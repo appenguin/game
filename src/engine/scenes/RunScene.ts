@@ -387,7 +387,7 @@ export class RunScene extends Phaser.Scene {
 
     // --- UI ---
     this.scoreText.setText(
-      `${Math.floor(this.distanceTraveled / 10)}m  ${this.score}pts`,
+      `Dist: ${Math.floor(this.distanceTraveled / 10)}m\nScore: ${this.score}`,
     );
     this.comboText.setText(this.combo > 1 ? `x${this.combo} combo` : "");
 

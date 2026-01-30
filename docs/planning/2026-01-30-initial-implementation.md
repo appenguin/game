@@ -38,13 +38,20 @@
   - Left/Right Spin still triggered by touch steering while airborne
   - Multi-touch: pointer-ID tracking so one finger steers while another taps trick buttons
 
+- [x] Phase 2: Refactor RunScene into modules
+  - Extracted `core/tricks.ts`: Trick interface, TRICKS constant, `calcTrickScore()`, `canQueueTrick()`
+  - Extracted `core/difficulty.ts`: difficulty zones, speed curve, spawn weight tables, `pickObstacleType()`
+  - Extracted `engine/systems/Input.ts`: keyboard + touch + trick buttons, input priority resolution
+  - Extracted `engine/systems/Spawner.ts`: SlopeObject, all spawn helpers, collision checking, object lifecycle
+  - RunScene slimmed from 814 to ~430 lines: thin orchestrator importing from modules
+  - Build passes, gameplay behavior identical
+
 ### Current step
 
-- [ ] Planning phases 2-7
+- [ ] Phase 3: Game feel
 
 ### Next steps
 
-- [ ] Phase 2: Refactor
 - [ ] Phase 3: Game feel
 - [ ] Phase 4: Menus and persistence
 - [ ] Phase 5: Art and audio (includes replacing placeholder PWA icons)
@@ -92,52 +99,52 @@ While airborne, directional inputs perform tricks:
 
 ---
 
-## Phase 2: Refactor
+## Phase 2: Refactor (completed)
 
-RunScene.ts is ~800 lines and growing. Before adding more features, extract game logic into focused modules. This prevents the scene from becoming unmaintainable and makes each system testable.
+RunScene.ts was 814 lines. Extracted game logic into focused modules to keep it maintainable and make each system testable.
 
-### File breakdown
+### File breakdown (actual)
 
 ```
 src/
   core/
-    scoring.ts         Score calculation, combo logic, trick point math
-    tricks.ts          Trick definitions, trick queue, variety bonus calc
-    difficulty.ts      Difficulty zones, spawn weights, speed curve
-    collision.ts       AABB collision check (pure function)
+    tricks.ts          Trick interface, TRICKS constant, calcTrickScore(), canQueueTrick()
+    difficulty.ts      Difficulty zones, spawn weights, speed curve, pickObstacleType()
   engine/
     scenes/
-      BootScene.ts     (exists, unchanged)
-      RunScene.ts      Slimmed to ~200 lines: scene lifecycle, delegates to systems
-    entities/
-      Penguin.ts       Penguin state: position, airborne, status effects, visual updates
-      SlopeObject.ts   Obstacle/collectible: type, sprite, dimensions
+      BootScene.ts     (unchanged)
+      RunScene.ts      Orchestrator (~430 lines): penguin state, scoring, UI, delegates to systems
     systems/
-      Spawner.ts       Obstacle spawning: timing, placement, difficulty-aware weights
-      Input.ts         Keyboard + touch input normalization, returns { steerDir, trickKey }
-  platform/
-    web/
-      storage.ts       localStorage wrapper for high scores and settings
+      Spawner.ts       SlopeObject interface, spawn helpers, collision check, object lifecycle
+      Input.ts         Keyboard + touch + trick buttons, getSteerDir(), getTrickKey()
 ```
 
-### What moves where
+### What moved where
 
-| Currently in RunScene | Moves to | Why |
-|----------------------|----------|-----|
-| `TRICKS` constant, trick queue logic | `core/tricks.ts` | Pure data + logic, no Phaser dependency |
-| `getDifficulty()`, spawn weight tables | `core/difficulty.ts` | Pure logic |
-| Score/combo math | `core/scoring.ts` | Pure logic, testable |
-| `checkCollision()` | `core/collision.ts` | Pure function |
-| Penguin state (airborne, slippery, slow, position) | `entities/Penguin.ts` | Encapsulates one entity |
-| `SlopeObject` interface + spawn helpers | `entities/SlopeObject.ts` + `systems/Spawner.ts` | Data vs creation |
-| Keyboard/touch handlers | `systems/Input.ts` | Reusable across scenes |
-| RunScene | Stays, but slimmer | Wires systems together, owns scene lifecycle |
+| From RunScene | To | Why |
+|---------------|-----|-----|
+| `Trick` interface, `TRICKS` constant, trick queueing logic | `core/tricks.ts` | Pure data + logic, no Phaser dependency |
+| `getDifficulty()`, speed curve, spawn weight tables, interval lookups | `core/difficulty.ts` | Pure logic, testable |
+| `SlopeObject` interface, all spawn helpers, `isSpawnClear()`, `checkCollision()` | `systems/Spawner.ts` | Object lifecycle in one place |
+| Keyboard setup, touch handlers, trick button UI, input priority resolution | `systems/Input.ts` | Reusable across scenes |
+| Penguin state, scoring, UI, collision handling, scene lifecycle | RunScene (stays) | Thin orchestrator wiring systems together |
+
+### What stayed in RunScene
+
+- Penguin sprite + shadow + airborne animation
+- Score, combo, trickScore, distanceTraveled, scrollSpeed state
+- Status effects (slipperyTimer, slowTimer)
+- All UI text elements
+- `handleAirTricks()`, `land()`, `launch()`, `handleCollision()`, `endGame()`
+- `showTrickText()`, `showStatusText()` UI tween helpers
 
 ### Verification
 
-- All existing gameplay works identically after refactor
-- `tsc` passes
-- Each `core/` module can be unit tested without Phaser
+- `npm run build` passes (tsc + vite)
+- Gameplay identical: steering, tricks, collisions, scoring, game over, restart
+- Touch controls work: left/right steering, FLIP/TUCK buttons, multi-touch
+- Keyboard controls work: arrows/WASD for steering + tricks, R for restart
+- No circular imports between modules
 
 ---
 
@@ -430,7 +437,7 @@ Bundle into a native Android app. The appenguin showcase.
 | Scrolling | Top-down, penguin at top, obstacles scroll up | Classic downhill ski perspective |
 | Trick system | Directional inputs while airborne | Simple to learn, depth via combinations |
 | Difficulty | Distance-based zones | Gradual learning curve, gets hard after 1500m |
-| Refactor before features | Yes | ~800-line scene is unmaintainable, extract before adding more |
+| Refactor before features | Yes, done | 814-line RunScene split into 4 modules: core/tricks, core/difficulty, systems/Input, systems/Spawner. RunScene now ~430 lines |
 | PWA early | Yes | Installability and offline support are cheap to add now with vite-plugin-pwa; touch controls need testing on real devices early |
 | Touch controls | Half-screen steering + trick buttons | Simpler than tilt, buttons enable all 4 tricks on mobile |
 | Orientation | Portrait locked | Screen Orientation API + PWA manifest |
@@ -452,3 +459,7 @@ Planned phases 2-7: refactor (extract modules from 720-line RunScene), game feel
 Pulled PWA forward: added vite-plugin-pwa with inline manifest, service worker, mobile meta tags. The game is installable to home screen and playable offline before any art polish.
 
 Controls overhaul: removed tilt/gyroscope steering in favor of simpler touch controls. Touch steering now uses left/right halves of the screen instead of thirds. Added on-screen FLIP and TUCK buttons at the bottom for performing Backflip and Front Tuck tricks while airborne. Multi-touch pointer-ID tracking lets one finger steer while another taps tricks. Portrait orientation locked via Screen Orientation API + PWA manifest. Input priority simplified to keyboard > touch.
+
+### 2026-01-30: Phase 2 refactor
+
+Broke the 814-line RunScene into focused modules. Created `core/tricks.ts` (Trick type, constants, scoring helpers) and `core/difficulty.ts` (difficulty zones, speed curve, spawn weight tables) as pure logic with no Phaser dependency. Created `engine/systems/Input.ts` (keyboard, touch, trick buttons, input priority resolution) and `engine/systems/Spawner.ts` (SlopeObject, all spawn helpers, collision checking, object lifecycle) as Phaser-dependent systems. RunScene slimmed to ~430 lines as a thin orchestrator: owns penguin state, scoring, UI, and wires the systems together. Build passes, gameplay behavior identical.

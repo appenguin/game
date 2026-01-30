@@ -1,26 +1,8 @@
 import Phaser from "phaser";
-
-/** Obstacle types on the slope */
-interface SlopeObject {
-  sprite: Phaser.GameObjects.Shape;
-  type: "rock" | "tree" | "ramp" | "fish" | "ice" | "crevasse" | "mogul" | "snowdrift";
-  width: number;
-  height: number;
-}
-
-/** A trick performed mid-air */
-interface Trick {
-  name: string;
-  points: number;
-  rotation: number; // radians to rotate penguin
-}
-
-const TRICKS: Record<string, Trick> = {
-  up: { name: "Backflip", points: 100, rotation: Math.PI * 2 },
-  down: { name: "Front Tuck", points: 80, rotation: -Math.PI * 2 },
-  left: { name: "Left Spin", points: 60, rotation: -Math.PI },
-  right: { name: "Right Spin", points: 60, rotation: Math.PI },
-};
+import { type Trick, TRICKS, canQueueTrick } from "../../core/tricks";
+import { getBaseSpeed } from "../../core/difficulty";
+import { Input } from "../systems/Input";
+import { Spawner, type SlopeObject } from "../systems/Spawner";
 
 /**
  * Main gameplay scene: Ski or Die-style downhill.
@@ -42,13 +24,8 @@ export class RunScene extends Phaser.Scene {
   private targetTrickRotation = 0;
 
   // Status effects
-  private slipperyTimer = 0; // seconds remaining of reduced steering
-  private slowTimer = 0; // seconds remaining of reduced speed
-
-  // Slope objects
-  private slopeObjects: SlopeObject[] = [];
-  private spawnTimer = 0;
-  private rampSpawnTimer = 0;
+  private slipperyTimer = 0;
+  private slowTimer = 0;
 
   // Speed & scoring
   private baseScrollSpeed = 200;
@@ -67,18 +44,9 @@ export class RunScene extends Phaser.Scene {
   private statusText!: Phaser.GameObjects.Text;
   private effectText!: Phaser.GameObjects.Text;
 
-  // Input
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private keys!: Record<string, Phaser.Input.Keyboard.Key>;
-  private touchSteerX = 0;
-  private steerPointerId: number | null = null;
-  private touchTrickKey = "";
-
-  // Trick buttons
-  private flipButton!: Phaser.GameObjects.Container;
-  private tuckButton!: Phaser.GameObjects.Container;
-  private flipButtonBounds!: Phaser.Geom.Rectangle;
-  private tuckButtonBounds!: Phaser.Geom.Rectangle;
+  // Systems
+  private inputHandler!: Input;
+  private spawner!: Spawner;
 
   constructor() {
     super("Run");
@@ -86,22 +54,18 @@ export class RunScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
+
+    // Reset state
     this.gameOver = false;
     this.score = 0;
     this.distanceTraveled = 0;
     this.combo = 0;
     this.trickScore = 0;
     this.isAirborne = false;
-    this.slopeObjects = [];
     this.baseScrollSpeed = 200;
     this.scrollSpeed = 200;
-    this.spawnTimer = 0;
-    this.rampSpawnTimer = 0;
     this.slipperyTimer = 0;
     this.slowTimer = 0;
-    this.touchSteerX = 0;
-    this.steerPointerId = null;
-    this.touchTrickKey = "";
 
     this.cameras.main.setBackgroundColor("#dce8f0");
 
@@ -172,116 +136,9 @@ export class RunScene extends Phaser.Scene {
       .setDepth(10)
       .setAlpha(0);
 
-    // Keyboard
-    if (this.input.keyboard) {
-      this.cursors = this.input.keyboard.createCursorKeys();
-      this.keys = {
-        a: this.input.keyboard.addKey("A"),
-        d: this.input.keyboard.addKey("D"),
-        w: this.input.keyboard.addKey("W"),
-        s: this.input.keyboard.addKey("S"),
-        r: this.input.keyboard.addKey("R"),
-      };
-    }
-
-    // Touch
-    this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      if (this.gameOver) {
-        this.restartGame();
-        return;
-      }
-      if (this.isOnTrickButton(pointer)) {
-        this.handleTrickButtonPress(pointer);
-        return;
-      }
-      this.steerPointerId = pointer.id;
-      this.updateTouchSteer(pointer);
-    });
-    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-      if (pointer.id === this.steerPointerId) {
-        this.updateTouchSteer(pointer);
-      }
-    });
-    this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
-      if (pointer.id === this.steerPointerId) {
-        this.steerPointerId = null;
-        this.touchSteerX = 0;
-      }
-    });
-
-    // Trick buttons
-    this.createTrickButtons();
-  }
-
-  private updateTouchSteer(pointer: Phaser.Input.Pointer): void {
-    const { width, height } = this.scale;
-    if (pointer.y > height * 0.85) return; // trick button zone
-    if (pointer.x < width / 2) this.touchSteerX = -1;
-    else this.touchSteerX = 1;
-  }
-
-  private createTrickButtons(): void {
-    const { width, height } = this.scale;
-    const btnW = 80;
-    const btnH = 50;
-    const btnY = height - 50;
-    const margin = 24;
-
-    // Flip button (left side) — triggers Backflip
-    const flipBg = this.add.rectangle(0, 0, btnW, btnH, 0x3b82f6, 0.35);
-    flipBg.setStrokeStyle(2, 0x60a5fa);
-    const flipLabel = this.add.text(0, 0, "FLIP", {
-      fontSize: "16px",
-      color: "#ffffff",
-      fontFamily: "system-ui, sans-serif",
-      fontStyle: "bold",
-    }).setOrigin(0.5);
-    this.flipButton = this.add.container(margin + btnW / 2, btnY, [flipBg, flipLabel]);
-    this.flipButton.setDepth(20);
-    this.flipButton.setAlpha(0.4);
-
-    // Tuck button (right side) — triggers Front Tuck
-    const tuckBg = this.add.rectangle(0, 0, btnW, btnH, 0x7c3aed, 0.35);
-    tuckBg.setStrokeStyle(2, 0xa78bfa);
-    const tuckLabel = this.add.text(0, 0, "TUCK", {
-      fontSize: "16px",
-      color: "#ffffff",
-      fontFamily: "system-ui, sans-serif",
-      fontStyle: "bold",
-    }).setOrigin(0.5);
-    this.tuckButton = this.add.container(width - margin - btnW / 2, btnY, [tuckBg, tuckLabel]);
-    this.tuckButton.setDepth(20);
-    this.tuckButton.setAlpha(0.4);
-
-    // Hit bounds for point-in-rect testing
-    this.flipButtonBounds = new Phaser.Geom.Rectangle(
-      margin, btnY - btnH / 2, btnW, btnH,
-    );
-    this.tuckButtonBounds = new Phaser.Geom.Rectangle(
-      width - margin - btnW, btnY - btnH / 2, btnW, btnH,
-    );
-  }
-
-  private isOnTrickButton(pointer: Phaser.Input.Pointer): boolean {
-    return this.flipButtonBounds.contains(pointer.x, pointer.y) ||
-      this.tuckButtonBounds.contains(pointer.x, pointer.y);
-  }
-
-  private handleTrickButtonPress(pointer: Phaser.Input.Pointer): void {
-    if (!this.isAirborne) return;
-    if (this.flipButtonBounds.contains(pointer.x, pointer.y)) {
-      this.touchTrickKey = "up";
-    } else if (this.tuckButtonBounds.contains(pointer.x, pointer.y)) {
-      this.touchTrickKey = "down";
-    }
-  }
-
-  /** Difficulty zone based on distance */
-  private getDifficulty(): number {
-    if (this.distanceTraveled < 500) return 0;
-    if (this.distanceTraveled < 1500) return 1;
-    if (this.distanceTraveled < 3000) return 2;
-    return 3;
+    // Systems
+    this.inputHandler = new Input(this);
+    this.spawner = new Spawner(this);
   }
 
   update(_time: number, delta: number): void {
@@ -291,8 +148,7 @@ export class RunScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     // Speed: base increases with distance, capped at 500
-    this.baseScrollSpeed = Math.min(500, 200 + this.distanceTraveled * 0.04);
-    // Apply slow effect
+    this.baseScrollSpeed = getBaseSpeed(this.distanceTraveled);
     this.scrollSpeed = this.slowTimer > 0
       ? this.baseScrollSpeed * 0.5
       : this.baseScrollSpeed;
@@ -302,11 +158,8 @@ export class RunScene extends Phaser.Scene {
     if (this.slipperyTimer > 0) this.slipperyTimer -= dt;
     if (this.slowTimer > 0) this.slowTimer -= dt;
 
-    // --- Steering (priority: keyboard > touch) ---
-    let steerDir = 0;
-    if (this.cursors?.left.isDown || this.keys?.a.isDown) steerDir = -1;
-    else if (this.cursors?.right.isDown || this.keys?.d.isDown) steerDir = 1;
-    else if (this.touchSteerX !== 0) steerDir = this.touchSteerX;
+    // --- Steering ---
+    const steerDir = this.inputHandler.getSteerDir();
 
     if (!this.isAirborne) {
       const effectiveSteer = this.slipperyTimer > 0
@@ -317,7 +170,6 @@ export class RunScene extends Phaser.Scene {
       this.penguin.x = Phaser.Math.Clamp(this.penguin.x, halfW + 8, width - halfW - 8);
       this.penguinShadow.x = this.penguin.x;
 
-      // Slippery visual: tint penguin cyan
       if (this.slipperyTimer > 0) {
         this.penguin.setFillStyle(0x67e8f9);
       } else {
@@ -327,35 +179,20 @@ export class RunScene extends Phaser.Scene {
       this.handleAirTricks(dt);
     }
 
-    // --- Spawn slope objects ---
-    const diff = this.getDifficulty();
-    const spawnInterval = [0.5, 0.38, 0.28, 0.2][diff];
-    this.spawnTimer -= dt;
-    if (this.spawnTimer <= 0) {
-      this.spawnObstacle();
-      this.spawnTimer = spawnInterval + Math.random() * spawnInterval;
-    }
+    // --- Spawn & scroll slope objects ---
+    this.spawner.update(dt, this.scrollSpeed, this.distanceTraveled);
 
-    const rampInterval = [2.5, 2.0, 1.8, 1.5][diff];
-    this.rampSpawnTimer -= dt;
-    if (this.rampSpawnTimer <= 0) {
-      this.spawnRamp();
-      this.rampSpawnTimer = rampInterval + Math.random() * rampInterval;
-    }
-
-    // --- Update slope objects ---
-    for (let i = this.slopeObjects.length - 1; i >= 0; i--) {
-      const obj = this.slopeObjects[i];
-      obj.sprite.y -= this.scrollSpeed * dt;
-
-      if (!this.isAirborne && this.checkCollision(obj)) {
-        this.handleCollision(obj);
-        if (this.gameOver) return;
-      }
-
-      if (obj.sprite.y < -50) {
-        obj.sprite.destroy();
-        this.slopeObjects.splice(i, 1);
+    // --- Collisions ---
+    if (!this.isAirborne) {
+      const px = this.penguin.x;
+      const py = this.penguin.y;
+      const pw = this.penguin.width * 0.7;
+      const ph = this.penguin.height * 0.7;
+      for (const obj of this.spawner.getObjects()) {
+        if (this.spawner.checkCollision(px, py, pw, ph, obj)) {
+          this.handleCollision(obj);
+          if (this.gameOver) return;
+        }
       }
     }
 
@@ -391,7 +228,6 @@ export class RunScene extends Phaser.Scene {
     );
     this.comboText.setText(this.combo > 1 ? `x${this.combo} combo` : "");
 
-    // Effect indicator
     if (this.slipperyTimer > 0) {
       this.effectText.setText("ICY!");
       this.effectText.setAlpha(0.8);
@@ -403,36 +239,16 @@ export class RunScene extends Phaser.Scene {
       this.effectText.setAlpha(0);
     }
 
-    // Trick button visibility
-    const btnAlpha = this.isAirborne ? 0.9 : 0.4;
-    this.flipButton.setAlpha(btnAlpha);
-    this.tuckButton.setAlpha(btnAlpha);
+    this.inputHandler.setAirborne(this.isAirborne);
   }
 
   private handleAirTricks(dt: number): void {
-    let trickKey = "";
-
-    // Keyboard: all 4 directions
-    if (this.cursors?.up.isDown || this.keys?.w.isDown) trickKey = "up";
-    else if (this.cursors?.down.isDown || this.keys?.s.isDown) trickKey = "down";
-    else if (this.cursors?.left.isDown || this.keys?.a.isDown) trickKey = "left";
-    else if (this.cursors?.right.isDown || this.keys?.d.isDown) trickKey = "right";
-
-    // Touch trick buttons: Flip (up) / Tuck (down)
-    if (!trickKey && this.touchTrickKey) {
-      trickKey = this.touchTrickKey;
-      this.touchTrickKey = "";
-    }
-
-    // Touch steering: left/right spins
-    if (!trickKey && this.touchSteerX < 0) trickKey = "left";
-    if (!trickKey && this.touchSteerX > 0) trickKey = "right";
+    const trickKey = this.inputHandler.getTrickKey();
 
     if (trickKey && TRICKS[trickKey]) {
       const trick = TRICKS[trickKey];
-      const alreadyQueued = this.trickQueue.some((t) => t.name === trick.name);
       const timeLeft = this.airDuration - this.airTime;
-      if (!alreadyQueued && timeLeft > 0.4) {
+      if (canQueueTrick(this.trickQueue, trick, timeLeft)) {
         this.trickQueue.push(trick);
         this.targetTrickRotation += trick.rotation;
         this.trickScore += trick.points;
@@ -445,12 +261,9 @@ export class RunScene extends Phaser.Scene {
       }
     }
 
-    // Reduced air steering (priority: keyboard > touch)
+    // Reduced air steering
     const { width } = this.scale;
-    let steerDir = 0;
-    if (this.cursors?.left.isDown || this.keys?.a.isDown) steerDir = -1;
-    else if (this.cursors?.right.isDown || this.keys?.d.isDown) steerDir = 1;
-    else if (this.touchSteerX !== 0) steerDir = this.touchSteerX;
+    const steerDir = this.inputHandler.getSteerDir();
     this.penguin.x += steerDir * this.steerSpeed * 0.5 * dt;
     const halfW = this.penguin.width / 2;
     this.penguin.x = Phaser.Math.Clamp(this.penguin.x, halfW + 8, width - halfW - 8);
@@ -486,7 +299,6 @@ export class RunScene extends Phaser.Scene {
     this.trickScore = 0;
     this.currentTrickRotation = 0;
     this.targetTrickRotation = 0;
-    this.touchTrickKey = "";
   }
 
   private launch(duration?: number): void {
@@ -502,187 +314,9 @@ export class RunScene extends Phaser.Scene {
     }
   }
 
-  /** Check if a spawn position is clear of nearby objects */
-  private isSpawnClear(x: number, y: number, minDist: number): boolean {
-    for (const obj of this.slopeObjects) {
-      const dx = obj.sprite.x - x;
-      const dy = obj.sprite.y - y;
-      if (dx * dx + dy * dy < minDist * minDist) return false;
-    }
-    return true;
-  }
-
-  private spawnObstacle(): void {
-    const { width, height } = this.scale;
-    const diff = this.getDifficulty();
-    const spawnY = height + 30;
-
-    // Pick x, ensure minimum spacing
-    let x = 30 + Math.random() * (width - 60);
-    let attempts = 0;
-    while (!this.isSpawnClear(x, spawnY, 50) && attempts < 5) {
-      x = 30 + Math.random() * (width - 60);
-      attempts++;
-    }
-
-    // Weighted spawn table based on difficulty
-    const roll = Math.random();
-
-    if (diff === 0) {
-      // Easy: fish heavy, some trees, rare rocks
-      if (roll < 0.15) {
-        this.spawnRock(x, spawnY);
-      } else if (roll < 0.35) {
-        this.spawnTree(x, spawnY);
-      } else if (roll < 0.45) {
-        this.spawnSnowdrift(x, spawnY);
-      } else {
-        this.spawnFish(x, spawnY);
-      }
-    } else if (diff === 1) {
-      // Medium: ice patches, more rocks
-      if (roll < 0.2) {
-        this.spawnRock(x, spawnY);
-      } else if (roll < 0.38) {
-        this.spawnTree(x, spawnY);
-      } else if (roll < 0.48) {
-        this.spawnIcePatch(x, spawnY);
-      } else if (roll < 0.55) {
-        this.spawnSnowdrift(x, spawnY);
-      } else if (roll < 0.62) {
-        this.spawnCrevasse(x, spawnY);
-      } else {
-        this.spawnFish(x, spawnY);
-      }
-    } else if (diff === 2) {
-      // Hard: moguls, crevasses, dense
-      if (roll < 0.22) {
-        this.spawnRock(x, spawnY);
-      } else if (roll < 0.37) {
-        this.spawnTree(x, spawnY);
-      } else if (roll < 0.47) {
-        this.spawnIcePatch(x, spawnY);
-      } else if (roll < 0.55) {
-        this.spawnCrevasse(x, spawnY);
-      } else if (roll < 0.65) {
-        this.spawnMogul(x, spawnY);
-      } else if (roll < 0.72) {
-        this.spawnSnowdrift(x, spawnY);
-      } else {
-        this.spawnFish(x, spawnY);
-      }
-    } else {
-      // Expert: everything, high density
-      if (roll < 0.25) {
-        this.spawnRock(x, spawnY);
-      } else if (roll < 0.37) {
-        this.spawnTree(x, spawnY);
-      } else if (roll < 0.47) {
-        this.spawnCrevasse(x, spawnY);
-      } else if (roll < 0.57) {
-        this.spawnIcePatch(x, spawnY);
-      } else if (roll < 0.67) {
-        this.spawnMogul(x, spawnY);
-      } else if (roll < 0.73) {
-        this.spawnSnowdrift(x, spawnY);
-      } else {
-        this.spawnFish(x, spawnY);
-      }
-    }
-  }
-
-  // --- Spawn helpers ---
-
-  private spawnRock(x: number, y: number): void {
-    const rock = this.add.rectangle(x, y, 30, 30, 0x6b7280);
-    rock.setStrokeStyle(2, 0x4b5563);
-    this.slopeObjects.push({ sprite: rock, type: "rock", width: 30, height: 30 });
-  }
-
-  private spawnTree(x: number, y: number): void {
-    const tree = this.add.triangle(x, y, 0, 0, 15, 30, 30, 0, 0x16a34a);
-    this.slopeObjects.push({ sprite: tree, type: "tree", width: 30, height: 30 });
-  }
-
-  private spawnFish(x: number, y: number): void {
-    // Occasionally spawn a cluster
-    if (Math.random() < 0.25) {
-      this.spawnFishCluster(x, y);
-      return;
-    }
-    const fish = this.add.circle(x, y, 8, 0xf59e0b);
-    this.slopeObjects.push({ sprite: fish, type: "fish", width: 16, height: 16 });
-  }
-
-  private spawnFishCluster(x: number, y: number): void {
-    const { width } = this.scale;
-    const count = 3 + Math.floor(Math.random() * 3); // 3-5 fish
-    const spacing = 22;
-    const startX = x - ((count - 1) * spacing) / 2;
-    for (let i = 0; i < count; i++) {
-      const fx = Phaser.Math.Clamp(startX + i * spacing, 16, width - 16);
-      const fish = this.add.circle(fx, y + i * 12, 8, 0xf59e0b);
-      this.slopeObjects.push({ sprite: fish, type: "fish", width: 16, height: 16 });
-    }
-  }
-
-  private spawnIcePatch(x: number, y: number): void {
-    const w = 60 + Math.random() * 40;
-    const ice = this.add.rectangle(x, y, w, 20, 0xa5f3fc, 0.6);
-    ice.setStrokeStyle(1, 0x67e8f9);
-    this.slopeObjects.push({ sprite: ice, type: "ice", width: w, height: 20 });
-  }
-
-  private spawnCrevasse(x: number, y: number): void {
-    const crevasse = this.add.rectangle(x, y, 14, 50, 0x1e293b);
-    crevasse.setStrokeStyle(1, 0x0f172a);
-    this.slopeObjects.push({ sprite: crevasse, type: "crevasse", width: 14, height: 50 });
-  }
-
-  private spawnMogul(x: number, y: number): void {
-    const mogul = this.add.ellipse(x, y, 28, 16, 0xf1f5f9);
-    mogul.setStrokeStyle(1, 0xcbd5e1);
-    this.slopeObjects.push({ sprite: mogul, type: "mogul", width: 28, height: 16 });
-  }
-
-  private spawnSnowdrift(x: number, y: number): void {
-    const drift = this.add.ellipse(x, y, 44, 18, 0xe2e8f0);
-    drift.setStrokeStyle(1, 0xcbd5e1);
-    this.slopeObjects.push({ sprite: drift, type: "snowdrift", width: 44, height: 18 });
-  }
-
-  private spawnRamp(): void {
-    const { width, height } = this.scale;
-    const x = 60 + Math.random() * (width - 120);
-    const spawnY = height + 40;
-    const ramp = this.add.triangle(x, spawnY, 0, 0, 50, 0, 25, 24, 0x60a5fa);
-    ramp.setStrokeStyle(2, 0x3b82f6);
-    this.slopeObjects.push({ sprite: ramp, type: "ramp", width: 50, height: 24 });
-  }
-
-  private checkCollision(obj: SlopeObject): boolean {
-    const px = this.penguin.x;
-    const py = this.penguin.y;
-    const pw = this.penguin.width * 0.7;
-    const ph = this.penguin.height * 0.7;
-
-    const ox = obj.sprite.x;
-    const oy = obj.sprite.y;
-    const ow = obj.width * 0.7;
-    const oh = obj.height * 0.7;
-
-    return (
-      Math.abs(px - ox) < (pw + ow) / 2 && Math.abs(py - oy) < (ph + oh) / 2
-    );
-  }
-
   private handleCollision(obj: SlopeObject): void {
     switch (obj.type) {
       case "rock":
-        this.score += Math.floor(this.distanceTraveled);
-        this.endGame();
-        break;
-
       case "crevasse":
         this.score += Math.floor(this.distanceTraveled);
         this.endGame();
@@ -693,40 +327,33 @@ export class RunScene extends Phaser.Scene {
         this.combo = 0;
         this.cameras.main.shake(200, 0.01);
         this.showStatusText("HIT!", "#ef4444");
-        obj.sprite.destroy();
-        this.slopeObjects.splice(this.slopeObjects.indexOf(obj), 1);
+        this.spawner.removeObject(obj);
         break;
 
       case "snowdrift":
         this.slowTimer = 1.2;
         this.showStatusText("SNOW!", "#94a3b8");
-        obj.sprite.destroy();
-        this.slopeObjects.splice(this.slopeObjects.indexOf(obj), 1);
+        this.spawner.removeObject(obj);
         break;
 
       case "ice":
         this.slipperyTimer = 1.0;
-        obj.sprite.destroy();
-        this.slopeObjects.splice(this.slopeObjects.indexOf(obj), 1);
+        this.spawner.removeObject(obj);
         break;
 
       case "mogul":
-        // Mini-launch: short air, enough for one quick trick
         this.launch(0.5);
-        obj.sprite.destroy();
-        this.slopeObjects.splice(this.slopeObjects.indexOf(obj), 1);
+        this.spawner.removeObject(obj);
         break;
 
       case "ramp":
         this.launch();
-        obj.sprite.destroy();
-        this.slopeObjects.splice(this.slopeObjects.indexOf(obj), 1);
+        this.spawner.removeObject(obj);
         break;
 
       case "fish":
         this.score += 10;
-        obj.sprite.destroy();
-        this.slopeObjects.splice(this.slopeObjects.indexOf(obj), 1);
+        this.spawner.removeObject(obj);
         break;
     }
   }
@@ -771,17 +398,13 @@ export class RunScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(10);
 
-    if (this.input.keyboard) {
-      this.input.keyboard.once("keydown-R", () => {
-        this.restartGame();
-      });
-    }
+    this.inputHandler.bindRestart(() => this.restartGame());
+    this.inputHandler.setGameOverTapHandler(() => this.restartGame());
   }
 
   private restartGame(): void {
-    for (const obj of this.slopeObjects) {
-      obj.sprite.destroy();
-    }
+    this.spawner.destroyAll();
+    this.inputHandler.reset();
     this.scene.restart();
   }
 

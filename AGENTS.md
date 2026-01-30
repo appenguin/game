@@ -24,12 +24,17 @@ No backend. All data stored locally (localStorage / Capacitor Storage).
 ```
 src/
   main.ts             Entry point + orientation lock
+  core/
+    tricks.ts         Trick types, constants, scoring helpers (pure, no Phaser)
+    difficulty.ts     Difficulty zones, spawn weights, speed curve (pure, no Phaser)
   engine/
     game.ts           Phaser config
     scenes/
       BootScene.ts    Minimal boot, launches Run
-      RunScene.ts     All gameplay (~800 lines, refactor planned)
-  core/               (planned) Pure game logic
+      RunScene.ts     Gameplay orchestrator (~430 lines)
+    systems/
+      Input.ts        Keyboard + touch + trick buttons
+      Spawner.ts      Obstacle spawning + management
   platform/           (planned) Platform adapters (web vs Capacitor)
 public/               Static assets (icons, manifest)
 index.html            HTML entry point

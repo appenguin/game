@@ -71,7 +71,7 @@ Why do this early? Because an installable, offline-capable game with solid touch
 
 ## What's next
 
-Refactoring the 800-line RunScene into focused modules, then adding game feel: particles, ski trails, near-miss slow-mo, snowfall. After that, menus, persistence, real art, and the Capacitor wrap for Android.
+The 814-line RunScene has been refactored into focused modules: pure game logic in `core/` (tricks, difficulty), Phaser systems in `engine/systems/` (input handling, obstacle spawning). RunScene is now a ~430-line orchestrator. Next up is game feel: particles, ski trails, near-miss slow-mo, snowfall. After that, menus, persistence, real art, and the Capacitor wrap for Android.
 
 We'll document the entire build as we go. Every decision, every dead end, every time we spend an hour tweaking how it feels to almost hit a rock.
 

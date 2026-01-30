@@ -92,7 +92,7 @@ Input priority: keyboard > touch buttons > touch half-screen.
 - Penguin stays fixed at screen center; the world scrolls via Phaser's `camera.scrollX`
 - Obstacles spawn in world-space relative to the penguin's position
 - All UI (HUD, buttons, game over text) uses `setScrollFactor(0)` to stay screen-pinned
-- Top bar HUD: semi-transparent dark bar showing score, distance, speed, and difficulty level
+- Top bar HUD: semi-transparent dark bar showing score, distance (m/km), speed (km/h), and difficulty level
 
 ## Difficulty levels
 

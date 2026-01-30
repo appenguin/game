@@ -66,7 +66,7 @@
   - Level passed to RunScene via scene data, preserved on restart
 - [x] Top bar HUD
   - Semi-transparent dark bar at top of screen (36px, 0.45 alpha)
-  - Shows score, distance (meters), speed, and difficulty level name
+  - Shows labeled score, distance (m until 1 km, then km), speed (km/h), and difficulty level name
   - All elements pinned to screen with `setScrollFactor(0)`
 
 ### Current step
@@ -467,7 +467,7 @@ Bundle into a native Android app. The appenguin showcase.
 | Touch controls | 4-button row: `[<] [FLIP] [TUCK] [>]` + half-screen fallback | Explicit steer buttons for angle-based steering; trick buttons for air |
 | Camera | Centered on penguin, world scrolls | Infinite horizontal movement, no screen-edge clamping |
 | Difficulty levels | Easy/Medium/Hard speed profiles | Player choice at start; obstacle zones still distance-based |
-| HUD | Semi-transparent top bar | Score, distance, speed, level -- always visible, non-intrusive |
+| HUD | Semi-transparent top bar | Labeled score, distance (m/km), speed (km/h), level -- always visible, non-intrusive |
 | Orientation | Portrait locked | Screen Orientation API + PWA manifest |
 
 ---

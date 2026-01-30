@@ -118,19 +118,19 @@ export class RunScene extends Phaser.Scene {
       .setScrollFactor(0);
 
     this.scoreText = this.add
-      .text(12, barH / 2, "0", textStyle)
+      .text(12, barH / 2, "Score: 0", textStyle)
       .setOrigin(0, 0.5)
       .setDepth(11)
       .setScrollFactor(0);
 
     this.distText = this.add
-      .text(width * 0.3, barH / 2, "0m", textStyle)
+      .text(width * 0.33, barH / 2, "0.0 km", textStyle)
       .setOrigin(0, 0.5)
       .setDepth(11)
       .setScrollFactor(0);
 
     this.speedText = this.add
-      .text(width * 0.58, barH / 2, "0", textStyle)
+      .text(width * 0.62, barH / 2, "0 km/h", textStyle)
       .setOrigin(0, 0.5)
       .setDepth(11)
       .setScrollFactor(0);
@@ -303,9 +303,13 @@ export class RunScene extends Phaser.Scene {
     }
 
     // --- UI ---
-    this.scoreText.setText(`${this.score}`);
-    this.distText.setText(`${Math.floor(this.distanceTraveled / 10)}m`);
-    this.speedText.setText(`${Math.floor(this.scrollSpeed)}`);
+    this.scoreText.setText(`Score: ${this.score}`);
+    const meters = Math.floor(this.distanceTraveled / 100);
+    const distStr = meters >= 1000
+      ? `${(meters / 1000).toFixed(1)} km`
+      : `${meters} m`;
+    this.distText.setText(distStr);
+    this.speedText.setText(`${Math.floor(this.scrollSpeed / 10)} km/h`);
     this.comboText.setText(this.combo > 1 ? `x${this.combo} combo` : "");
 
     if (this.slipperyTimer > 0) {
@@ -463,7 +467,7 @@ export class RunScene extends Phaser.Scene {
       .text(
         width / 2,
         height * 0.45,
-        `Score: ${this.score}\nDistance: ${Math.floor(this.distanceTraveled / 10)}m`,
+        `Score: ${this.score}\nDistance: ${Math.floor(this.distanceTraveled / 100) >= 1000 ? (Math.floor(this.distanceTraveled / 100) / 1000).toFixed(1) + " km" : Math.floor(this.distanceTraveled / 100) + " m"}`,
         {
           fontSize: "22px",
           color: "#374151",

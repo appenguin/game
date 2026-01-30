@@ -58,6 +58,21 @@ export function getMusicLevel(score: number): number {
 }
 
 // ---------------------------------------------------------------------------
+// Death pattern — plays for a few bars on game over, then fades to intro pad
+// ---------------------------------------------------------------------------
+
+export function getDeathPattern(): any {
+  const { n } = g();
+
+  return note("e2").fast(32)
+    .sound("sawtooth")
+    .lpf(600)
+    .gain(0.3)
+    .room(0.4)
+    .slow(2);
+}
+
+// ---------------------------------------------------------------------------
 // Pattern definitions — one per level
 //
 // To tweak a layer, edit the matching case below.

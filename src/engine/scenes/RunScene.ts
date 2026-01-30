@@ -102,9 +102,11 @@ export class RunScene extends Phaser.Scene {
     this.penguinShadow = this.add.ellipse(
       width / 2, height * 0.25, 36, 12, 0x000000, 0.2,
     );
+    this.penguinShadow.setDepth(4);
 
     // Penguin
     this.penguin = this.add.image(width / 2, height * 0.25, "penguin");
+    this.penguin.setDepth(5);
 
     // UI — top bar
     const barH = 36;
@@ -224,21 +226,20 @@ export class RunScene extends Phaser.Scene {
 
     // --- Steering (angle-based with momentum) ---
     if (!this.isAirborne) {
-      const steerDir = this.inputHandler.getSteerDir();
       const icy = this.slipperyTimer > 0;
-      const accel = icy ? this.turnAccel * 0.35 : this.turnAccel;
-      const drag = icy ? this.headingDrag * 0.5 : this.headingDrag;
+      const steerDir = icy ? 0 : this.inputHandler.getSteerDir();
 
       if (steerDir !== 0) {
         // Counter-steering (pressing opposite to current heading) gets a boost
         const counterSteer = (steerDir > 0 && this.heading < -0.05) ||
           (steerDir < 0 && this.heading > 0.05);
-        const effectiveAccel = counterSteer ? accel * 2.0 : accel;
+        const effectiveAccel = counterSteer ? this.turnAccel * 2.0 : this.turnAccel;
         this.headingVelocity += steerDir * effectiveAccel * dt;
         this.headingVelocity = Phaser.Math.Clamp(
           this.headingVelocity, -this.maxTurnSpeed, this.maxTurnSpeed,
         );
       } else {
+        const drag = icy ? this.headingDrag * 0.2 : this.headingDrag;
         this.headingVelocity *= 1 - drag * dt;
         if (Math.abs(this.headingVelocity) < 0.05) this.headingVelocity = 0;
       }
@@ -247,7 +248,8 @@ export class RunScene extends Phaser.Scene {
 
       // Return heading toward straight downhill when not steering
       if (steerDir === 0) {
-        this.heading *= 1 - this.headingCenter * dt;
+        const center = icy ? this.headingCenter * 0.2 : this.headingCenter;
+        this.heading *= 1 - center * dt;
         if (Math.abs(this.heading) < 0.01) this.heading = 0;
       }
 
@@ -369,6 +371,7 @@ export class RunScene extends Phaser.Scene {
 
   private land(): void {
     this.isAirborne = false;
+    this.penguin.setDepth(5);
     this.penguin.y = this.scale.height * 0.25;
     this.penguin.setScale(1);
     this.penguin.setRotation(-this.heading);
@@ -406,6 +409,7 @@ export class RunScene extends Phaser.Scene {
 
   private launch(duration?: number): void {
     this.isAirborne = true;
+    this.penguin.setDepth(8);
     this.airTime = 0;
     this.airDuration = duration ?? 1.2 + (this.scrollSpeed - 200) * 0.002;
     this.trickQueue = [];
@@ -440,7 +444,7 @@ export class RunScene extends Phaser.Scene {
         break;
 
       case "ice":
-        this.slipperyTimer = 1.0;
+        this.slipperyTimer = 2.5;
         this.spawner.removeObject(obj);
         break;
 

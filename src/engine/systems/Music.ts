@@ -12,6 +12,7 @@ import { initStrudel } from "@strudel/web";
 import {
   getMusicLevel,
   getPatternForLevel,
+  getDeathPattern,
   BASE_BPM,
 } from "../../core/music";
 
@@ -25,6 +26,7 @@ class Music {
   private musicLevel = -1; // -1 = not yet started
   private _muted: boolean;
   private wantsPlay = false; // true if play() was called before init finished
+  private deathTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this._muted = localStorage.getItem(STORAGE_KEY) === "off";
@@ -94,13 +96,32 @@ class Music {
   // -----------------------------------------------------------------------
 
   onGameOver(): void {
-    this.hush();
+    if (!this.initialized || this._muted) return;
+    this.clearDeathTimer();
+    // Play death pattern immediately
+    const cps = BASE_BPM / 4 / 60;
+    getDeathPattern().cps(cps).play();
+    // After 2 bars, drop to intro pad
+    const barDuration = 2 / cps; // 2 cycles in seconds
+    this.deathTimer = setTimeout(() => {
+      this.deathTimer = null;
+      this.musicLevel = 0;
+      if (!this._muted) this.applyLevel(0);
+    }, barDuration * 1000);
   }
 
   onRestart(): void {
+    this.clearDeathTimer();
     this.musicLevel = 0;
     if (!this._muted) {
       this.applyLevel(0);
+    }
+  }
+
+  private clearDeathTimer(): void {
+    if (this.deathTimer) {
+      clearTimeout(this.deathTimer);
+      this.deathTimer = null;
     }
   }
 

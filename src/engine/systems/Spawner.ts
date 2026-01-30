@@ -23,6 +23,7 @@ export class Spawner {
   private objects: SlopeObject[] = [];
   private spawnTimer = 0;
   private rampSpawnTimer = 0;
+  private penguinX = 0;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -33,7 +34,9 @@ export class Spawner {
     dt: number,
     scrollSpeed: number,
     distanceTraveled: number,
+    penguinX: number,
   ): void {
+    this.penguinX = penguinX;
     const { width, height } = this.scene.scale;
     const diff = getDifficulty(distanceTraveled);
 
@@ -53,11 +56,11 @@ export class Spawner {
       this.rampSpawnTimer = rampInterval + Math.random() * rampInterval;
     }
 
-    // Scroll and cull
+    // Scroll and cull (vertical + horizontal)
     for (let i = this.objects.length - 1; i >= 0; i--) {
       const obj = this.objects[i];
       obj.sprite.y -= scrollSpeed * dt;
-      if (obj.sprite.y < -50) {
+      if (obj.sprite.y < -50 || Math.abs(obj.sprite.x - penguinX) > width * 2) {
         obj.sprite.destroy();
         this.objects.splice(i, 1);
       }
@@ -114,11 +117,13 @@ export class Spawner {
 
   private spawnObstacle(screenWidth: number, screenHeight: number, diff: number): void {
     const spawnY = screenHeight + 30;
+    const spawnWidth = screenWidth * 1.5;
+    const spawnLeft = this.penguinX - spawnWidth / 2;
 
-    let x = 30 + Math.random() * (screenWidth - 60);
+    let x = spawnLeft + Math.random() * spawnWidth;
     let attempts = 0;
     while (!this.isSpawnClear(x, spawnY, 50) && attempts < 5) {
-      x = 30 + Math.random() * (screenWidth - 60);
+      x = spawnLeft + Math.random() * spawnWidth;
       attempts++;
     }
 
@@ -131,7 +136,7 @@ export class Spawner {
         this.spawnTree(x, spawnY);
         break;
       case "fish":
-        this.spawnFish(x, spawnY, screenWidth);
+        this.spawnFish(x, spawnY);
         break;
       case "ice":
         this.spawnIcePatch(x, spawnY);
@@ -149,7 +154,8 @@ export class Spawner {
   }
 
   private spawnRamp(screenWidth: number, screenHeight: number): void {
-    const x = 60 + Math.random() * (screenWidth - 120);
+    const spawnWidth = screenWidth * 1.2;
+    const x = this.penguinX - spawnWidth / 2 + Math.random() * spawnWidth;
     const spawnY = screenHeight + 40;
     const ramp = this.scene.add.triangle(x, spawnY, 0, 0, 50, 0, 25, 24, 0x60a5fa);
     ramp.setStrokeStyle(2, 0x3b82f6);
@@ -167,21 +173,21 @@ export class Spawner {
     this.objects.push({ sprite: tree, type: "tree", width: 30, height: 30 });
   }
 
-  private spawnFish(x: number, y: number, screenWidth: number): void {
+  private spawnFish(x: number, y: number): void {
     if (Math.random() < 0.25) {
-      this.spawnFishCluster(x, y, screenWidth);
+      this.spawnFishCluster(x, y);
       return;
     }
     const fish = this.scene.add.circle(x, y, 8, 0xf59e0b);
     this.objects.push({ sprite: fish, type: "fish", width: 16, height: 16 });
   }
 
-  private spawnFishCluster(x: number, y: number, screenWidth: number): void {
+  private spawnFishCluster(x: number, y: number): void {
     const count = 3 + Math.floor(Math.random() * 3);
     const spacing = 22;
     const startX = x - ((count - 1) * spacing) / 2;
     for (let i = 0; i < count; i++) {
-      const fx = Phaser.Math.Clamp(startX + i * spacing, 16, screenWidth - 16);
+      const fx = startX + i * spacing;
       const fish = this.scene.add.circle(fx, y + i * 12, 8, 0xf59e0b);
       this.objects.push({ sprite: fish, type: "fish", width: 16, height: 16 });
     }

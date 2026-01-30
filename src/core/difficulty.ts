@@ -17,9 +17,17 @@ export function getDifficulty(distance: number): number {
   return 3;
 }
 
-/** Base scroll speed, increases with distance, capped at 500 */
-export function getBaseSpeed(distance: number): number {
-  return Math.min(500, 200 + distance * 0.04);
+/** Speed profiles per player-selected level (Easy/Medium/Hard) */
+const SPEED_PROFILES = [
+  { start: 150, accel: 0.02, cap: 350 }, // Easy
+  { start: 200, accel: 0.04, cap: 500 }, // Medium
+  { start: 280, accel: 0.07, cap: 600 }, // Hard
+];
+
+/** Base scroll speed for given distance and player level (0-2) */
+export function getBaseSpeed(distance: number, level: number = 1): number {
+  const p = SPEED_PROFILES[level] ?? SPEED_PROFILES[1];
+  return Math.min(p.cap, p.start + distance * p.accel);
 }
 
 const SPAWN_INTERVALS = [0.5, 0.38, 0.28, 0.2];

@@ -37,6 +37,9 @@ export class RunScene extends Phaser.Scene {
   private readonly headingCenter = 3.0; // heading return-to-center rate (when no input)
   private readonly lateralFactor = 0.8; // lateral speed = sin(heading) * scrollSpeed * factor
 
+  // Difficulty level (0=Easy, 1=Medium, 2=Hard)
+  private level = 1;
+
   // Speed & scoring
   private baseScrollSpeed = 200;
   private scrollSpeed = 200;
@@ -63,6 +66,10 @@ export class RunScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
+
+    // Read difficulty level from scene data
+    const data = this.scene.settings.data as { level?: number } | undefined;
+    this.level = data?.level ?? 1;
 
     // Reset state
     this.gameOver = false;
@@ -99,7 +106,8 @@ export class RunScene extends Phaser.Scene {
         fontFamily: "system-ui, sans-serif",
         fontStyle: "bold",
       })
-      .setDepth(10);
+      .setDepth(10)
+      .setScrollFactor(0);
 
     this.trickText = this.add
       .text(width / 2, height * 0.5, "", {
@@ -111,7 +119,8 @@ export class RunScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(10)
-      .setAlpha(0);
+      .setAlpha(0)
+      .setScrollFactor(0);
 
     this.comboText = this.add
       .text(width - 16, 16, "", {
@@ -122,7 +131,8 @@ export class RunScene extends Phaser.Scene {
         align: "right",
       })
       .setOrigin(1, 0)
-      .setDepth(10);
+      .setDepth(10)
+      .setScrollFactor(0);
 
     this.statusText = this.add
       .text(width / 2, height * 0.6, "", {
@@ -134,7 +144,8 @@ export class RunScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(10)
-      .setAlpha(0);
+      .setAlpha(0)
+      .setScrollFactor(0);
 
     this.effectText = this.add
       .text(width / 2, height * 0.15, "", {
@@ -145,11 +156,11 @@ export class RunScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(10)
-      .setAlpha(0);
+      .setAlpha(0)
+      .setScrollFactor(0);
 
     // Systems
     this.inputHandler = new Input(this);
-    this.inputHandler.setPenguinX(this.penguin.x);
     this.spawner = new Spawner(this);
   }
 
@@ -160,7 +171,7 @@ export class RunScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     // Speed: base increases with distance, capped at 500
-    this.baseScrollSpeed = getBaseSpeed(this.distanceTraveled);
+    this.baseScrollSpeed = getBaseSpeed(this.distanceTraveled, this.level);
     this.scrollSpeed = this.slowTimer > 0
       ? this.baseScrollSpeed * 0.5
       : this.baseScrollSpeed;
@@ -202,8 +213,6 @@ export class RunScene extends Phaser.Scene {
       this.heading = Phaser.Math.Clamp(this.heading, -this.maxAngle, this.maxAngle);
 
       this.penguin.x += Math.sin(this.heading) * this.scrollSpeed * this.lateralFactor * dt;
-      const halfW = this.penguin.width / 2;
-      this.penguin.x = Phaser.Math.Clamp(this.penguin.x, halfW + 8, width - halfW - 8);
       this.penguin.setRotation(-this.heading);
       this.penguinShadow.x = this.penguin.x;
 
@@ -216,8 +225,11 @@ export class RunScene extends Phaser.Scene {
       this.handleAirTricks(dt);
     }
 
+    // --- Camera follows penguin horizontally ---
+    this.cameras.main.scrollX = this.penguin.x - width / 2;
+
     // --- Spawn & scroll slope objects ---
-    this.spawner.update(dt, this.scrollSpeed, this.distanceTraveled);
+    this.spawner.update(dt, this.scrollSpeed, this.distanceTraveled, this.penguin.x);
 
     // --- Collisions ---
     if (!this.isAirborne) {
@@ -277,7 +289,6 @@ export class RunScene extends Phaser.Scene {
     }
 
     this.inputHandler.setAirborne(this.isAirborne);
-    this.inputHandler.setPenguinX(this.penguin.x);
   }
 
   private handleAirTricks(dt: number): void {
@@ -300,10 +311,7 @@ export class RunScene extends Phaser.Scene {
     }
 
     // Passive air drift from heading at launch (reduced rate)
-    const { width } = this.scale;
     this.penguin.x += Math.sin(this.heading) * this.scrollSpeed * this.lateralFactor * 0.5 * dt;
-    const halfW = this.penguin.width / 2;
-    this.penguin.x = Phaser.Math.Clamp(this.penguin.x, halfW + 8, width - halfW - 8);
     this.penguinShadow.x = this.penguin.x;
   }
 
@@ -409,7 +417,8 @@ export class RunScene extends Phaser.Scene {
         fontStyle: "bold",
       })
       .setOrigin(0.5)
-      .setDepth(10);
+      .setDepth(10)
+      .setScrollFactor(0);
 
     this.add
       .text(
@@ -424,7 +433,8 @@ export class RunScene extends Phaser.Scene {
         },
       )
       .setOrigin(0.5)
-      .setDepth(10);
+      .setDepth(10)
+      .setScrollFactor(0);
 
     this.add
       .text(width / 2, height * 0.58, "Tap or press R to restart", {
@@ -433,7 +443,8 @@ export class RunScene extends Phaser.Scene {
         fontFamily: "system-ui, sans-serif",
       })
       .setOrigin(0.5)
-      .setDepth(10);
+      .setDepth(10)
+      .setScrollFactor(0);
 
     this.inputHandler.bindRestart(() => this.restartGame());
     this.inputHandler.setGameOverTapHandler(() => this.restartGame());
@@ -442,7 +453,7 @@ export class RunScene extends Phaser.Scene {
   private restartGame(): void {
     this.spawner.destroyAll();
     this.inputHandler.reset();
-    this.scene.restart();
+    this.scene.restart({ level: this.level });
   }
 
   private showTrickText(text: string): void {

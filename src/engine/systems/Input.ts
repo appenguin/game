@@ -14,7 +14,6 @@ export class Input {
   // Touch steering
   private touchSteerX = 0;
   private steerPointerId: number | null = null;
-  private penguinX = 0; // penguin x position for relative touch steering
 
   // Touch trick buttons
   private touchTrickKey = "";
@@ -85,11 +84,6 @@ export class Input {
     this.tuckButton.setAlpha(alpha);
   }
 
-  /** Update penguin x position for relative touch steering */
-  setPenguinX(x: number): void {
-    this.penguinX = x;
-  }
-
   /** Bind R key to restart handler */
   bindRestart(handler: () => void): void {
     if (this.scene.input.keyboard) {
@@ -150,9 +144,9 @@ export class Input {
   }
 
   private updateTouchSteer(pointer: Phaser.Input.Pointer): void {
-    const { height } = this.scene.scale;
+    const { width, height } = this.scene.scale;
     if (pointer.y > height * 0.82) return; // button zone
-    if (pointer.x < this.penguinX) this.touchSteerX = -1;
+    if (pointer.x < width / 2) this.touchSteerX = -1;
     else this.touchSteerX = 1;
   }
 
@@ -178,7 +172,7 @@ export class Input {
       .text(0, 0, "\u25C0", { fontSize: "20px", color: "#ffffff", fontFamily: "system-ui, sans-serif" })
       .setOrigin(0.5);
     this.leftButton = this.scene.add.container(x0, btnY, [leftBg, leftLabel]);
-    this.leftButton.setDepth(20).setAlpha(0.7);
+    this.leftButton.setDepth(20).setAlpha(0.7).setScrollFactor(0);
 
     // FLIP trick
     const flipBg = this.scene.add.rectangle(0, 0, btnW, btnH, 0x3b82f6, 0.35);
@@ -187,7 +181,7 @@ export class Input {
       .text(0, 0, "FLIP", { fontSize: "14px", color: "#ffffff", fontFamily: "system-ui, sans-serif", fontStyle: "bold" })
       .setOrigin(0.5);
     this.flipButton = this.scene.add.container(x1, btnY, [flipBg, flipLabel]);
-    this.flipButton.setDepth(20).setAlpha(0.4);
+    this.flipButton.setDepth(20).setAlpha(0.4).setScrollFactor(0);
 
     // TUCK trick
     const tuckBg = this.scene.add.rectangle(0, 0, btnW, btnH, 0x7c3aed, 0.35);
@@ -196,7 +190,7 @@ export class Input {
       .text(0, 0, "TUCK", { fontSize: "14px", color: "#ffffff", fontFamily: "system-ui, sans-serif", fontStyle: "bold" })
       .setOrigin(0.5);
     this.tuckButton = this.scene.add.container(x2, btnY, [tuckBg, tuckLabel]);
-    this.tuckButton.setDepth(20).setAlpha(0.4);
+    this.tuckButton.setDepth(20).setAlpha(0.4).setScrollFactor(0);
 
     // RIGHT steer
     const rightBg = this.scene.add.rectangle(0, 0, btnW, btnH, 0x475569, 0.35);
@@ -205,7 +199,7 @@ export class Input {
       .text(0, 0, "\u25B6", { fontSize: "20px", color: "#ffffff", fontFamily: "system-ui, sans-serif" })
       .setOrigin(0.5);
     this.rightButton = this.scene.add.container(x3, btnY, [rightBg, rightLabel]);
-    this.rightButton.setDepth(20).setAlpha(0.7);
+    this.rightButton.setDepth(20).setAlpha(0.7).setScrollFactor(0);
 
     // Hit bounds
     this.leftButtonBounds = new Phaser.Geom.Rectangle(

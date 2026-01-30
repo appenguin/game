@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { music } from "../systems/Music";
 
 const LEVELS = [
   { label: "EASY", color: 0x22c55e, stroke: 0x16a34a },
@@ -13,6 +14,12 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
+
+    // Init Strudel (sets up AudioContext unlock on first click).
+    // play() is called on first tap — if init hasn't finished yet the
+    // request is queued and fulfilled once Strudel is ready.
+    music.init();
+    this.input.once("pointerdown", () => music.play());
 
     this.cameras.main.setBackgroundColor("#f2f7ff");
 
@@ -61,5 +68,21 @@ export class BootScene extends Phaser.Scene {
         this.scene.start("Run", { level: i });
       });
     }
+
+    // Music toggle
+    const musicLabel = () => music.muted ? "Music: OFF" : "Music: ON";
+    const musicText = this.add
+      .text(width / 2, height * 0.85, musicLabel(), {
+        fontSize: "16px",
+        color: "#64748b",
+        fontFamily: "system-ui, sans-serif",
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    musicText.on("pointerdown", () => {
+      music.toggleMute();
+      musicText.setText(musicLabel());
+    });
   }
 }

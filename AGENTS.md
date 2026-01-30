@@ -15,6 +15,7 @@ Inspired by **Ski or Die** (EA, 1990) -- especially the Downhill Blitz and Acro 
 - **Phaser 3** game framework
 - **TypeScript**
 - **Vite** for bundling
+- **Strudel** (`@strudel/web`) for procedural music
 - **Capacitor** for mobile wrapping (later)
 
 No backend. All data stored locally (localStorage / Capacitor Storage).
@@ -27,14 +28,17 @@ src/
   core/
     tricks.ts         Trick types, constants, scoring helpers (pure, no Phaser)
     difficulty.ts     Difficulty zones, spawn weights, speed curve (pure, no Phaser)
+    music.ts          Music pattern definitions, level thresholds (pure, no Phaser)
   engine/
     game.ts           Phaser config
     scenes/
-      BootScene.ts    Difficulty selection (Easy/Medium/Hard), launches Run
-      RunScene.ts     Gameplay orchestrator (~490 lines)
+      BootScene.ts    Difficulty selection, music toggle, launches Run
+      RunScene.ts     Gameplay orchestrator (~540 lines)
     systems/
       Input.ts        Keyboard + touch + steer/trick buttons
       Spawner.ts      Obstacle spawning + management
+      Music.ts        Strudel lifecycle, score-driven layer progression
+  strudel.d.ts        TypeScript declarations for @strudel/web
   platform/           (planned) Platform adapters (web vs Capacitor)
 public/               Static assets (icons, manifest, penguin sprite)
 index.html            HTML entry point
@@ -105,6 +109,19 @@ Three player-selected levels on the start screen:
 | Hard | 280 | 0.07/dist | 600 |
 
 Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by level selection.
+
+## Music
+
+Procedural layered music powered by **Strudel** (`@strudel/web`). Samples loaded from `github:tidalcycles/dirt-samples`.
+
+- 16 layers that stack as score increases (full arrangement at 1500 score)
+- Synth oscillators (sawtooth, triangle, square) for pads, bass, arps, melodies
+- Drum samples (bd, hh, sd, oh) introduced gradually, interleaved with synths
+- Key: E minor. Base tempo: 110 BPM (+1 per level)
+- Pattern definitions live in `src/core/music.ts` — edit that file to change the music
+- Music system (`src/engine/systems/Music.ts`) is a singleton shared across scenes
+- Music toggle on boot screen, preference persisted in localStorage
+- AudioContext unlocks on first user interaction (tap)
 
 ## Development
 

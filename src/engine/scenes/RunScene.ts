@@ -3,6 +3,7 @@ import { type Trick, TRICKS, canQueueTrick } from "../../core/tricks";
 import { getBaseSpeed } from "../../core/difficulty";
 import { Input } from "../systems/Input";
 import { Spawner, type SlopeObject } from "../systems/Spawner";
+import { music } from "../systems/Music";
 
 /**
  * Main gameplay scene: Ski or Die-style downhill.
@@ -63,6 +64,7 @@ export class RunScene extends Phaser.Scene {
   // Systems
   private inputHandler!: Input;
   private spawner!: Spawner;
+  private music = music;
 
   constructor() {
     super("Run");
@@ -332,6 +334,7 @@ export class RunScene extends Phaser.Scene {
     }
 
     this.inputHandler.setAirborne(this.isAirborne);
+    this.music.updateScore(this.score);
   }
 
   private handleAirTricks(dt: number): void {
@@ -460,6 +463,7 @@ export class RunScene extends Phaser.Scene {
 
   private endGame(): void {
     this.gameOver = true;
+    this.music.onGameOver();
     this.cameras.main.shake(400, 0.02);
 
     // Spin and tumble slightly in the opposite direction
@@ -515,6 +519,7 @@ export class RunScene extends Phaser.Scene {
   }
 
   private restartGame(): void {
+    this.music.onRestart();
     this.spawner.destroyAll();
     this.inputHandler.reset();
     this.scene.restart({ level: this.level });

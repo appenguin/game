@@ -33,7 +33,7 @@ src/
       BootScene.ts    Minimal boot, launches Run
       RunScene.ts     Gameplay orchestrator (~430 lines)
     systems/
-      Input.ts        Keyboard + touch + trick buttons
+      Input.ts        Keyboard + touch + steer/trick buttons
       Spawner.ts      Obstacle spawning + management
   platform/           (planned) Platform adapters (web vs Capacitor)
 public/               Static assets (icons, manifest)
@@ -56,23 +56,32 @@ docs/
 ## Constraints
 
 - Offline-first: PWA with service worker already precaches all assets (vite-plugin-pwa)
-- Touch-first controls with on-screen trick buttons, keyboard as secondary. Input priority: keyboard > touch. Portrait orientation locked.
+- Touch-first controls with on-screen steer + trick buttons, keyboard as secondary. Input priority: keyboard > touch. Portrait orientation locked.
 - Must run at stable FPS on mid-tier Android
 - No remote code loading (App Store requirement)
 - Bundle all assets inside the app for Capacitor builds
 
 ## Controls
 
-**Ground steering:**
-- Keyboard: Arrow keys or A/D
-- Touch: left half of screen = steer left, right half = steer right
+**Ground steering (angle-based with momentum):**
+- Keyboard: Arrow keys or A/D rotate the penguin's heading angle
+- Touch: LEFT/RIGHT arrow buttons or tap/swipe relative to penguin position
+- Heading has momentum: builds up while held, drifts back to center on release
+- Penguin sprite rotates to show heading; lateral movement follows the angle
+- Ice patches reduce turn rate and increase drift (sluggish + slippery)
 
 **Air tricks:**
 - Keyboard: Up/W = Backflip, Down/S = Front Tuck, Left/A = Left Spin, Right/D = Right Spin
-- Touch: FLIP button (bottom-left) = Backflip, TUCK button (bottom-right) = Front Tuck
-- Touch steering while airborne triggers Left/Right Spin
+- Touch: FLIP button (bottom-right) = Backflip, TUCK button (bottom-right) = Front Tuck
+- Holding LEFT/RIGHT while airborne triggers Left/Right Spin
+- Heading is frozen in air; penguin drifts passively from launch angle
 
-Input priority: keyboard > touch buttons > touch steering.
+**Mobile button layout (single row at bottom):**
+```
+[<] [FLIP] [TUCK] [>]
+```
+
+Input priority: keyboard > touch buttons > touch half-screen.
 
 ## Development
 

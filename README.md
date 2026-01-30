@@ -6,7 +6,8 @@ Play at [icedrift.appenguin.com](https://icedrift.appenguin.com)
 
 ## How to play
 
-- **Steer** with arrow keys, A/D, or touch left/right sides of the screen
+- **Steer** with arrow keys, A/D, or the on-screen LEFT/RIGHT buttons -- the penguin rotates and carves in that direction
+- Hold a direction to build momentum; release to drift back straight
 - Hit **ramps** to launch into the air
 - **Perform tricks mid-air** with keyboard directions or the **FLIP** and **TUCK** buttons
 - **Land cleanly** to keep your score, crash and lose your combo
@@ -14,7 +15,7 @@ Play at [icedrift.appenguin.com](https://icedrift.appenguin.com)
 - Avoid **rocks**, **trees**, and **crevasses**
 - Speed increases over time -- survive as long as you can
 
-**Mobile:** Install to your home screen for fullscreen portrait play. Steer by touching left/right halves of the screen. Use the FLIP and TUCK buttons at the bottom to perform tricks while airborne.
+**Mobile:** Install to your home screen for fullscreen portrait play. Four buttons at the bottom: **< FLIP TUCK >** -- steer with the arrows, trick with FLIP and TUCK while airborne.
 
 ## Development
 

@@ -27,10 +27,19 @@ export class RunScene extends Phaser.Scene {
   private slipperyTimer = 0;
   private slowTimer = 0;
 
+  // Heading (angle-based steering with momentum)
+  private heading = 0; // current angle (radians, 0 = straight down)
+  private headingVelocity = 0; // angular velocity (rad/s)
+  private readonly maxAngle = (Math.PI / 180) * 40; // ±40° max steering
+  private readonly turnAccel = 6.0; // angular acceleration (rad/s²)
+  private readonly maxTurnSpeed = 4.0; // max angular velocity (rad/s)
+  private readonly headingDrag = 5.0; // angular velocity decay when no input
+  private readonly headingCenter = 3.0; // heading return-to-center rate (when no input)
+  private readonly lateralFactor = 0.8; // lateral speed = sin(heading) * scrollSpeed * factor
+
   // Speed & scoring
   private baseScrollSpeed = 200;
   private scrollSpeed = 200;
-  private steerSpeed = 250;
   private distanceTraveled = 0;
   private score = 0;
   private trickScore = 0;
@@ -64,6 +73,8 @@ export class RunScene extends Phaser.Scene {
     this.isAirborne = false;
     this.baseScrollSpeed = 200;
     this.scrollSpeed = 200;
+    this.heading = 0;
+    this.headingVelocity = 0;
     this.slipperyTimer = 0;
     this.slowTimer = 0;
 
@@ -138,6 +149,7 @@ export class RunScene extends Phaser.Scene {
 
     // Systems
     this.inputHandler = new Input(this);
+    this.inputHandler.setPenguinX(this.penguin.x);
     this.spawner = new Spawner(this);
   }
 
@@ -158,19 +170,44 @@ export class RunScene extends Phaser.Scene {
     if (this.slipperyTimer > 0) this.slipperyTimer -= dt;
     if (this.slowTimer > 0) this.slowTimer -= dt;
 
-    // --- Steering ---
-    const steerDir = this.inputHandler.getSteerDir();
-
+    // --- Steering (angle-based with momentum) ---
     if (!this.isAirborne) {
-      const effectiveSteer = this.slipperyTimer > 0
-        ? this.steerSpeed * 0.35
-        : this.steerSpeed;
-      this.penguin.x += steerDir * effectiveSteer * dt;
+      const steerDir = this.inputHandler.getSteerDir();
+      const icy = this.slipperyTimer > 0;
+      const accel = icy ? this.turnAccel * 0.35 : this.turnAccel;
+      const drag = icy ? this.headingDrag * 0.5 : this.headingDrag;
+
+      if (steerDir !== 0) {
+        // Counter-steering (pressing opposite to current heading) gets a boost
+        const counterSteer = (steerDir > 0 && this.heading < -0.05) ||
+          (steerDir < 0 && this.heading > 0.05);
+        const effectiveAccel = counterSteer ? accel * 2.0 : accel;
+        this.headingVelocity += steerDir * effectiveAccel * dt;
+        this.headingVelocity = Phaser.Math.Clamp(
+          this.headingVelocity, -this.maxTurnSpeed, this.maxTurnSpeed,
+        );
+      } else {
+        this.headingVelocity *= 1 - drag * dt;
+        if (Math.abs(this.headingVelocity) < 0.05) this.headingVelocity = 0;
+      }
+
+      this.heading += this.headingVelocity * dt;
+
+      // Return heading toward straight downhill when not steering
+      if (steerDir === 0) {
+        this.heading *= 1 - this.headingCenter * dt;
+        if (Math.abs(this.heading) < 0.01) this.heading = 0;
+      }
+
+      this.heading = Phaser.Math.Clamp(this.heading, -this.maxAngle, this.maxAngle);
+
+      this.penguin.x += Math.sin(this.heading) * this.scrollSpeed * this.lateralFactor * dt;
       const halfW = this.penguin.width / 2;
       this.penguin.x = Phaser.Math.Clamp(this.penguin.x, halfW + 8, width - halfW - 8);
+      this.penguin.setRotation(-this.heading);
       this.penguinShadow.x = this.penguin.x;
 
-      if (this.slipperyTimer > 0) {
+      if (icy) {
         this.penguin.setFillStyle(0x67e8f9);
       } else {
         this.penguin.setFillStyle(0x38bdf8);
@@ -240,6 +277,7 @@ export class RunScene extends Phaser.Scene {
     }
 
     this.inputHandler.setAirborne(this.isAirborne);
+    this.inputHandler.setPenguinX(this.penguin.x);
   }
 
   private handleAirTricks(dt: number): void {
@@ -261,10 +299,9 @@ export class RunScene extends Phaser.Scene {
       }
     }
 
-    // Reduced air steering
+    // Passive air drift from heading at launch (reduced rate)
     const { width } = this.scale;
-    const steerDir = this.inputHandler.getSteerDir();
-    this.penguin.x += steerDir * this.steerSpeed * 0.5 * dt;
+    this.penguin.x += Math.sin(this.heading) * this.scrollSpeed * this.lateralFactor * 0.5 * dt;
     const halfW = this.penguin.width / 2;
     this.penguin.x = Phaser.Math.Clamp(this.penguin.x, halfW + 8, width - halfW - 8);
     this.penguinShadow.x = this.penguin.x;
@@ -274,7 +311,7 @@ export class RunScene extends Phaser.Scene {
     this.isAirborne = false;
     this.penguin.y = this.scale.height * 0.25;
     this.penguin.setScale(1);
-    this.penguin.setRotation(0);
+    this.penguin.setRotation(-this.heading);
     this.penguinShadow.setScale(1);
     this.penguinShadow.setAlpha(0.2);
     this.penguinAirHeight = 0;

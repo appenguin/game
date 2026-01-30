@@ -61,9 +61,9 @@ We pulled PWA support forward. The game is installable to your home screen and w
 
 - **Mobile meta tags** in index.html: theme-color, apple-mobile-web-app-capable, viewport-fit=cover, no user scaling. The game fills the screen edge to edge on mobile.
 
-- **Touch controls.** Left half of the screen steers left, right half steers right. Two on-screen buttons at the bottom -- FLIP and TUCK -- let you perform Backflip and Front Tuck tricks while airborne. Multi-touch means you can steer with one thumb and tap tricks with the other.
+- **Touch controls.** Four buttons in a row at the bottom: **< FLIP TUCK >**. The arrow buttons steer (rotating the penguin's heading with momentum, Ski or Die-style), and FLIP/TUCK perform tricks while airborne. Tapping or swiping above the button row also steers -- relative to the penguin's position, so tapping right of the penguin steers right. Multi-touch means you can steer with one thumb and tap tricks with the other.
 
-  We originally had tilt/gyroscope steering, which was fun but added friction (iOS permission prompts, inconsistent Android support, analog-vs-discrete UX gaps). The simpler touch scheme works everywhere and gives full access to all four tricks on mobile.
+  We originally had tilt/gyroscope steering, then half-screen touch zones. The current layout with explicit steer buttons matches the angle-based steering model -- you hold a direction to carve into a turn, and release to drift back straight.
 
   Portrait orientation is locked via the PWA manifest and the Screen Orientation API.
 

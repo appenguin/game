@@ -38,6 +38,16 @@
   - Left/Right Spin still triggered by touch steering while airborne
   - Multi-touch: pointer-ID tracking so one finger steers while another taps trick buttons
 
+- [x] Steering overhaul: angle-based steering with momentum
+  - Left/right input rotates penguin heading angle (was instant lateral strafe)
+  - Heading has angular velocity with acceleration + drag (momentum/inertia)
+  - Heading returns to center when no input (gravity pulls straight downhill)
+  - Lateral movement from `sin(heading) * scrollSpeed`; penguin sprite rotates to show heading
+  - Counter-steering (pressing opposite direction) gets 2x acceleration for snappy corrections
+  - Max angle ±40°; ice patches reduce turn rate and increase drift
+  - While airborne, heading is frozen; penguin drifts passively from launch angle
+  - Touch steering relative to penguin position (tap right of penguin = steer right)
+  - On-screen LEFT/RIGHT steer buttons for mobile, 4-button bottom row: `[<] [FLIP] [TUCK] [>]`
 - [x] Phase 2: Refactor RunScene into modules
   - Extracted `core/tricks.ts`: Trick interface, TRICKS constant, `calcTrickScore()`, `canQueueTrick()`
   - Extracted `core/difficulty.ts`: difficulty zones, speed curve, spawn weight tables, `pickObstacleType()`
@@ -71,7 +81,7 @@ Our version: a penguin slides downhill on ice. Steer left/right to avoid obstacl
 
 | Mechanic | How it works |
 |----------|-------------|
-| Steering | Left/right input moves penguin laterally |
+| Steering | Left/right rotates penguin heading with momentum; lateral movement follows angle (Ski or Die style) |
 | Auto-scroll | Obstacles scroll upward (penguin at top = downhill perspective), speed increases over time |
 | Obstacles | Rocks (game over), trees (slow + lose combo), ice patches (reduced steering), crevasses (game over), moguls (small bump/air), snowdrifts (slow) |
 | Ramps | Hit a ramp to launch into the air. Airtime depends on speed |
@@ -361,7 +371,7 @@ PWA and mobile optimization were implemented early alongside Phase 1.
 - Phaser game config updated: `fullscreenTarget: "game-container"`, `activePointers: 2`
 - `vite-plugin-pwa/client` types added to `tsconfig.json`
 - Portrait orientation locked via PWA manifest (`orientation: "portrait"`) + Screen Orientation API
-- Touch controls: left/right half-screen steering + FLIP/TUCK trick buttons
+- Touch controls: LEFT/RIGHT steer buttons + FLIP/TUCK trick buttons in a single bottom row, half-screen steering as fallback
 - Input priority: keyboard > touch
 
 > **Note:** Tilt/gyroscope steering was implemented initially but later removed in favor of
@@ -439,7 +449,8 @@ Bundle into a native Android app. The appenguin showcase.
 | Difficulty | Distance-based zones | Gradual learning curve, gets hard after 1500m |
 | Refactor before features | Yes, done | 814-line RunScene split into 4 modules: core/tricks, core/difficulty, systems/Input, systems/Spawner. RunScene now ~430 lines |
 | PWA early | Yes | Installability and offline support are cheap to add now with vite-plugin-pwa; touch controls need testing on real devices early |
-| Touch controls | Half-screen steering + trick buttons | Simpler than tilt, buttons enable all 4 tricks on mobile |
+| Steering model | Angle-based with momentum | Ski or Die feel: carving turns, momentum, drift back to center |
+| Touch controls | 4-button row: `[<] [FLIP] [TUCK] [>]` + half-screen fallback | Explicit steer buttons for angle-based steering; trick buttons for air |
 | Orientation | Portrait locked | Screen Orientation API + PWA manifest |
 
 ---
@@ -459,6 +470,12 @@ Planned phases 2-7: refactor (extract modules from 720-line RunScene), game feel
 Pulled PWA forward: added vite-plugin-pwa with inline manifest, service worker, mobile meta tags. The game is installable to home screen and playable offline before any art polish.
 
 Controls overhaul: removed tilt/gyroscope steering in favor of simpler touch controls. Touch steering now uses left/right halves of the screen instead of thirds. Added on-screen FLIP and TUCK buttons at the bottom for performing Backflip and Front Tuck tricks while airborne. Multi-touch pointer-ID tracking lets one finger steer while another taps tricks. Portrait orientation locked via Screen Orientation API + PWA manifest. Input priority simplified to keyboard > touch.
+
+### 2026-01-30: Angle-based steering
+
+Replaced lateral strafe steering with Ski or Die-style angle steering. Left/right input now rotates the penguin's heading angle with momentum (angular velocity, acceleration, drag). Heading naturally returns to center when released (simulates gravity pulling straight downhill). Lateral movement comes from `sin(heading) * scrollSpeed`. Penguin sprite visually rotates to show heading. Max angle capped at ±40°. Counter-steering (pressing opposite to current heading) gets 2x acceleration for snappy corrections. Ice patches reduce turn acceleration to 35% and halve drag, making steering sluggish and drifty. While airborne, heading is frozen and the penguin drifts passively from launch angle.
+
+Added on-screen LEFT/RIGHT steer buttons for mobile. All 4 buttons now sit in a single bottom row: `[<] [FLIP] [TUCK] [>]` with taller hit targets (64px). Touch steering above the button zone is relative to the penguin's x position (tap right of penguin = steer right, works with swipe via pointermove tracking).
 
 ### 2026-01-30: Phase 2 refactor
 

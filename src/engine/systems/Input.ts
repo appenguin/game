@@ -14,6 +14,7 @@ export class Input {
   // Touch steering
   private touchSteerX = 0;
   private steerPointerId: number | null = null;
+  private penguinX = 0; // penguin x position for relative touch steering
 
   // Touch trick buttons
   private touchTrickKey = "";
@@ -21,6 +22,12 @@ export class Input {
   private tuckButton!: Phaser.GameObjects.Container;
   private flipButtonBounds!: Phaser.Geom.Rectangle;
   private tuckButtonBounds!: Phaser.Geom.Rectangle;
+
+  // Touch steer buttons
+  private leftButton!: Phaser.GameObjects.Container;
+  private rightButton!: Phaser.GameObjects.Container;
+  private leftButtonBounds!: Phaser.Geom.Rectangle;
+  private rightButtonBounds!: Phaser.Geom.Rectangle;
 
   // State
   private _airborne = false;
@@ -32,7 +39,7 @@ export class Input {
     this.scene = scene;
     this.setupKeyboard();
     this.setupTouch();
-    this.createTrickButtons();
+    this.createButtons();
   }
 
   /** Set callback for tap-to-restart during game over */
@@ -63,7 +70,7 @@ export class Input {
       return key;
     }
 
-    // Touch steering: left/right spins
+    // Touch steer buttons: left/right spins when airborne
     if (this.touchSteerX < 0) return "left";
     if (this.touchSteerX > 0) return "right";
 
@@ -76,6 +83,11 @@ export class Input {
     const alpha = airborne ? 0.9 : 0.4;
     this.flipButton.setAlpha(alpha);
     this.tuckButton.setAlpha(alpha);
+  }
+
+  /** Update penguin x position for relative touch steering */
+  setPenguinX(x: number): void {
+    this.penguinX = x;
   }
 
   /** Bind R key to restart handler */
@@ -117,6 +129,10 @@ export class Input {
         this.handleTrickButtonPress(pointer);
         return;
       }
+      if (this.isOnSteerButton(pointer)) {
+        this.handleSteerButtonPress(pointer);
+        return;
+      }
       this.steerPointerId = pointer.id;
       this.updateTouchSteer(pointer);
     });
@@ -134,68 +150,92 @@ export class Input {
   }
 
   private updateTouchSteer(pointer: Phaser.Input.Pointer): void {
-    const { width, height } = this.scene.scale;
-    if (pointer.y > height * 0.85) return; // trick button zone
-    if (pointer.x < width / 2) this.touchSteerX = -1;
+    const { height } = this.scene.scale;
+    if (pointer.y > height * 0.82) return; // button zone
+    if (pointer.x < this.penguinX) this.touchSteerX = -1;
     else this.touchSteerX = 1;
   }
 
-  private createTrickButtons(): void {
+  private createButtons(): void {
     const { width, height } = this.scene.scale;
-    const btnW = 80;
-    const btnH = 50;
-    const btnY = height - 50;
-    const margin = 24;
+    const btnH = 64;
+    const btnY = height - 44;
+    const margin = 12;
+    const gap = 6;
+    // 4 buttons in a row: [<] [FLIP] [TUCK] [>]
+    const totalGaps = gap * 3;
+    const btnW = Math.floor((width - margin * 2 - totalGaps) / 4);
 
-    // Flip button (left side) — triggers Backflip
+    const x0 = margin + btnW / 2;
+    const x1 = margin + btnW + gap + btnW / 2;
+    const x2 = margin + (btnW + gap) * 2 + btnW / 2;
+    const x3 = margin + (btnW + gap) * 3 + btnW / 2;
+
+    // LEFT steer
+    const leftBg = this.scene.add.rectangle(0, 0, btnW, btnH, 0x475569, 0.35);
+    leftBg.setStrokeStyle(2, 0x64748b);
+    const leftLabel = this.scene.add
+      .text(0, 0, "\u25C0", { fontSize: "20px", color: "#ffffff", fontFamily: "system-ui, sans-serif" })
+      .setOrigin(0.5);
+    this.leftButton = this.scene.add.container(x0, btnY, [leftBg, leftLabel]);
+    this.leftButton.setDepth(20).setAlpha(0.7);
+
+    // FLIP trick
     const flipBg = this.scene.add.rectangle(0, 0, btnW, btnH, 0x3b82f6, 0.35);
     flipBg.setStrokeStyle(2, 0x60a5fa);
     const flipLabel = this.scene.add
-      .text(0, 0, "FLIP", {
-        fontSize: "16px",
-        color: "#ffffff",
-        fontFamily: "system-ui, sans-serif",
-        fontStyle: "bold",
-      })
+      .text(0, 0, "FLIP", { fontSize: "14px", color: "#ffffff", fontFamily: "system-ui, sans-serif", fontStyle: "bold" })
       .setOrigin(0.5);
-    this.flipButton = this.scene.add.container(margin + btnW / 2, btnY, [
-      flipBg,
-      flipLabel,
-    ]);
-    this.flipButton.setDepth(20);
-    this.flipButton.setAlpha(0.4);
+    this.flipButton = this.scene.add.container(x1, btnY, [flipBg, flipLabel]);
+    this.flipButton.setDepth(20).setAlpha(0.4);
 
-    // Tuck button (right side) — triggers Front Tuck
+    // TUCK trick
     const tuckBg = this.scene.add.rectangle(0, 0, btnW, btnH, 0x7c3aed, 0.35);
     tuckBg.setStrokeStyle(2, 0xa78bfa);
     const tuckLabel = this.scene.add
-      .text(0, 0, "TUCK", {
-        fontSize: "16px",
-        color: "#ffffff",
-        fontFamily: "system-ui, sans-serif",
-        fontStyle: "bold",
-      })
+      .text(0, 0, "TUCK", { fontSize: "14px", color: "#ffffff", fontFamily: "system-ui, sans-serif", fontStyle: "bold" })
       .setOrigin(0.5);
-    this.tuckButton = this.scene.add.container(width - margin - btnW / 2, btnY, [
-      tuckBg,
-      tuckLabel,
-    ]);
-    this.tuckButton.setDepth(20);
-    this.tuckButton.setAlpha(0.4);
+    this.tuckButton = this.scene.add.container(x2, btnY, [tuckBg, tuckLabel]);
+    this.tuckButton.setDepth(20).setAlpha(0.4);
 
-    // Hit bounds for point-in-rect testing
+    // RIGHT steer
+    const rightBg = this.scene.add.rectangle(0, 0, btnW, btnH, 0x475569, 0.35);
+    rightBg.setStrokeStyle(2, 0x64748b);
+    const rightLabel = this.scene.add
+      .text(0, 0, "\u25B6", { fontSize: "20px", color: "#ffffff", fontFamily: "system-ui, sans-serif" })
+      .setOrigin(0.5);
+    this.rightButton = this.scene.add.container(x3, btnY, [rightBg, rightLabel]);
+    this.rightButton.setDepth(20).setAlpha(0.7);
+
+    // Hit bounds
+    this.leftButtonBounds = new Phaser.Geom.Rectangle(
+      margin, btnY - btnH / 2, btnW, btnH,
+    );
     this.flipButtonBounds = new Phaser.Geom.Rectangle(
-      margin,
-      btnY - btnH / 2,
-      btnW,
-      btnH,
+      margin + btnW + gap, btnY - btnH / 2, btnW, btnH,
     );
     this.tuckButtonBounds = new Phaser.Geom.Rectangle(
-      width - margin - btnW,
-      btnY - btnH / 2,
-      btnW,
-      btnH,
+      margin + (btnW + gap) * 2, btnY - btnH / 2, btnW, btnH,
     );
+    this.rightButtonBounds = new Phaser.Geom.Rectangle(
+      margin + (btnW + gap) * 3, btnY - btnH / 2, btnW, btnH,
+    );
+  }
+
+  private isOnSteerButton(pointer: Phaser.Input.Pointer): boolean {
+    return (
+      this.leftButtonBounds.contains(pointer.x, pointer.y) ||
+      this.rightButtonBounds.contains(pointer.x, pointer.y)
+    );
+  }
+
+  private handleSteerButtonPress(pointer: Phaser.Input.Pointer): void {
+    this.steerPointerId = pointer.id;
+    if (this.leftButtonBounds.contains(pointer.x, pointer.y)) {
+      this.touchSteerX = -1;
+    } else if (this.rightButtonBounds.contains(pointer.x, pointer.y)) {
+      this.touchSteerX = 1;
+    }
   }
 
   private isOnTrickButton(pointer: Phaser.Input.Pointer): boolean {

@@ -13,7 +13,7 @@ import { Spawner, type SlopeObject } from "../systems/Spawner";
  */
 export class RunScene extends Phaser.Scene {
   // Penguin
-  private penguin!: Phaser.GameObjects.Rectangle;
+  private penguin!: Phaser.GameObjects.Image;
   private penguinShadow!: Phaser.GameObjects.Ellipse;
   private penguinAirHeight = 0;
   private isAirborne = false;
@@ -22,6 +22,7 @@ export class RunScene extends Phaser.Scene {
   private trickQueue: Trick[] = [];
   private currentTrickRotation = 0;
   private targetTrickRotation = 0;
+  private spinRotation = 0;
 
   // Status effects
   private slipperyTimer = 0;
@@ -35,7 +36,7 @@ export class RunScene extends Phaser.Scene {
   private readonly maxTurnSpeed = 4.0; // max angular velocity (rad/s)
   private readonly headingDrag = 5.0; // angular velocity decay when no input
   private readonly headingCenter = 3.0; // heading return-to-center rate (when no input)
-  private readonly lateralFactor = 0.8; // lateral speed = sin(heading) * scrollSpeed * factor
+  private readonly lateralFactor = 1.6; // lateral speed = sin(heading) * scrollSpeed * factor
 
   // Difficulty level (0=Easy, 1=Medium, 2=Hard)
   private level = 1;
@@ -66,6 +67,10 @@ export class RunScene extends Phaser.Scene {
     super("Run");
   }
 
+  preload(): void {
+    this.load.image("penguin", "penguin.png");
+  }
+
   create(): void {
     const { width, height } = this.scale;
 
@@ -87,18 +92,15 @@ export class RunScene extends Phaser.Scene {
     this.slipperyTimer = 0;
     this.slowTimer = 0;
 
-    this.cameras.main.setBackgroundColor("#dce8f0");
+    this.cameras.main.setBackgroundColor("#f2f7ff");
 
     // Penguin shadow
     this.penguinShadow = this.add.ellipse(
-      width / 2, height * 0.28, 36, 12, 0x000000, 0.2,
+      width / 2, height * 0.25, 36, 12, 0x000000, 0.2,
     );
 
     // Penguin
-    this.penguin = this.add.rectangle(
-      width / 2, height * 0.25, 28, 36, 0x38bdf8,
-    );
-    this.penguin.setStrokeStyle(2, 0x1e6091);
+    this.penguin = this.add.image(width / 2, height * 0.25, "penguin");
 
     // UI — top bar
     const barH = 36;
@@ -246,9 +248,9 @@ export class RunScene extends Phaser.Scene {
       this.penguinShadow.x = this.penguin.x;
 
       if (icy) {
-        this.penguin.setFillStyle(0x67e8f9);
+        this.penguin.setTint(0x67e8f9);
       } else {
-        this.penguin.setFillStyle(0x38bdf8);
+        this.penguin.clearTint();
       }
     } else {
       this.handleAirTricks(dt);
@@ -264,8 +266,8 @@ export class RunScene extends Phaser.Scene {
     if (!this.isAirborne) {
       const px = this.penguin.x;
       const py = this.penguin.y;
-      const pw = this.penguin.width * 0.7;
-      const ph = this.penguin.height * 0.7;
+      const pw = this.penguin.displayWidth * 0.7;
+      const ph = this.penguin.displayHeight * 0.7;
       for (const obj of this.spawner.getObjects()) {
         if (this.spawner.checkCollision(px, py, pw, ph, obj)) {
           this.handleCollision(obj);
@@ -292,8 +294,8 @@ export class RunScene extends Phaser.Scene {
           this.targetTrickRotation,
           rotSpeed * dt,
         );
-        this.penguin.setRotation(this.currentTrickRotation);
       }
+      this.penguin.setRotation(-this.heading + this.currentTrickRotation + this.spinRotation);
 
       if (this.airTime >= this.airDuration) {
         this.land();
@@ -321,8 +323,8 @@ export class RunScene extends Phaser.Scene {
   }
 
   private handleAirTricks(dt: number): void {
+    // Tricks: up/down only
     const trickKey = this.inputHandler.getTrickKey();
-
     if (trickKey && TRICKS[trickKey]) {
       const trick = TRICKS[trickKey];
       const timeLeft = this.airDuration - this.airTime;
@@ -337,6 +339,12 @@ export class RunScene extends Phaser.Scene {
 
         this.showTrickText(trick.name);
       }
+    }
+
+    // Spin: left/right arrows add continuous rotation
+    const spinDir = this.inputHandler.getSpinDir();
+    if (spinDir !== 0) {
+      this.spinRotation += spinDir * Math.PI * 2 * dt;
     }
 
     // Passive air drift from heading at launch (reduced rate)
@@ -373,6 +381,7 @@ export class RunScene extends Phaser.Scene {
     this.trickScore = 0;
     this.currentTrickRotation = 0;
     this.targetTrickRotation = 0;
+    this.spinRotation = 0;
   }
 
   private launch(duration?: number): void {
@@ -383,6 +392,7 @@ export class RunScene extends Phaser.Scene {
     this.trickScore = 0;
     this.currentTrickRotation = 0;
     this.targetTrickRotation = 0;
+    this.spinRotation = 0;
     if (!duration) {
       this.showStatusText("AIR!", "#3b82f6");
     }
@@ -434,7 +444,7 @@ export class RunScene extends Phaser.Scene {
 
   private endGame(): void {
     this.gameOver = true;
-    this.penguin.setFillStyle(0xef4444);
+    this.penguin.setTint(0xef4444);
     this.cameras.main.shake(400, 0.02);
 
     const { width, height } = this.scale;

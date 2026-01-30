@@ -8,8 +8,6 @@ export interface Trick {
 export const TRICKS: Record<string, Trick> = {
   up: { name: "Backflip", points: 100, rotation: Math.PI * 2 },
   down: { name: "Front Tuck", points: 80, rotation: -Math.PI * 2 },
-  left: { name: "Left Spin", points: 60, rotation: -Math.PI },
-  right: { name: "Right Spin", points: 60, rotation: Math.PI },
 };
 
 /** Sum base points + variety bonus (+50 per extra trick) */

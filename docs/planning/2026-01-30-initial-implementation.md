@@ -35,7 +35,7 @@
   - Removed tilt/gyroscope steering (DeviceOrientationEvent)
   - Touch steering: left/right halves of screen (was thirds with dead center)
   - On-screen FLIP and TUCK buttons for Backflip and Front Tuck tricks while airborne
-  - Left/Right Spin still triggered by touch steering while airborne
+  - Left/Right adds continuous spin while airborne (visual, not scored)
   - Multi-touch: pointer-ID tracking so one finger steers while another taps trick buttons
 
 - [x] Steering overhaul: angle-based steering with momentum
@@ -112,13 +112,14 @@ While airborne, directional inputs perform tricks:
 |-------|-------|--------|
 | Up / W | Backflip | 100 |
 | Down / S | Front tuck | 80 |
-| Left / A | Left spin | 60 |
-| Right / D | Right spin | 60 |
+
+Left/Right arrows add continuous spin while airborne (visual, not scored).
 
 - Each trick can only be performed once per jump
 - Performing multiple different tricks scores a variety bonus (+50 per extra trick)
 - Must finish trick rotation before landing or it counts as a crash
 - Crash landing = zero trick points for that jump, combo reset
+- Heading rotation is preserved in air; tricks and spin layer on top
 
 ---
 
@@ -313,8 +314,8 @@ Replace colored shapes with sprites and add sound. Transforms the look and feel.
 
 | Object | Sprite description | Size |
 |--------|--------------------|------|
-| Penguin (ground) | Top-down penguin on skis, slight lean when steering | 32x40 |
-| Penguin (air) | Penguin spread pose, rotates with tricks | 32x40 |
+| Penguin (ground) | Top-down belly-slide penguin with beanie (already using `public/penguin.png`) | 48x64 |
+| Penguin (air) | Same sprite, rotates with tricks + spin | 48x64 |
 | Rock | Gray boulder, irregular shape | 30x30 |
 | Tree | Pine tree, top-down (dark green triangle with trunk dot) | 30x36 |
 | Ramp | Blue/white ski ramp, perspective | 50x24 |
@@ -455,10 +456,10 @@ Bundle into a native Android app. The appenguin showcase.
 |----------|--------|-----------|
 | Game framework | Phaser 3 | Mature, good mobile perf, rich feature set for polish |
 | Bundler | Vite | Fast dev, good TS support |
-| Art style (MVP) | Colored shapes | Ship fast, iterate on feel |
+| Art style (MVP) | Penguin sprite + colored shapes for obstacles | Penguin sprite loaded from `public/penguin.png`; obstacles still placeholder shapes |
 | Game style | Ski or Die downhill + tricks | More depth than pure drift runner, iconic reference |
 | Scrolling | Top-down, penguin at screen center, camera follows | Infinite horizontal freedom, classic downhill feel |
-| Trick system | Directional inputs while airborne | Simple to learn, depth via combinations |
+| Trick system | Up/down for tricks, left/right for spin | Tricks scored, spin is visual flair |
 | Difficulty | Distance-based zones | Gradual learning curve, gets hard after 1500m |
 | Refactor before features | Yes, done | 814-line RunScene split into 4 modules: core/tricks, core/difficulty, systems/Input, systems/Spawner. RunScene now ~430 lines |
 | PWA early | Yes | Installability and offline support are cheap to add now with vite-plugin-pwa; touch controls need testing on real devices early |
@@ -496,6 +497,14 @@ Added on-screen LEFT/RIGHT steer buttons for mobile. All 4 buttons now sit in a 
 ### 2026-01-30: Phase 2 refactor
 
 Broke the 814-line RunScene into focused modules. Created `core/tricks.ts` (Trick type, constants, scoring helpers) and `core/difficulty.ts` (difficulty zones, speed curve, spawn weight tables) as pure logic with no Phaser dependency. Created `engine/systems/Input.ts` (keyboard, touch, trick buttons, input priority resolution) and `engine/systems/Spawner.ts` (SlopeObject, all spawn helpers, collision checking, object lifecycle) as Phaser-dependent systems. RunScene slimmed to ~430 lines as a thin orchestrator: owns penguin state, scoring, UI, and wires the systems together. Build passes, gameplay behavior identical.
+
+### 2026-01-30: Penguin sprite, air controls, visual polish
+
+Replaced the placeholder blue rectangle with a real penguin sprite (`public/penguin.png`): a top-down belly-sliding penguin wearing a red beanie, 48x64px with transparent background. RunScene now preloads the image and uses `Phaser.GameObjects.Image` instead of `Rectangle`. Icy state uses `setTint()` instead of `setFillStyle()`, crash uses red tint.
+
+Reworked air controls: Left/Right Spin tricks removed from the trick queue system. Left/right arrows now add continuous visual spin while airborne (not scored). Up/down arrows remain as queued tricks (Backflip/Front Tuck). Heading rotation is preserved throughout the jump — tricks and spin layer on top of it. Added `getSpinDir()` to Input system.
+
+Increased lateral movement factor from 0.8 to 1.6 so sideways movement is more pronounced relative to the visual tilt. Moved penguin shadow to same Y as penguin (was offset below). Background color changed to `#f2f7ff` (bright white with subtle blue tint).
 
 ### 2026-01-30: Centered camera + difficulty selection + HUD
 

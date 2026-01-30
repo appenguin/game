@@ -79,6 +79,14 @@ A few more things landed before we move to game feel polish:
 
 **Top bar HUD.** A semi-transparent dark bar at the top shows score, distance, speed, and difficulty level at a glance.
 
+## First real sprite
+
+The placeholder blue rectangle is gone. The penguin now has a proper sprite -- a top-down belly-sliding penguin wearing a red beanie, processed from a generated image down to 48x64px with transparent background. It loads in `preload()` and uses Phaser's `Image` instead of `Rectangle`. Icy state tints the sprite cyan; crashing tints it red.
+
+We also cleaned up the air controls. Left and right arrows used to trigger "Left Spin" and "Right Spin" as scored tricks -- but that felt wrong. Now left/right add continuous visual spin while airborne (hold to keep spinning, purely cosmetic), while up/down remain the real tricks (Backflip and Front Tuck, scored). The penguin's heading rotation carries through the jump, with tricks and spin layering on top.
+
+The background got brighter too -- `#f2f7ff`, a near-white with just enough blue to read as snow under a clear sky. The old grey felt too overcast.
+
 ## What's next
 
 The codebase has been refactored into focused modules: pure game logic in `core/` (tricks, difficulty), Phaser systems in `engine/systems/` (input handling, obstacle spawning). RunScene is now a ~490-line orchestrator. Next up is game feel: particles, ski trails, near-miss slow-mo, snowfall. After that, menus, persistence, real art, and the Capacitor wrap for Android.

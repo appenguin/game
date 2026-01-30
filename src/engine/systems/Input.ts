@@ -54,13 +54,10 @@ export class Input {
     return 0;
   }
 
-  /** Resolve trick key: keyboard > buttons > touch steering. Returns key or "" */
+  /** Resolve trick key: keyboard > buttons. Returns "up", "down", or "" */
   getTrickKey(): string {
-    // Keyboard: all 4 directions
     if (this.cursors?.up.isDown || this.keys?.w.isDown) return "up";
     if (this.cursors?.down.isDown || this.keys?.s.isDown) return "down";
-    if (this.cursors?.left.isDown || this.keys?.a.isDown) return "left";
-    if (this.cursors?.right.isDown || this.keys?.d.isDown) return "right";
 
     // Touch trick buttons
     if (this.touchTrickKey) {
@@ -69,11 +66,15 @@ export class Input {
       return key;
     }
 
-    // Touch steer buttons: left/right spins when airborne
-    if (this.touchSteerX < 0) return "left";
-    if (this.touchSteerX > 0) return "right";
-
     return "";
+  }
+
+  /** Resolve spin direction while airborne: -1 (left), 0, or 1 (right) */
+  getSpinDir(): number {
+    if (this.cursors?.left.isDown || this.keys?.a.isDown) return -1;
+    if (this.cursors?.right.isDown || this.keys?.d.isDown) return 1;
+    if (this.touchSteerX !== 0) return this.touchSteerX;
+    return 0;
   }
 
   /** Update trick button alpha and internal airborne flag */

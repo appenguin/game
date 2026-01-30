@@ -36,7 +36,7 @@ src/
       Input.ts        Keyboard + touch + steer/trick buttons
       Spawner.ts      Obstacle spawning + management
   platform/           (planned) Platform adapters (web vs Capacitor)
-public/               Static assets (icons, manifest)
+public/               Static assets (icons, manifest, penguin sprite)
 index.html            HTML entry point
 vite.config.ts        Vite + PWA config
 docs/
@@ -70,11 +70,13 @@ docs/
 - Penguin sprite rotates to show heading; lateral movement follows the angle
 - Ice patches reduce turn rate and increase drift (sluggish + slippery)
 
-**Air tricks:**
-- Keyboard: Up/W = Backflip, Down/S = Front Tuck, Left/A = Left Spin, Right/D = Right Spin
-- Touch: FLIP button (bottom-right) = Backflip, TUCK button (bottom-right) = Front Tuck
-- Holding LEFT/RIGHT while airborne triggers Left/Right Spin
-- Heading is frozen in air; penguin drifts passively from launch angle
+**Air tricks (up/down) and spin (left/right):**
+- Keyboard: Up/W = Backflip, Down/S = Front Tuck (queued tricks, scored)
+- Keyboard: Left/A and Right/D = continuous spin (visual, not scored)
+- Touch: FLIP button = Backflip, TUCK button = Front Tuck
+- Touch: LEFT/RIGHT buttons add continuous spin while airborne
+- Heading rotation is preserved in air; tricks and spin layer on top
+- Penguin drifts passively from launch angle
 
 **Mobile button layout (single row at bottom):**
 ```
@@ -85,6 +87,8 @@ Input priority: keyboard > touch buttons > touch half-screen.
 
 ## Camera and rendering
 
+- Penguin uses a sprite image (`public/penguin.png`), loaded in RunScene preload
+- Background color is `#f2f7ff` (bright white with subtle blue tint, icy snow)
 - Penguin stays fixed at screen center; the world scrolls via Phaser's `camera.scrollX`
 - Obstacles spawn in world-space relative to the penguin's position
 - All UI (HUD, buttons, game over text) uses `setScrollFactor(0)` to stay screen-pinned

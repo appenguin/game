@@ -14,7 +14,7 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
-    this.cameras.main.setBackgroundColor("#dce8f0");
+    this.cameras.main.setBackgroundColor("#f2f7ff");
 
     // Title
     this.add

@@ -46,6 +46,7 @@ export class RunScene extends Phaser.Scene {
   private scrollSpeed = 200;
   private distanceTraveled = 0;
   private score = 0;
+  private scoreFrac = 0;
   private trickScore = 0;
   private combo = 0;
   private gameOver = false;
@@ -81,6 +82,7 @@ export class RunScene extends Phaser.Scene {
     // Reset state
     this.gameOver = false;
     this.score = 0;
+    this.scoreFrac = 0;
     this.distanceTraveled = 0;
     this.combo = 0;
     this.trickScore = 0;
@@ -207,6 +209,12 @@ export class RunScene extends Phaser.Scene {
       ? this.baseScrollSpeed * 0.5
       : this.baseScrollSpeed;
     this.distanceTraveled += this.scrollSpeed * dt;
+    this.scoreFrac += this.scrollSpeed * dt * 0.02;
+    const earned = Math.floor(this.scoreFrac);
+    if (earned > 0) {
+      this.score += earned;
+      this.scoreFrac -= earned;
+    }
 
     // Tick down status effects
     if (this.slipperyTimer > 0) this.slipperyTimer -= dt;
@@ -368,7 +376,12 @@ export class RunScene extends Phaser.Scene {
     const rotDiff = Math.abs(this.currentTrickRotation - this.targetTrickRotation);
     const landed = rotDiff < 0.5;
 
-    if (this.trickQueue.length > 0) {
+    // Award spin points (50 per half rotation)
+    const spinHalves = Math.floor(Math.abs(this.spinRotation) / Math.PI);
+    const spinPoints = spinHalves * 50;
+    this.trickScore += spinPoints;
+
+    if (this.trickQueue.length > 0 || spinPoints > 0) {
       if (landed) {
         const comboMultiplier = Math.max(1, this.combo);
         const points = this.trickScore * comboMultiplier;
@@ -406,7 +419,6 @@ export class RunScene extends Phaser.Scene {
     switch (obj.type) {
       case "rock":
       case "crevasse":
-        this.score += Math.floor(this.distanceTraveled);
         this.endGame();
         break;
 

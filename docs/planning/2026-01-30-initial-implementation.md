@@ -102,7 +102,7 @@ Our version: a penguin slides downhill on ice. Steer left/right to avoid obstacl
 | Landing | Clean = keep trick points. Crash = lose trick points + penalty |
 | Fish | Collectibles on the slope, worth base points. Sometimes in clusters. |
 | Combo | Consecutive clean trick landings increase multiplier |
-| Scoring | Distance + fish + trick points * combo multiplier |
+| Scoring | Slow distance trickle + fish + (tricks + spin) * combo multiplier |
 
 ### Trick system (Ski or Die style)
 
@@ -110,10 +110,11 @@ While airborne, directional inputs perform tricks:
 
 | Input | Trick | Points |
 |-------|-------|--------|
-| Up / W | Backflip | 100 |
-| Down / S | Front tuck | 80 |
+| Up / W | Backflip | 300 |
+| Down / S | Front tuck | 250 |
+| Left/Right | Spin | 50 per half rotation |
 
-Left/Right arrows add continuous spin while airborne (visual, not scored).
+Left/Right arrows add continuous spin while airborne (scored on landing).
 
 - Each trick can only be performed once per jump
 - Performing multiple different tricks scores a variety bonus (+50 per extra trick)

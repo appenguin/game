@@ -11,17 +11,41 @@
     * { margin: 0; padding: 0; }
     html, body { overflow: hidden; background: #0a1628; }
     #game-container {
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100vw;
       height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      height: 100dvh;
     }
     #game-container canvas { display: block; }
+    #rotate-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: #0a1628;
+      color: #94a3b8;
+      font-family: system-ui, sans-serif;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      text-align: center;
+    }
+    #rotate-overlay span { font-size: 48px; }
+    #rotate-overlay p { font-size: 18px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      #rotate-overlay { display: flex; }
+    }
   </style>
 </head>
 <body>
   <div id="game-container"></div>
+  <div id="rotate-overlay">
+    <span>&#x1F4F1;</span>
+    <p>Please rotate your device to portrait</p>
+  </div>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

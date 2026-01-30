@@ -1,0 +1,450 @@
+# Ice Drift: initial implementation
+
+## Progress
+
+### Completed
+
+- [x] Project scaffolding: AGENTS.md, README, GitHub Pages workflow, CNAME, .gitignore
+- [x] Vite + TypeScript + Phaser 3 project setup
+- [x] Build verified: tsc passes, vite build produces dist/
+- [x] Researched game libs (Phaser vs KAPLAY vs LittleJS vs PixiJS). Staying with Phaser 3 for polish
+- [x] Pivoted game concept: from drift runner to Ski or Die-style downhill with ramps and tricks
+- [x] Phase 1a: Basic downhill prototype working
+  - Penguin near top of screen, obstacles scroll upward (downhill perspective)
+  - Left/right steering (keyboard + touch)
+  - Rocks (game over), trees (slow + lose combo), ramps (launch), fish (points)
+  - Airborne trick system: directional inputs perform tricks, variety bonus
+  - Clean landing scores points * combo multiplier, crash landing resets combo
+  - Score display, trick name flash, combo counter
+  - Speed increases over distance
+  - Game over screen with restart (R key or tap)
+- [x] Phase 1b: More slope elements and difficulty tuning
+  - Ice patches (reduced steering), crevasses (game over), moguls (mini-launch), snowdrifts (slow)
+  - Fish clusters (3-5 in diagonal line)
+  - 4 difficulty zones by distance (easy/medium/hard/expert)
+  - Spawn spacing enforcement, weighted spawn tables per zone
+  - Speed cap at 500, slow/icy status effects with UI indicators
+- [x] PWA + mobile + tilt controls (pulled forward from Phase 6)
+  - `vite-plugin-pwa` with inline manifest, auto-updating service worker, workbox precaching
+  - Placeholder PWA icons (192x192, 512x512) in `public/assets/icons/`
+  - Mobile meta tags: theme-color, apple-mobile-web-app-capable, viewport-fit=cover, no user scaling
+  - Phaser config: `fullscreenTarget`, `activePointers: 2`
+  - Gyroscope tilt steering via `DeviceOrientationEvent.gamma`
+  - iOS permission request on first tap (`DeviceOrientationEvent.requestPermission`)
+  - Input priority: keyboard (discrete) > tilt (analog -1..+1) > touch (discrete)
+  - Dead zone of 0.08 (~2.4 degrees) to prevent jitter
+  - Orientation listener cleanup on scene restart
+
+### Current step
+
+- [ ] Planning phases 2-7
+
+### Next steps
+
+- [ ] Phase 2: Refactor
+- [ ] Phase 3: Game feel
+- [ ] Phase 4: Menus and persistence
+- [ ] Phase 5: Art and audio (includes replacing placeholder PWA icons)
+- [ ] Phase 7: Capacitor wrap
+
+---
+
+## Game concept
+
+Inspired by **Ski or Die** (EA, 1990), especially:
+- **Downhill Blitz**: top-down scrolling, dodge obstacles, hit jumps, choose routes
+- **Acro Aerials**: launch off ramps, perform tricks mid-air, judges score your performance
+
+Our version: a penguin slides downhill on ice. Steer left/right to avoid obstacles. Hit ramps to go airborne. Perform tricks in the air for bonus points. Land cleanly or crash. Collect fish. Speed increases over time.
+
+### Core mechanics
+
+| Mechanic | How it works |
+|----------|-------------|
+| Steering | Left/right input moves penguin laterally |
+| Auto-scroll | Obstacles scroll upward (penguin at top = downhill perspective), speed increases over time |
+| Obstacles | Rocks (game over), trees (slow + lose combo), ice patches (reduced steering), crevasses (game over), moguls (small bump/air), snowdrifts (slow) |
+| Ramps | Hit a ramp to launch into the air. Airtime depends on speed |
+| Tricks | While airborne, tap directions to perform tricks (flip, spin). Each trick has a point value |
+| Landing | Clean = keep trick points. Crash = lose trick points + penalty |
+| Fish | Collectibles on the slope, worth base points. Sometimes in clusters. |
+| Combo | Consecutive clean trick landings increase multiplier |
+| Scoring | Distance + fish + trick points * combo multiplier |
+
+### Trick system (Ski or Die style)
+
+While airborne, directional inputs perform tricks:
+
+| Input | Trick | Points |
+|-------|-------|--------|
+| Up / W | Backflip | 100 |
+| Down / S | Front tuck | 80 |
+| Left / A | Left spin | 60 |
+| Right / D | Right spin | 60 |
+
+- Each trick can only be performed once per jump
+- Performing multiple different tricks scores a variety bonus (+50 per extra trick)
+- Must finish trick rotation before landing or it counts as a crash
+- Crash landing = zero trick points for that jump, combo reset
+
+---
+
+## Phase 2: Refactor
+
+RunScene.ts is 720 lines and growing. Before adding more features, extract game logic into focused modules. This prevents the scene from becoming unmaintainable and makes each system testable.
+
+### File breakdown
+
+```
+src/
+  core/
+    scoring.ts         Score calculation, combo logic, trick point math
+    tricks.ts          Trick definitions, trick queue, variety bonus calc
+    difficulty.ts      Difficulty zones, spawn weights, speed curve
+    collision.ts       AABB collision check (pure function)
+  engine/
+    scenes/
+      BootScene.ts     (exists, unchanged)
+      RunScene.ts      Slimmed to ~200 lines: scene lifecycle, delegates to systems
+    entities/
+      Penguin.ts       Penguin state: position, airborne, status effects, visual updates
+      SlopeObject.ts   Obstacle/collectible: type, sprite, dimensions
+    systems/
+      Spawner.ts       Obstacle spawning: timing, placement, difficulty-aware weights
+      Input.ts         Keyboard + touch input normalization, returns { steerDir, trickKey }
+  platform/
+    web/
+      storage.ts       localStorage wrapper for high scores and settings
+```
+
+### What moves where
+
+| Currently in RunScene | Moves to | Why |
+|----------------------|----------|-----|
+| `TRICKS` constant, trick queue logic | `core/tricks.ts` | Pure data + logic, no Phaser dependency |
+| `getDifficulty()`, spawn weight tables | `core/difficulty.ts` | Pure logic |
+| Score/combo math | `core/scoring.ts` | Pure logic, testable |
+| `checkCollision()` | `core/collision.ts` | Pure function |
+| Penguin state (airborne, slippery, slow, position) | `entities/Penguin.ts` | Encapsulates one entity |
+| `SlopeObject` interface + spawn helpers | `entities/SlopeObject.ts` + `systems/Spawner.ts` | Data vs creation |
+| Keyboard/touch handlers | `systems/Input.ts` | Reusable across scenes |
+| RunScene | Stays, but slimmer | Wires systems together, owns scene lifecycle |
+
+### Verification
+
+- All existing gameplay works identically after refactor
+- `tsc` passes
+- Each `core/` module can be unit tested without Phaser
+
+---
+
+## Phase 3: Game feel
+
+Visual and audio polish that makes the game feel satisfying. This is where placeholder shapes start to feel like a real game even before sprite art.
+
+### Particles
+
+| Event | Effect |
+|-------|--------|
+| Penguin moving on ground | Snow spray particles behind penguin, angled by steer direction |
+| Clean trick landing | Gold particle burst at penguin feet |
+| Crash landing | Red particle burst + penguin bounces |
+| Fish collected | Small yellow sparkle at fish position |
+| Rock/crevasse death | Large gray burst + penguin flash red |
+| Ice patch entered | Cyan sparkle trail while on ice |
+| Snowdrift entered | White puff at contact point |
+
+### Screen effects
+
+| Event | Effect |
+|-------|--------|
+| Rock/crevasse death | Strong camera shake (already have mild version) |
+| Tree hit | Quick shake (already exists) |
+| Near-miss (< 10px from rock) | Brief slow-motion (0.2s at 50% speed) + white flash outline on rock |
+| High speed (> 400) | Subtle speed lines on screen edges |
+| Combo x3+ | Screen border glow (gold, pulsing) |
+| Landing | Brief screen bump (camera offset down then back) |
+
+### Snowfall background
+
+- Constant light snowfall particles across the screen
+- Two layers: small slow flakes (far) and larger faster flakes (near)
+- Parallax: far layer moves at 30% scroll speed, near at 70%
+- Density increases with difficulty zone
+
+### Trail
+
+- Penguin leaves faint ski tracks on the slope
+- Two parallel thin lines behind penguin that fade over 1-2 seconds
+- When airborne, trail stops (penguin is in the air)
+- When steering hard, tracks curve
+
+### Phaser features to use
+
+- `this.add.particles()` for all particle effects
+- `this.cameras.main.shake()` (already using)
+- `this.cameras.main.flash()` for near-miss flash
+- `this.time.timeScale` for slow-motion
+- `this.tweens` for screen border glow, UI animations
+
+### Verification
+
+- Particles fire for all listed events
+- Near-miss slow-mo triggers when barely dodging a rock
+- Snowfall visible at all times, denser in later zones
+- Ski trail renders behind penguin on ground
+- No FPS drop below 55 on desktop
+
+---
+
+## Phase 4: Menus and persistence
+
+A complete game loop: start screen, gameplay, results, back to start. High score saved locally.
+
+### New scenes
+
+**MenuScene** (`src/engine/scenes/MenuScene.ts`)
+- Game title "ICE DRIFT" in large text
+- "TAP TO START" / "PRESS ENTER" prompt, pulsing animation
+- High score display below title
+- Snowfall particles (reuse from RunScene)
+- Simple penguin animation (idle bobbing)
+- Settings button (gear icon or "SETTINGS" text)
+
+**ResultsScene** (`src/engine/scenes/ResultsScene.ts`)
+- Score breakdown:
+  - Distance traveled
+  - Fish collected (count * 10)
+  - Trick points earned
+  - Best combo multiplier achieved
+  - Total score
+- "NEW HIGH SCORE!" flash if applicable
+- "TAP TO CONTINUE" returns to menu
+- "PLAY AGAIN" shortcut (tap twice quickly or press R)
+
+**SettingsScene** (`src/engine/scenes/SettingsScene.ts`) (or overlay on MenuScene)
+- SFX on/off
+- Music on/off
+- Vibration on/off (for Capacitor later)
+- Back button
+
+### Persistence (localStorage)
+
+```typescript
+interface GameData {
+  highScore: number;
+  highDistance: number;
+  totalRuns: number;
+  settings: {
+    sfx: boolean;
+    music: boolean;
+    vibration: boolean;
+  };
+}
+```
+
+- Save on game over
+- Load on boot
+- Use `platform/web/storage.ts` so Capacitor can swap to its own storage later
+
+### Scene flow
+
+```
+BootScene -> MenuScene -> RunScene -> ResultsScene -> MenuScene
+                ^                                        |
+                |________________________________________|
+```
+
+### Run data tracking
+
+RunScene needs to track additional stats during gameplay to show on results:
+- Fish count (not just score)
+- Total trick points
+- Best combo reached
+- Cause of death ("hit a rock" / "fell in crevasse")
+
+### Verification
+
+- Full loop: menu -> play -> die -> results -> menu -> play again
+- High score persists across browser refreshes
+- Settings persist and are respected
+- All stats shown on results screen match gameplay
+
+---
+
+## Phase 5: Art and audio
+
+Replace colored shapes with sprites and add sound. Transforms the look and feel.
+
+### Sprites
+
+| Object | Sprite description | Size |
+|--------|--------------------|------|
+| Penguin (ground) | Top-down penguin on skis, slight lean when steering | 32x40 |
+| Penguin (air) | Penguin spread pose, rotates with tricks | 32x40 |
+| Rock | Gray boulder, irregular shape | 30x30 |
+| Tree | Pine tree, top-down (dark green triangle with trunk dot) | 30x36 |
+| Ramp | Blue/white ski ramp, perspective | 50x24 |
+| Fish | Gold fish shape | 16x16 |
+| Ice patch | Translucent blue texture | 60-100 x 20 |
+| Crevasse | Dark crack in ice | 14x50 |
+| Mogul | Snow bump with shadow | 28x16 |
+| Snowdrift | Snow pile | 44x18 |
+
+Options for creating sprites:
+1. **Pixel art** -- simple, retro aesthetic, fast to create
+2. **SVG** -- scalable, crisp at all sizes, can inline in code
+3. **AI-generated** -- quick but may need cleanup
+
+### Sound effects
+
+| Event | Sound |
+|-------|-------|
+| Penguin ground slide | Continuous low swoosh (looping, pitch increases with speed) |
+| Steer | Subtle carve sound |
+| Ramp launch | Whoosh up |
+| Air tricks | Quick spin/flip sound per trick |
+| Clean landing | Satisfying crunch/thud |
+| Crash landing | Thump + comedy fail |
+| Fish collect | Bright ding/pop |
+| Rock/crevasse death | Crash + sad trombone or honk |
+| Tree hit | Wooden thunk |
+| Ice patch | Glassy slide sound |
+| Snowdrift | Soft poof |
+| Near-miss | Brief whoosh/gasp |
+| Combo milestone | Ascending chime |
+
+### Music
+
+- One looping background track
+- Upbeat, winter-themed, chiptune or lo-fi
+- Tempo could subtly increase with speed (stretch goal)
+- Can use royalty-free or generate with a tool
+
+### Asset pipeline
+
+- Sprites in `public/assets/sprites/`
+- Audio in `public/assets/audio/`
+- Load in BootScene with progress bar
+- Use Phaser's asset loader
+
+### Verification
+
+- All placeholder shapes replaced with sprites
+- All sound events fire
+- Audio respects SFX/music settings toggles
+- Assets load correctly, progress bar shows in BootScene
+- Sprite rendering doesn't impact FPS
+
+---
+
+## Phase 6: PWA (completed -- pulled forward)
+
+PWA, mobile optimization, and tilt controls were implemented early alongside Phase 1.
+
+### What was done
+
+- `vite-plugin-pwa` configured in `vite.config.ts` with inline manifest (no separate `manifest.json`)
+- Service worker auto-registers with `registerType: "autoUpdate"`, workbox precaches all assets
+- Placeholder icons at `public/assets/icons/icon-192.png` and `icon-512.png` (solid ice blue, replaced in Phase 5)
+- Mobile meta tags in `index.html`: theme-color, apple-mobile-web-app-capable, viewport-fit=cover, disabled user scaling
+- Phaser game config updated: `fullscreenTarget: "game-container"`, `activePointers: 2`
+- `vite-plugin-pwa/client` types added to `tsconfig.json`
+- Gyroscope tilt steering in `RunScene.ts`:
+  - `DeviceOrientationEvent.gamma` mapped to -1..+1 via 30-degree clamp
+  - iOS permission requested on first tap
+  - Non-iOS enabled immediately
+  - Dead zone of 0.08 prevents jitter
+  - Input priority: keyboard > tilt > touch
+  - Analog tilt gives fine-grained steering vs discrete keyboard/touch
+
+### Remaining for later
+
+- Replace placeholder icons with real penguin art (Phase 5)
+- Fullscreen button in menu (Phase 4)
+
+---
+
+## Phase 7: Capacitor wrap
+
+Bundle into a native Android app. The appenguin showcase.
+
+### Setup
+
+- Initialize Capacitor in the project: `npx cap init`
+- Add Android platform: `npx cap add android`
+- Configure `capacitor.config.ts`: app name, app ID, webDir pointing to `dist/`
+- CLI-only Android SDK (no Android Studio required, matching cqc-android approach)
+
+### Platform adapters
+
+`src/platform/capacitor/`
+- **Storage**: Capacitor Preferences API instead of localStorage
+- **Haptics**: vibrate on rock collision, light tap on fish collect, medium on trick land
+- **Share**: share score to social media (results screen button)
+- **StatusBar**: hide status bar for fullscreen
+- **SplashScreen**: show during boot, auto-hide when game ready
+
+### Build
+
+- `npm run build` to produce dist/
+- `npx cap sync` to copy web assets to native project
+- `npx cap build android` for APK/AAB
+- Release signing with keystore (same approach as cqc-android)
+
+### App icon and splash
+
+- App icon: penguin on ice blue background, round/square adaptive icon
+- Splash screen: centered penguin logo on ice blue gradient
+- Generate all sizes with `@capacitor/assets`
+
+### Testing
+
+- Build APK, install on real Android device
+- Verify haptics fire on correct events
+- Verify offline play works (no network at all)
+- Verify back button behavior (exit app, not navigate back)
+- Test on mid-tier device for FPS
+
+### Verification
+
+- APK builds without errors
+- App installs and runs on Android device
+- Haptics respond to game events
+- No network dependency
+- App icon and splash screen render correctly
+- Playable at stable FPS on mid-tier Android
+
+---
+
+## Key decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Game framework | Phaser 3 | Mature, good mobile perf, rich feature set for polish |
+| Bundler | Vite | Fast dev, good TS support |
+| Art style (MVP) | Colored shapes | Ship fast, iterate on feel |
+| Game style | Ski or Die downhill + tricks | More depth than pure drift runner, iconic reference |
+| Scrolling | Top-down, penguin at top, obstacles scroll up | Classic downhill ski perspective |
+| Trick system | Directional inputs while airborne | Simple to learn, depth via combinations |
+| Difficulty | Distance-based zones | Gradual learning curve, gets hard after 1500m |
+| Refactor before features | Yes | 720-line scene is unmaintainable, extract before adding more |
+| PWA early | Yes | Installability and offline support are cheap to add now with vite-plugin-pwa; tilt controls need testing on real devices early |
+| Tilt input priority | keyboard > tilt > touch | Keyboard for desktop, tilt is analog (best mobile feel), touch as fallback |
+| Tilt dead zone | 0.08 (~2.4 degrees) | Prevents jitter from minor hand tremor when phone is level |
+
+---
+
+## Dev log
+
+### 2026-01-30: Project kickoff
+
+Set up project skeleton. Researched game libs, decided to stay with Phaser 3 for its polish features (particles, camera, audio, scene management). Pivoted game concept from "hold to drift" runner to Ski or Die-style downhill with ramps and trick scoring.
+
+Built phase 1a: playable downhill prototype. Penguin at top of screen, obstacles scroll upward (SkiFree-style perspective). Steering, rocks, trees, ramps, fish, airborne trick system with variety bonus, combo multiplier, game over + restart. All placeholder art (colored shapes).
+
+Built phase 1b: added ice patches, crevasses, moguls, snowdrifts, fish clusters. 4 difficulty zones by distance with weighted spawn tables. Spawn spacing enforcement. Speed cap at 500. Status effects (icy steering, slow speed) with UI indicators.
+
+Planned phases 2-7: refactor (extract modules from 720-line RunScene), game feel (particles, trails, near-miss, snowfall), menus + persistence (full game loop with high scores), art + audio (sprites, SFX, music), PWA (offline, installable), Capacitor (Android app with haptics).
+
+Pulled PWA forward: added vite-plugin-pwa with inline manifest, service worker, mobile meta tags. Also added gyroscope tilt steering -- DeviceOrientationEvent.gamma mapped to analog -1..+1 input with iOS permission handling and 0.08 dead zone. Input priority: keyboard > tilt > touch. This means the game is already installable to home screen and playable offline with tilt controls before any art polish.

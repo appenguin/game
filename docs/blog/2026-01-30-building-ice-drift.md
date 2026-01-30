@@ -37,6 +37,7 @@ We're keeping it loose. Five phases:
 - **Phaser 3** for the game engine
 - **TypeScript** because we're not animals
 - **Vite** for fast builds
+- **Strudel** (`@strudel/web`) for procedural music
 - **Capacitor** for the mobile wrap (later)
 
 No backend. No accounts. No analytics. Everything runs locally. Just a penguin and the ice.
@@ -87,9 +88,23 @@ We also cleaned up the air controls. Left and right arrows used to trigger "Left
 
 The background got brighter too -- `#f2f7ff`, a near-white with just enough blue to read as snow under a clear sky. The old grey felt too overcast.
 
+## Procedural music with Strudel
+
+Games need music. We didn't want a static loop -- we wanted the music to grow with the player. Enter [Strudel](https://strudel.cc/), a live coding music system that runs entirely in the browser.
+
+The music system has 16 layers that stack as your score increases. At score 0 you hear a slow, icy pad. A cold E minor chord fades in next. Then the kick drum arrives. Arpeggios. Hi-hats. A lead melody. By the time you hit 1500 score, all 16 layers are playing together.
+
+The key design choice: **synths come first, drums come later.** The early game is atmospheric -- pads and bass setting the mood. Drums enter gradually, interleaved with new melodic layers. This keeps the progression feeling musical rather than just "add another drum loop."
+
+All pattern definitions live in one file (`src/core/music.ts`). Each level is a clearly commented `case` in a switch statement using Strudel's pattern language. Want to change the key from E minor to D minor? Edit one string. Want the snare to hit on different beats? Change the pattern. The musical content is completely separated from the playback engine.
+
+The system is a singleton that persists across scenes, so the intro music on the boot screen flows seamlessly into gameplay. A toggle on the start screen lets you turn it off (persisted to localStorage for next time).
+
+Technical detail: Strudel is installed via npm and bundled by Vite. Drum sounds (kick, hi-hat, snare, open hat) come from the dirt-samples library loaded at init. All synth sounds (sawtooth, triangle, square, supersaw) are Web Audio oscillators -- no files needed.
+
 ## What's next
 
-The codebase has been refactored into focused modules: pure game logic in `core/` (tricks, difficulty), Phaser systems in `engine/systems/` (input handling, obstacle spawning). RunScene is now a ~490-line orchestrator. Next up is game feel: particles, ski trails, near-miss slow-mo, snowfall. After that, menus, persistence, real art, and the Capacitor wrap for Android.
+The codebase has been refactored into focused modules: pure game logic in `core/` (tricks, difficulty, music), Phaser systems in `engine/systems/` (input, spawning, music playback). RunScene is now a ~540-line orchestrator. Next up is game feel: particles, ski trails, near-miss slow-mo, snowfall. After that, menus, persistence, real art, and the Capacitor wrap for Android.
 
 We'll document the entire build as we go. Every decision, every dead end, every time we spend an hour tweaking how it feels to almost hit a rock.
 

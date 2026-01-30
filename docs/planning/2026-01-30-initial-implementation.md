@@ -69,6 +69,18 @@
   - Shows labeled score, distance (m until 1 km, then km), speed (km/h), and difficulty level name
   - All elements pinned to screen with `setScrollFactor(0)`
 
+- [x] Music system (Strudel)
+  - `@strudel/web` integrated via npm, bundled by Vite
+  - 16-level score-driven layer progression (full arrangement at 1500 score)
+  - Synth oscillators (sawtooth, triangle, square) for pads, bass, arps, melodies
+  - Drum samples (bd, hh, sd, oh) from dirt-samples, interleaved with synths
+  - Pattern definitions in `src/core/music.ts` (pure, no Phaser), easy to edit
+  - Music system singleton in `src/engine/systems/Music.ts`, shared across scenes
+  - Music starts on boot screen (intro pad), layers build during gameplay
+  - Music toggle on boot screen, preference persisted in localStorage
+  - Music stops on game over, resets on restart
+  - Key: E minor, base tempo 110 BPM (+1 per level)
+
 ### Current step
 
 - [ ] Phase 3: Game feel
@@ -77,7 +89,7 @@
 
 - [ ] Phase 3: Game feel
 - [ ] Phase 4: Menus and persistence
-- [ ] Phase 5: Art and audio (includes replacing placeholder PWA icons)
+- [ ] Phase 5: Art and audio (music done; SFX and sprites remaining)
 - [ ] Phase 7: Capacitor wrap
 
 ---
@@ -135,13 +147,16 @@ src/
   core/
     tricks.ts          Trick interface, TRICKS constant, calcTrickScore(), canQueueTrick()
     difficulty.ts      Difficulty zones, spawn weights, speed curve, pickObstacleType()
+    music.ts           Music pattern definitions, level thresholds, getMusicLevel()
   engine/
     scenes/
-      BootScene.ts     Difficulty selection (Easy/Medium/Hard), launches RunScene with level
-      RunScene.ts      Orchestrator (~490 lines): penguin state, camera, scoring, HUD, delegates to systems
+      BootScene.ts     Difficulty selection, music toggle, launches RunScene with level
+      RunScene.ts      Orchestrator (~540 lines): penguin state, camera, scoring, HUD, music, delegates to systems
     systems/
       Spawner.ts       SlopeObject interface, spawn helpers, collision check, object lifecycle
       Input.ts         Keyboard + touch + trick buttons, getSteerDir(), getTrickKey()
+      Music.ts         Strudel lifecycle, score-driven layer progression, singleton
+  strudel.d.ts         TypeScript declarations for @strudel/web
 ```
 
 ### What moved where
@@ -349,12 +364,9 @@ Options for creating sprites:
 | Near-miss | Brief whoosh/gasp |
 | Combo milestone | Ascending chime |
 
-### Music
+### Music (done)
 
-- One looping background track
-- Upbeat, winter-themed, chiptune or lo-fi
-- Tempo could subtly increase with speed (stretch goal)
-- Can use royalty-free or generate with a tool
+Implemented with Strudel (`@strudel/web`) — procedural layered music that evolves with score. 16 levels of stacking patterns in E minor using synth oscillators and dirt-samples drums. See `src/core/music.ts` for pattern definitions.
 
 ### Asset pipeline
 
@@ -470,6 +482,9 @@ Bundle into a native Android app. The appenguin showcase.
 | Difficulty levels | Easy/Medium/Hard speed profiles | Player choice at start; obstacle zones still distance-based |
 | HUD | Semi-transparent top bar | Labeled score, distance (m/km), speed (km/h), level -- always visible, non-intrusive |
 | Orientation | Portrait locked | Screen Orientation API + PWA manifest |
+| Music engine | Strudel (@strudel/web) | Procedural layered music, no static audio files needed, patterns easy to edit |
+| Music progression | 16 score-based levels | Synths introduced first, drums interleaved later; full arrangement at 1500 score |
+| Music architecture | core/music.ts + engine/systems/Music.ts | Pattern definitions separated from playback engine; edit music.ts to change the music |
 
 ---
 
@@ -514,3 +529,11 @@ Switched from clamping the penguin to screen edges to a camera-follows-penguin m
 Added a difficulty selection screen to BootScene: three buttons (Easy, Medium, Hard) with color-coded backgrounds. Each level maps to a speed profile in `core/difficulty.ts` controlling start speed, acceleration rate, and speed cap. The selected level is passed to RunScene via scene data and preserved on restart. Obstacle spawn difficulty (distance-based zones 0-3) remains independent of the player-selected level.
 
 Added a top bar HUD: a semi-transparent dark bar (36px tall, 0.45 alpha) at the top of the screen showing score, distance in meters, current speed, and the difficulty level name. All HUD elements are screen-pinned with `setScrollFactor(0)`. RunScene is now ~490 lines.
+
+### 2026-01-30: Procedural music with Strudel
+
+Added layered procedural music using Strudel (`@strudel/web`). 16 levels of patterns that stack as score increases, reaching full arrangement at 1500 score. Synth oscillators (sawtooth, triangle, square, supersaw) provide pads, bass, arpeggios, and melodies. Drum samples (bd, hh, sd, oh) from dirt-samples are interleaved with synths rather than clustered together — synths come first to set the mood, drums enter gradually.
+
+Architecture follows the existing core/engine split: `core/music.ts` holds all pattern definitions, level thresholds, and the `getPatternForLevel()` switch statement — edit this one file to change the music. `engine/systems/Music.ts` is a singleton that manages Strudel initialization, score-to-level mapping, and game event hooks (game over, restart). The singleton persists across scenes so the intro music on the boot screen flows seamlessly into gameplay.
+
+Music starts playing on the boot screen with a slow icy pad (E minor). A "Music: ON/OFF" toggle on the boot screen persists the preference to localStorage. AudioContext unlocks on the user's first tap. Key: E minor. Base tempo: 110 BPM, increasing +1 per level.

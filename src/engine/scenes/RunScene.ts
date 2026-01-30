@@ -304,12 +304,12 @@ export class RunScene extends Phaser.Scene {
 
     // --- UI ---
     this.scoreText.setText(`Score: ${this.score}`);
-    const meters = Math.floor(this.distanceTraveled / 100);
+    const meters = Math.floor(this.distanceTraveled / 18);
     const distStr = meters >= 1000
       ? `${(meters / 1000).toFixed(1)} km`
       : `${meters} m`;
     this.distText.setText(distStr);
-    this.speedText.setText(`${Math.floor(this.scrollSpeed / 10)} km/h`);
+    this.speedText.setText(`${Math.floor(this.scrollSpeed * 0.2)} km/h`);
     this.comboText.setText(this.combo > 1 ? `x${this.combo} combo` : "");
 
     if (this.slipperyTimer > 0) {
@@ -448,8 +448,17 @@ export class RunScene extends Phaser.Scene {
 
   private endGame(): void {
     this.gameOver = true;
-    this.penguin.setTint(0xef4444);
     this.cameras.main.shake(400, 0.02);
+
+    // Spin and tumble slightly in the opposite direction
+    const spinDir = this.heading >= 0 ? -1 : 1;
+    this.tweens.add({
+      targets: this.penguin,
+      x: this.penguin.x + spinDir * 40,
+      rotation: this.penguin.rotation + spinDir * Math.PI * 4,
+      duration: 800,
+      ease: "Cubic.easeOut",
+    });
 
     const { width, height } = this.scale;
     this.add
@@ -467,7 +476,7 @@ export class RunScene extends Phaser.Scene {
       .text(
         width / 2,
         height * 0.45,
-        `Score: ${this.score}\nDistance: ${Math.floor(this.distanceTraveled / 100) >= 1000 ? (Math.floor(this.distanceTraveled / 100) / 1000).toFixed(1) + " km" : Math.floor(this.distanceTraveled / 100) + " m"}`,
+        `Score: ${this.score}\nDistance: ${Math.floor(this.distanceTraveled / 18) >= 1000 ? (Math.floor(this.distanceTraveled / 18) / 1000).toFixed(1) + " km" : Math.floor(this.distanceTraveled / 18) + " m"}\nDifficulty: ${["Easy", "Medium", "Hard"][this.level] ?? "Medium"}`,
         {
           fontSize: "22px",
           color: "#374151",

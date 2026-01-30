@@ -71,10 +71,14 @@ export class RunScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private touchSteerX = 0;
-  private isTouching = false;
-  private tiltEnabled = false;
-  private tiltSteerX = 0;
-  private orientationHandler: ((e: DeviceOrientationEvent) => void) | null = null;
+  private steerPointerId: number | null = null;
+  private touchTrickKey = "";
+
+  // Trick buttons
+  private flipButton!: Phaser.GameObjects.Container;
+  private tuckButton!: Phaser.GameObjects.Container;
+  private flipButtonBounds!: Phaser.Geom.Rectangle;
+  private tuckButtonBounds!: Phaser.Geom.Rectangle;
 
   constructor() {
     super("Run");
@@ -95,6 +99,9 @@ export class RunScene extends Phaser.Scene {
     this.rampSpawnTimer = 0;
     this.slipperyTimer = 0;
     this.slowTimer = 0;
+    this.touchSteerX = 0;
+    this.steerPointerId = null;
+    this.touchTrickKey = "";
 
     this.cameras.main.setBackgroundColor("#dce8f0");
 
@@ -179,76 +186,94 @@ export class RunScene extends Phaser.Scene {
 
     // Touch
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      this.isTouching = true;
+      if (this.gameOver) {
+        this.restartGame();
+        return;
+      }
+      if (this.isOnTrickButton(pointer)) {
+        this.handleTrickButtonPress(pointer);
+        return;
+      }
+      this.steerPointerId = pointer.id;
       this.updateTouchSteer(pointer);
-      if (this.gameOver) this.restartGame();
-      this.requestTiltPermission();
     });
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-      if (this.isTouching) this.updateTouchSteer(pointer);
+      if (pointer.id === this.steerPointerId) {
+        this.updateTouchSteer(pointer);
+      }
     });
-    this.input.on("pointerup", () => {
-      this.isTouching = false;
-      this.touchSteerX = 0;
+    this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
+      if (pointer.id === this.steerPointerId) {
+        this.steerPointerId = null;
+        this.touchSteerX = 0;
+      }
     });
 
-    // Tilt controls (non-iOS: enable immediately)
-    this.initTilt();
+    // Trick buttons
+    this.createTrickButtons();
   }
 
   private updateTouchSteer(pointer: Phaser.Input.Pointer): void {
-    const { width } = this.scale;
-    const third = width / 3;
-    if (pointer.x < third) this.touchSteerX = -1;
-    else if (pointer.x > third * 2) this.touchSteerX = 1;
-    else this.touchSteerX = 0;
+    const { width, height } = this.scale;
+    if (pointer.y > height * 0.85) return; // trick button zone
+    if (pointer.x < width / 2) this.touchSteerX = -1;
+    else this.touchSteerX = 1;
   }
 
-  /** Set up tilt controls. On non-iOS, enable immediately. iOS needs user gesture. */
-  private initTilt(): void {
-    if (typeof DeviceOrientationEvent === "undefined") return;
+  private createTrickButtons(): void {
+    const { width, height } = this.scale;
+    const btnW = 80;
+    const btnH = 50;
+    const btnY = height - 50;
+    const margin = 24;
 
-    // iOS requires permission via requestPermission (user gesture needed)
-    const doe = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
-      requestPermission?: () => Promise<string>;
-    };
-    if (typeof doe.requestPermission === "function") {
-      // iOS: defer to requestTiltPermission() called on first tap
-      return;
+    // Flip button (left side) — triggers Backflip
+    const flipBg = this.add.rectangle(0, 0, btnW, btnH, 0x3b82f6, 0.35);
+    flipBg.setStrokeStyle(2, 0x60a5fa);
+    const flipLabel = this.add.text(0, 0, "FLIP", {
+      fontSize: "16px",
+      color: "#ffffff",
+      fontFamily: "system-ui, sans-serif",
+      fontStyle: "bold",
+    }).setOrigin(0.5);
+    this.flipButton = this.add.container(margin + btnW / 2, btnY, [flipBg, flipLabel]);
+    this.flipButton.setDepth(20);
+    this.flipButton.setAlpha(0.4);
+
+    // Tuck button (right side) — triggers Front Tuck
+    const tuckBg = this.add.rectangle(0, 0, btnW, btnH, 0x7c3aed, 0.35);
+    tuckBg.setStrokeStyle(2, 0xa78bfa);
+    const tuckLabel = this.add.text(0, 0, "TUCK", {
+      fontSize: "16px",
+      color: "#ffffff",
+      fontFamily: "system-ui, sans-serif",
+      fontStyle: "bold",
+    }).setOrigin(0.5);
+    this.tuckButton = this.add.container(width - margin - btnW / 2, btnY, [tuckBg, tuckLabel]);
+    this.tuckButton.setDepth(20);
+    this.tuckButton.setAlpha(0.4);
+
+    // Hit bounds for point-in-rect testing
+    this.flipButtonBounds = new Phaser.Geom.Rectangle(
+      margin, btnY - btnH / 2, btnW, btnH,
+    );
+    this.tuckButtonBounds = new Phaser.Geom.Rectangle(
+      width - margin - btnW, btnY - btnH / 2, btnW, btnH,
+    );
+  }
+
+  private isOnTrickButton(pointer: Phaser.Input.Pointer): boolean {
+    return this.flipButtonBounds.contains(pointer.x, pointer.y) ||
+      this.tuckButtonBounds.contains(pointer.x, pointer.y);
+  }
+
+  private handleTrickButtonPress(pointer: Phaser.Input.Pointer): void {
+    if (!this.isAirborne) return;
+    if (this.flipButtonBounds.contains(pointer.x, pointer.y)) {
+      this.touchTrickKey = "up";
+    } else if (this.tuckButtonBounds.contains(pointer.x, pointer.y)) {
+      this.touchTrickKey = "down";
     }
-
-    // Non-iOS: enable immediately
-    this.enableTilt();
-  }
-
-  /** Request iOS DeviceOrientation permission (must be called from user gesture) */
-  private requestTiltPermission(): void {
-    if (this.tiltEnabled) return;
-
-    const doe = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
-      requestPermission?: () => Promise<string>;
-    };
-    if (typeof doe.requestPermission !== "function") return;
-
-    doe.requestPermission().then((state: string) => {
-      if (state === "granted") this.enableTilt();
-    });
-  }
-
-  /** Start listening for device orientation events */
-  private enableTilt(): void {
-    if (this.tiltEnabled) return;
-    this.tiltEnabled = true;
-    this.orientationHandler = (e: DeviceOrientationEvent) =>
-      this.handleOrientation(e);
-    window.addEventListener("deviceorientation", this.orientationHandler);
-  }
-
-  /** Map device gamma (left/right tilt) to -1..+1 steering */
-  private handleOrientation(event: DeviceOrientationEvent): void {
-    if (event.gamma === null) return;
-    const clamped = Phaser.Math.Clamp(event.gamma, -30, 30);
-    this.tiltSteerX = clamped / 30;
   }
 
   /** Difficulty zone based on distance */
@@ -277,11 +302,10 @@ export class RunScene extends Phaser.Scene {
     if (this.slipperyTimer > 0) this.slipperyTimer -= dt;
     if (this.slowTimer > 0) this.slowTimer -= dt;
 
-    // --- Steering (priority: keyboard > tilt > touch) ---
+    // --- Steering (priority: keyboard > touch) ---
     let steerDir = 0;
     if (this.cursors?.left.isDown || this.keys?.a.isDown) steerDir = -1;
     else if (this.cursors?.right.isDown || this.keys?.d.isDown) steerDir = 1;
-    else if (this.tiltEnabled && Math.abs(this.tiltSteerX) > 0.08) steerDir = this.tiltSteerX;
     else if (this.touchSteerX !== 0) steerDir = this.touchSteerX;
 
     if (!this.isAirborne) {
@@ -378,17 +402,31 @@ export class RunScene extends Phaser.Scene {
     } else {
       this.effectText.setAlpha(0);
     }
+
+    // Trick button visibility
+    const btnAlpha = this.isAirborne ? 0.9 : 0.4;
+    this.flipButton.setAlpha(btnAlpha);
+    this.tuckButton.setAlpha(btnAlpha);
   }
 
   private handleAirTricks(dt: number): void {
     let trickKey = "";
+
+    // Keyboard: all 4 directions
     if (this.cursors?.up.isDown || this.keys?.w.isDown) trickKey = "up";
     else if (this.cursors?.down.isDown || this.keys?.s.isDown) trickKey = "down";
     else if (this.cursors?.left.isDown || this.keys?.a.isDown) trickKey = "left";
     else if (this.cursors?.right.isDown || this.keys?.d.isDown) trickKey = "right";
 
-    if (this.touchSteerX < 0) trickKey = "left";
-    if (this.touchSteerX > 0) trickKey = "right";
+    // Touch trick buttons: Flip (up) / Tuck (down)
+    if (!trickKey && this.touchTrickKey) {
+      trickKey = this.touchTrickKey;
+      this.touchTrickKey = "";
+    }
+
+    // Touch steering: left/right spins
+    if (!trickKey && this.touchSteerX < 0) trickKey = "left";
+    if (!trickKey && this.touchSteerX > 0) trickKey = "right";
 
     if (trickKey && TRICKS[trickKey]) {
       const trick = TRICKS[trickKey];
@@ -407,12 +445,11 @@ export class RunScene extends Phaser.Scene {
       }
     }
 
-    // Reduced air steering (same priority: keyboard > tilt > touch)
+    // Reduced air steering (priority: keyboard > touch)
     const { width } = this.scale;
     let steerDir = 0;
     if (this.cursors?.left.isDown || this.keys?.a.isDown) steerDir = -1;
     else if (this.cursors?.right.isDown || this.keys?.d.isDown) steerDir = 1;
-    else if (this.tiltEnabled && Math.abs(this.tiltSteerX) > 0.08) steerDir = this.tiltSteerX;
     else if (this.touchSteerX !== 0) steerDir = this.touchSteerX;
     this.penguin.x += steerDir * this.steerSpeed * 0.5 * dt;
     const halfW = this.penguin.width / 2;
@@ -449,6 +486,7 @@ export class RunScene extends Phaser.Scene {
     this.trickScore = 0;
     this.currentTrickRotation = 0;
     this.targetTrickRotation = 0;
+    this.touchTrickKey = "";
   }
 
   private launch(duration?: number): void {
@@ -741,9 +779,6 @@ export class RunScene extends Phaser.Scene {
   }
 
   private restartGame(): void {
-    if (this.orientationHandler) {
-      window.removeEventListener("deviceorientation", this.orientationHandler);
-    }
     for (const obj of this.slopeObjects) {
       obj.sprite.destroy();
     }

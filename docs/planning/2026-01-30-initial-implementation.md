@@ -24,16 +24,19 @@
   - 4 difficulty zones by distance (easy/medium/hard/expert)
   - Spawn spacing enforcement, weighted spawn tables per zone
   - Speed cap at 500, slow/icy status effects with UI indicators
-- [x] PWA + mobile + tilt controls (pulled forward from Phase 6)
+- [x] PWA + mobile controls (pulled forward from Phase 6)
   - `vite-plugin-pwa` with inline manifest, auto-updating service worker, workbox precaching
   - Placeholder PWA icons (192x192, 512x512) in `public/assets/icons/`
   - Mobile meta tags: theme-color, apple-mobile-web-app-capable, viewport-fit=cover, no user scaling
   - Phaser config: `fullscreenTarget`, `activePointers: 2`
-  - Gyroscope tilt steering via `DeviceOrientationEvent.gamma`
-  - iOS permission request on first tap (`DeviceOrientationEvent.requestPermission`)
-  - Input priority: keyboard (discrete) > tilt (analog -1..+1) > touch (discrete)
-  - Dead zone of 0.08 (~2.4 degrees) to prevent jitter
-  - Orientation listener cleanup on scene restart
+  - Portrait orientation locked via PWA manifest + Screen Orientation API
+  - Input priority: keyboard > touch
+- [x] Controls overhaul: touch halves + trick buttons
+  - Removed tilt/gyroscope steering (DeviceOrientationEvent)
+  - Touch steering: left/right halves of screen (was thirds with dead center)
+  - On-screen FLIP and TUCK buttons for Backflip and Front Tuck tricks while airborne
+  - Left/Right Spin still triggered by touch steering while airborne
+  - Multi-touch: pointer-ID tracking so one finger steers while another taps trick buttons
 
 ### Current step
 
@@ -91,7 +94,7 @@ While airborne, directional inputs perform tricks:
 
 ## Phase 2: Refactor
 
-RunScene.ts is 720 lines and growing. Before adding more features, extract game logic into focused modules. This prevents the scene from becoming unmaintainable and makes each system testable.
+RunScene.ts is ~800 lines and growing. Before adding more features, extract game logic into focused modules. This prevents the scene from becoming unmaintainable and makes each system testable.
 
 ### File breakdown
 
@@ -340,7 +343,7 @@ Options for creating sprites:
 
 ## Phase 6: PWA (completed -- pulled forward)
 
-PWA, mobile optimization, and tilt controls were implemented early alongside Phase 1.
+PWA and mobile optimization were implemented early alongside Phase 1.
 
 ### What was done
 
@@ -350,13 +353,12 @@ PWA, mobile optimization, and tilt controls were implemented early alongside Pha
 - Mobile meta tags in `index.html`: theme-color, apple-mobile-web-app-capable, viewport-fit=cover, disabled user scaling
 - Phaser game config updated: `fullscreenTarget: "game-container"`, `activePointers: 2`
 - `vite-plugin-pwa/client` types added to `tsconfig.json`
-- Gyroscope tilt steering in `RunScene.ts`:
-  - `DeviceOrientationEvent.gamma` mapped to -1..+1 via 30-degree clamp
-  - iOS permission requested on first tap
-  - Non-iOS enabled immediately
-  - Dead zone of 0.08 prevents jitter
-  - Input priority: keyboard > tilt > touch
-  - Analog tilt gives fine-grained steering vs discrete keyboard/touch
+- Portrait orientation locked via PWA manifest (`orientation: "portrait"`) + Screen Orientation API
+- Touch controls: left/right half-screen steering + FLIP/TUCK trick buttons
+- Input priority: keyboard > touch
+
+> **Note:** Tilt/gyroscope steering was implemented initially but later removed in favor of
+> simpler touch controls with on-screen trick buttons.
 
 ### Remaining for later
 
@@ -428,10 +430,10 @@ Bundle into a native Android app. The appenguin showcase.
 | Scrolling | Top-down, penguin at top, obstacles scroll up | Classic downhill ski perspective |
 | Trick system | Directional inputs while airborne | Simple to learn, depth via combinations |
 | Difficulty | Distance-based zones | Gradual learning curve, gets hard after 1500m |
-| Refactor before features | Yes | 720-line scene is unmaintainable, extract before adding more |
-| PWA early | Yes | Installability and offline support are cheap to add now with vite-plugin-pwa; tilt controls need testing on real devices early |
-| Tilt input priority | keyboard > tilt > touch | Keyboard for desktop, tilt is analog (best mobile feel), touch as fallback |
-| Tilt dead zone | 0.08 (~2.4 degrees) | Prevents jitter from minor hand tremor when phone is level |
+| Refactor before features | Yes | ~800-line scene is unmaintainable, extract before adding more |
+| PWA early | Yes | Installability and offline support are cheap to add now with vite-plugin-pwa; touch controls need testing on real devices early |
+| Touch controls | Half-screen steering + trick buttons | Simpler than tilt, buttons enable all 4 tricks on mobile |
+| Orientation | Portrait locked | Screen Orientation API + PWA manifest |
 
 ---
 
@@ -447,4 +449,6 @@ Built phase 1b: added ice patches, crevasses, moguls, snowdrifts, fish clusters.
 
 Planned phases 2-7: refactor (extract modules from 720-line RunScene), game feel (particles, trails, near-miss, snowfall), menus + persistence (full game loop with high scores), art + audio (sprites, SFX, music), PWA (offline, installable), Capacitor (Android app with haptics).
 
-Pulled PWA forward: added vite-plugin-pwa with inline manifest, service worker, mobile meta tags. Also added gyroscope tilt steering -- DeviceOrientationEvent.gamma mapped to analog -1..+1 input with iOS permission handling and 0.08 dead zone. Input priority: keyboard > tilt > touch. This means the game is already installable to home screen and playable offline with tilt controls before any art polish.
+Pulled PWA forward: added vite-plugin-pwa with inline manifest, service worker, mobile meta tags. The game is installable to home screen and playable offline before any art polish.
+
+Controls overhaul: removed tilt/gyroscope steering in favor of simpler touch controls. Touch steering now uses left/right halves of the screen instead of thirds. Added on-screen FLIP and TUCK buttons at the bottom for performing Backflip and Front Tuck tricks while airborne. Multi-touch pointer-ID tracking lets one finger steer while another taps tricks. Portrait orientation locked via Screen Orientation API + PWA manifest. Input priority simplified to keyboard > touch.

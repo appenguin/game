@@ -6,15 +6,15 @@ Play at [icedrift.appenguin.com](https://icedrift.appenguin.com)
 
 ## How to play
 
-- **Steer** with arrow keys, A/D, touch screen sides, or **tilt your phone**
+- **Steer** with arrow keys, A/D, or touch left/right sides of the screen
 - Hit **ramps** to launch into the air
-- **Tap directions mid-air** to perform tricks (flips, spins) for bonus points
+- **Perform tricks mid-air** with keyboard directions or the **FLIP** and **TUCK** buttons
 - **Land cleanly** to keep your score, crash and lose your combo
 - Collect **fish** for points
 - Avoid **rocks**, **trees**, and **crevasses**
 - Speed increases over time -- survive as long as you can
 
-**Mobile:** Install to your home screen for fullscreen play. Tilt steering gives analog control -- slight tilt for gentle turns, big tilt for sharp ones.
+**Mobile:** Install to your home screen for fullscreen portrait play. Steer by touching left/right halves of the screen. Use the FLIP and TUCK buttons at the bottom to perform tricks while airborne.
 
 ## Development
 

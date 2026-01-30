@@ -23,17 +23,20 @@ No backend. All data stored locally (localStorage / Capacitor Storage).
 
 ```
 src/
-  main.ts         Entry point
-  core/           Pure game logic (scoring, collision, RNG, tricks)
+  main.ts             Entry point + orientation lock
   engine/
-    game.ts       Phaser config
-    scenes/       Phaser scenes (Boot, Run, Menu, Results)
-    entities/     Game objects (Penguin, Obstacle, Fish, Ramp)
-    systems/      Camera, Input, Particles
-  platform/       Platform adapters (web localStorage, Capacitor haptics/storage)
-public/           Static assets (sprites, audio, manifest)
-index.html        HTML entry point
-vite.config.ts
+    game.ts           Phaser config
+    scenes/
+      BootScene.ts    Minimal boot, launches Run
+      RunScene.ts     All gameplay (~800 lines, refactor planned)
+  core/               (planned) Pure game logic
+  platform/           (planned) Platform adapters (web vs Capacitor)
+public/               Static assets (icons, manifest)
+index.html            HTML entry point
+vite.config.ts        Vite + PWA config
+docs/
+  planning/           Implementation plans and progress
+  blog/               Dev blog posts
 ```
 
 ## General guidelines
@@ -48,10 +51,23 @@ vite.config.ts
 ## Constraints
 
 - Offline-first: PWA with service worker already precaches all assets (vite-plugin-pwa)
-- Touch and tilt-first controls, keyboard as secondary. Input priority: keyboard > tilt > touch
+- Touch-first controls with on-screen trick buttons, keyboard as secondary. Input priority: keyboard > touch. Portrait orientation locked.
 - Must run at stable FPS on mid-tier Android
 - No remote code loading (App Store requirement)
 - Bundle all assets inside the app for Capacitor builds
+
+## Controls
+
+**Ground steering:**
+- Keyboard: Arrow keys or A/D
+- Touch: left half of screen = steer left, right half = steer right
+
+**Air tricks:**
+- Keyboard: Up/W = Backflip, Down/S = Front Tuck, Left/A = Left Spin, Right/D = Right Spin
+- Touch: FLIP button (bottom-left) = Backflip, TUCK button (bottom-right) = Front Tuck
+- Touch steering while airborne triggers Left/Right Spin
+
+Input priority: keyboard > touch buttons > touch steering.
 
 ## Development
 
@@ -71,8 +87,8 @@ Push to `main` triggers automatic deployment via GitHub Actions.
 ## Documentation
 
 - `ice_drift_pwa_capacitor_game_spec_appenguin_2.md` - Original game spec (drift runner concept)
-- `docs/planning/2026-01-30-initial-implementation.md` - MVP planning and progress (includes PWA + tilt controls)
-- `docs/blog/2026-01-30-building-ice-drift.md` - Dev blog: project kickoff + PWA/tilt update
+- `docs/planning/2026-01-30-initial-implementation.md` - MVP planning and progress
+- `docs/blog/2026-01-30-building-ice-drift.md` - Dev blog: project kickoff + PWA/touch controls
 
 ## Git standards
 

@@ -2,7 +2,7 @@
 
 *January 30, 2026*
 
-We're building a game. You slide downhill on ice, hold to drift, release to straighten. Collect fish (finally, someone gets what matters), dodge rocks, chain combos. Simple to learn, hard to master, impossible to stop.
+We're building a game. A penguin slides downhill on ice, dodging rocks and trees, hitting ramps to launch into the air and pull off tricks. Collect fish, chain combos, survive as long as you can. Simple to learn, hard to master, impossible to stop.
 
 The game is called **Ice Drift**, and it will live at [icedrift.appenguin.com](https://icedrift.appenguin.com).
 
@@ -20,11 +20,11 @@ Three reasons, in order of honesty:
 
 We're keeping it loose. Five phases:
 
-1. **Playable prototype** -- core loop with placeholder art (colored shapes). Penguin slides, drifts, collects fish, hits rocks, game over. No menus, no persistence. Just the feel. Done.
+1. **Playable prototype** -- core loop with placeholder art (colored shapes). Penguin slides downhill, steers, hits ramps, does tricks, collects fish, hits rocks, game over. No menus, no persistence. Just the feel. Done.
 
-2. **PWA + mobile + tilt** -- pulled this forward. Service worker, manifest, offline play, gyroscope steering. Install it to your home screen and tilt to steer. Done.
+2. **PWA + mobile** -- pulled this forward. Service worker, manifest, offline play, touch controls with on-screen trick buttons. Install it to your home screen and play in portrait. Done.
 
-3. **Game feel polish** -- drift trails, screen shake, near-miss slow-mo, snowfall particles, basic sound effects. This is where it goes from "tech demo" to "game."
+3. **Game feel polish** -- ski trails, screen shake, near-miss slow-mo, snowfall particles, basic sound effects. This is where it goes from "tech demo" to "game."
 
 4. **Menus and persistence** -- main menu, results screen, settings, best score saved locally. Full game loop.
 
@@ -61,17 +61,17 @@ We pulled PWA support forward. The game is installable to your home screen and w
 
 - **Mobile meta tags** in index.html: theme-color, apple-mobile-web-app-capable, viewport-fit=cover, no user scaling. The game fills the screen edge to edge on mobile.
 
-- **Tilt steering.** This was the fun part. `DeviceOrientationEvent.gamma` gives you the left/right tilt angle of the phone. We clamp it to a comfortable range (-30 to +30 degrees), normalize to -1..+1, and feed it into the same steering code that handles keyboard and touch. The result is analog steering -- slight tilt for gentle turns, big tilt for sharp ones. It feels natural.
+- **Touch controls.** Left half of the screen steers left, right half steers right. Two on-screen buttons at the bottom -- FLIP and TUCK -- let you perform Backflip and Front Tuck tricks while airborne. Multi-touch means you can steer with one thumb and tap tricks with the other.
 
-  On iOS, you need to request permission for device orientation (thanks, Apple). We hook into the first tap to call `DeviceOrientationEvent.requestPermission()`. On Android and desktop, it just works.
+  We originally had tilt/gyroscope steering, which was fun but added friction (iOS permission prompts, inconsistent Android support, analog-vs-discrete UX gaps). The simpler touch scheme works everywhere and gives full access to all four tricks on mobile.
 
-  Input priority is keyboard > tilt > touch. If you're on a phone, tilt takes over automatically. A dead zone of about 2.4 degrees prevents jitter when the phone is nearly flat.
+  Portrait orientation is locked via the PWA manifest and the Screen Orientation API.
 
-Why do this early? Because an installable, offline-capable game with tilt controls is already a better demo for appenguin than a desktop-only web page. And honestly, tilting your phone to steer a penguin downhill is just fun.
+Why do this early? Because an installable, offline-capable game with solid touch controls is already a better demo for appenguin than a desktop-only web page.
 
 ## What's next
 
-Refactoring the 720-line RunScene into focused modules, then adding game feel: particles, ski trails, near-miss slow-mo, snowfall. After that, menus, persistence, real art, and the Capacitor wrap for Android.
+Refactoring the 800-line RunScene into focused modules, then adding game feel: particles, ski trails, near-miss slow-mo, snowfall. After that, menus, persistence, real art, and the Capacitor wrap for Android.
 
 We'll document the entire build as we go. Every decision, every dead end, every time we spend an hour tweaking how it feels to almost hit a rock.
 

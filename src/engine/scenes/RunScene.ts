@@ -3,6 +3,7 @@ import { type Trick, TRICKS, canQueueTrick } from "../../core/tricks";
 import { getBaseSpeed } from "../../core/difficulty";
 import { Input } from "../systems/Input";
 import { Spawner, type SlopeObject } from "../systems/Spawner";
+import { Effects } from "../systems/Effects";
 import { music } from "../systems/Music";
 
 /**
@@ -64,6 +65,7 @@ export class RunScene extends Phaser.Scene {
   // Systems
   private inputHandler!: Input;
   private spawner!: Spawner;
+  private effects!: Effects;
   private music = music;
 
   constructor() {
@@ -72,6 +74,15 @@ export class RunScene extends Phaser.Scene {
 
   preload(): void {
     this.load.image("penguin", "penguin.png");
+
+    // Generate snow particle texture
+    if (!this.textures.exists("snow-particle")) {
+      const g = this.add.graphics();
+      g.fillStyle(0x9ec5e8);
+      g.fillCircle(4, 4, 4);
+      g.generateTexture("snow-particle", 8, 8);
+      g.destroy();
+    }
   }
 
   create(): void {
@@ -96,7 +107,7 @@ export class RunScene extends Phaser.Scene {
     this.slipperyTimer = 0;
     this.slowTimer = 0;
 
-    this.cameras.main.setBackgroundColor("#f2f7ff");
+    this.cameras.main.setBackgroundColor("#f8fbff");
 
     // Penguin shadow
     this.penguinShadow = this.add.ellipse(
@@ -107,6 +118,7 @@ export class RunScene extends Phaser.Scene {
     // Penguin
     this.penguin = this.add.image(width / 2, height * 0.25, "penguin");
     this.penguin.setDepth(5);
+
 
     // UI — top bar
     const barH = 36;
@@ -199,10 +211,15 @@ export class RunScene extends Phaser.Scene {
     // Systems
     this.inputHandler = new Input(this);
     this.spawner = new Spawner(this);
+    this.effects = new Effects(this, this.penguin);
   }
 
   update(_time: number, delta: number): void {
-    if (this.gameOver) return;
+    if (this.gameOver) {
+      const dt = delta / 1000;
+      this.effects.update(dt, this.penguin.x, this.penguin.y, this.heading, 0, false);
+      return;
+    }
 
     const dt = delta / 1000;
     const { width, height } = this.scale;
@@ -267,6 +284,9 @@ export class RunScene extends Phaser.Scene {
     } else {
       this.handleAirTricks(dt);
     }
+
+    // --- Effects (snow spray + ski trail) ---
+    this.effects.update(dt, this.penguin.x, this.penguin.y, this.heading, this.scrollSpeed, this.isAirborne);
 
     // --- Camera follows penguin horizontally ---
     this.cameras.main.scrollX = this.penguin.x - width / 2;
@@ -524,6 +544,7 @@ export class RunScene extends Phaser.Scene {
 
   private restartGame(): void {
     this.music.onRestart();
+    this.effects.destroy();
     this.spawner.destroyAll();
     this.inputHandler.reset();
     this.scene.restart({ level: this.level });

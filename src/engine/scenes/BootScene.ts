@@ -21,7 +21,7 @@ export class BootScene extends Phaser.Scene {
     music.init();
     this.input.once("pointerdown", () => music.play());
 
-    this.cameras.main.setBackgroundColor("#f2f7ff");
+    this.cameras.main.setBackgroundColor("#f8fbff");
 
     // Title
     this.add

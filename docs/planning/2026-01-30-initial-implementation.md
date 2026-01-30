@@ -81,9 +81,16 @@
   - Music stops on game over, resets on restart
   - Key: E minor, base tempo 110 BPM (+1 per level)
 
+- [x] Snow spray and belly-slide trail (Phase 3 partial)
+  - `engine/systems/Effects.ts`: snow particle emitter + trail system
+  - Snow particles: blue-tinted, speed-scaled (more at higher speed), disabled when airborne/stopped
+  - Trail: single fading rectangles in world-space, scroll upward with obstacles
+  - Snow particle texture generated in RunScene.preload()
+  - Note: Phaser `setFrequency` and `particleAngle` assignment break emitters; using manual `emitParticle` instead
+
 ### Current step
 
-- [ ] Phase 3: Game feel
+- [ ] Phase 3: Game feel (remaining: screen effects, snowfall background)
 
 ### Next steps
 

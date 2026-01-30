@@ -51,6 +51,8 @@ export class RunScene extends Phaser.Scene {
 
   // UI
   private scoreText!: Phaser.GameObjects.Text;
+  private speedText!: Phaser.GameObjects.Text;
+  private distText!: Phaser.GameObjects.Text;
   private trickText!: Phaser.GameObjects.Text;
   private comboText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
@@ -98,14 +100,53 @@ export class RunScene extends Phaser.Scene {
     );
     this.penguin.setStrokeStyle(2, 0x1e6091);
 
-    // UI
+    // UI — top bar
+    const barH = 36;
+    const levelNames = ["EASY", "MED", "HARD"];
+    const textStyle: Phaser.Types.GameObjects.Text.TextStyle = {
+      fontSize: "13px",
+      color: "#ffffff",
+      fontFamily: "system-ui, sans-serif",
+      fontStyle: "bold",
+    };
+
+    this.add
+      .rectangle(width / 2, barH / 2, width, barH, 0x1a1a2e, 0.45)
+      .setDepth(10)
+      .setScrollFactor(0);
+
     this.scoreText = this.add
-      .text(16, 16, "0", {
-        fontSize: "20px",
-        color: "#1a1a2e",
+      .text(12, barH / 2, "0", textStyle)
+      .setOrigin(0, 0.5)
+      .setDepth(11)
+      .setScrollFactor(0);
+
+    this.distText = this.add
+      .text(width * 0.3, barH / 2, "0m", textStyle)
+      .setOrigin(0, 0.5)
+      .setDepth(11)
+      .setScrollFactor(0);
+
+    this.speedText = this.add
+      .text(width * 0.58, barH / 2, "0", textStyle)
+      .setOrigin(0, 0.5)
+      .setDepth(11)
+      .setScrollFactor(0);
+
+    this.add
+      .text(width - 12, barH / 2, levelNames[this.level] ?? "MED", textStyle)
+      .setOrigin(1, 0.5)
+      .setDepth(11)
+      .setScrollFactor(0);
+
+    this.comboText = this.add
+      .text(width / 2, barH + 8, "", {
+        fontSize: "16px",
+        color: "#7c3aed",
         fontFamily: "system-ui, sans-serif",
         fontStyle: "bold",
       })
+      .setOrigin(0.5, 0)
       .setDepth(10)
       .setScrollFactor(0);
 
@@ -120,18 +161,6 @@ export class RunScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(10)
       .setAlpha(0)
-      .setScrollFactor(0);
-
-    this.comboText = this.add
-      .text(width - 16, 16, "", {
-        fontSize: "18px",
-        color: "#7c3aed",
-        fontFamily: "system-ui, sans-serif",
-        fontStyle: "bold",
-        align: "right",
-      })
-      .setOrigin(1, 0)
-      .setDepth(10)
       .setScrollFactor(0);
 
     this.statusText = this.add
@@ -272,9 +301,9 @@ export class RunScene extends Phaser.Scene {
     }
 
     // --- UI ---
-    this.scoreText.setText(
-      `Dist: ${Math.floor(this.distanceTraveled / 10)}m\nScore: ${this.score}`,
-    );
+    this.scoreText.setText(`${this.score}`);
+    this.distText.setText(`${Math.floor(this.distanceTraveled / 10)}m`);
+    this.speedText.setText(`${Math.floor(this.scrollSpeed)}`);
     this.comboText.setText(this.combo > 1 ? `x${this.combo} combo` : "");
 
     if (this.slipperyTimer > 0) {

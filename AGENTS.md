@@ -30,8 +30,8 @@ src/
   engine/
     game.ts           Phaser config
     scenes/
-      BootScene.ts    Minimal boot, launches Run
-      RunScene.ts     Gameplay orchestrator (~430 lines)
+      BootScene.ts    Difficulty selection (Easy/Medium/Hard), launches Run
+      RunScene.ts     Gameplay orchestrator (~490 lines)
     systems/
       Input.ts        Keyboard + touch + steer/trick buttons
       Spawner.ts      Obstacle spawning + management
@@ -65,7 +65,7 @@ docs/
 
 **Ground steering (angle-based with momentum):**
 - Keyboard: Arrow keys or A/D rotate the penguin's heading angle
-- Touch: LEFT/RIGHT arrow buttons or tap/swipe relative to penguin position
+- Touch: LEFT/RIGHT arrow buttons or tap left/right half of screen
 - Heading has momentum: builds up while held, drifts back to center on release
 - Penguin sprite rotates to show heading; lateral movement follows the angle
 - Ice patches reduce turn rate and increase drift (sluggish + slippery)
@@ -82,6 +82,25 @@ docs/
 ```
 
 Input priority: keyboard > touch buttons > touch half-screen.
+
+## Camera and rendering
+
+- Penguin stays fixed at screen center; the world scrolls via Phaser's `camera.scrollX`
+- Obstacles spawn in world-space relative to the penguin's position
+- All UI (HUD, buttons, game over text) uses `setScrollFactor(0)` to stay screen-pinned
+- Top bar HUD: semi-transparent dark bar showing score, distance, speed, and difficulty level
+
+## Difficulty levels
+
+Three player-selected levels on the start screen:
+
+| Level | Start speed | Acceleration | Cap |
+|-------|------------|--------------|-----|
+| Easy | 150 | 0.02/dist | 350 |
+| Medium | 200 | 0.04/dist | 500 |
+| Hard | 280 | 0.07/dist | 600 |
+
+Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by level selection.
 
 ## Development
 

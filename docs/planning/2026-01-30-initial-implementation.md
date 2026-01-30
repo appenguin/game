@@ -46,7 +46,7 @@
   - Counter-steering (pressing opposite direction) gets 2x acceleration for snappy corrections
   - Max angle ±40°; ice patches reduce turn rate and increase drift
   - While airborne, heading is frozen; penguin drifts passively from launch angle
-  - Touch steering relative to penguin position (tap right of penguin = steer right)
+  - Touch steering uses screen center (penguin always centered); tap right of center = steer right
   - On-screen LEFT/RIGHT steer buttons for mobile, 4-button bottom row: `[<] [FLIP] [TUCK] [>]`
 - [x] Phase 2: Refactor RunScene into modules
   - Extracted `core/tricks.ts`: Trick interface, TRICKS constant, `calcTrickScore()`, `canQueueTrick()`
@@ -55,6 +55,19 @@
   - Extracted `engine/systems/Spawner.ts`: SlopeObject, all spawn helpers, collision checking, object lifecycle
   - RunScene slimmed from 814 to ~430 lines: thin orchestrator importing from modules
   - Build passes, gameplay behavior identical
+- [x] Centered camera: penguin always at screen center, world scrolls via `camera.scrollX`
+  - Obstacles spawn in world-space relative to penguin position
+  - Horizontal culling for off-screen objects
+  - All UI uses `setScrollFactor(0)` to stay pinned to screen
+  - Touch steering uses screen center (penguin is always centered)
+- [x] Difficulty selection screen (BootScene)
+  - Three levels: Easy, Medium, Hard with colored buttons
+  - Per-level speed profiles in `core/difficulty.ts` (start speed, acceleration, cap)
+  - Level passed to RunScene via scene data, preserved on restart
+- [x] Top bar HUD
+  - Semi-transparent dark bar at top of screen (36px, 0.45 alpha)
+  - Shows score, distance (meters), speed, and difficulty level name
+  - All elements pinned to screen with `setScrollFactor(0)`
 
 ### Current step
 
@@ -122,8 +135,8 @@ src/
     difficulty.ts      Difficulty zones, spawn weights, speed curve, pickObstacleType()
   engine/
     scenes/
-      BootScene.ts     (unchanged)
-      RunScene.ts      Orchestrator (~430 lines): penguin state, scoring, UI, delegates to systems
+      BootScene.ts     Difficulty selection (Easy/Medium/Hard), launches RunScene with level
+      RunScene.ts      Orchestrator (~490 lines): penguin state, camera, scoring, HUD, delegates to systems
     systems/
       Spawner.ts       SlopeObject interface, spawn helpers, collision check, object lifecycle
       Input.ts         Keyboard + touch + trick buttons, getSteerDir(), getTrickKey()
@@ -444,13 +457,16 @@ Bundle into a native Android app. The appenguin showcase.
 | Bundler | Vite | Fast dev, good TS support |
 | Art style (MVP) | Colored shapes | Ship fast, iterate on feel |
 | Game style | Ski or Die downhill + tricks | More depth than pure drift runner, iconic reference |
-| Scrolling | Top-down, penguin at top, obstacles scroll up | Classic downhill ski perspective |
+| Scrolling | Top-down, penguin at screen center, camera follows | Infinite horizontal freedom, classic downhill feel |
 | Trick system | Directional inputs while airborne | Simple to learn, depth via combinations |
 | Difficulty | Distance-based zones | Gradual learning curve, gets hard after 1500m |
 | Refactor before features | Yes, done | 814-line RunScene split into 4 modules: core/tricks, core/difficulty, systems/Input, systems/Spawner. RunScene now ~430 lines |
 | PWA early | Yes | Installability and offline support are cheap to add now with vite-plugin-pwa; touch controls need testing on real devices early |
 | Steering model | Angle-based with momentum | Ski or Die feel: carving turns, momentum, drift back to center |
 | Touch controls | 4-button row: `[<] [FLIP] [TUCK] [>]` + half-screen fallback | Explicit steer buttons for angle-based steering; trick buttons for air |
+| Camera | Centered on penguin, world scrolls | Infinite horizontal movement, no screen-edge clamping |
+| Difficulty levels | Easy/Medium/Hard speed profiles | Player choice at start; obstacle zones still distance-based |
+| HUD | Semi-transparent top bar | Score, distance, speed, level -- always visible, non-intrusive |
 | Orientation | Portrait locked | Screen Orientation API + PWA manifest |
 
 ---
@@ -480,3 +496,11 @@ Added on-screen LEFT/RIGHT steer buttons for mobile. All 4 buttons now sit in a 
 ### 2026-01-30: Phase 2 refactor
 
 Broke the 814-line RunScene into focused modules. Created `core/tricks.ts` (Trick type, constants, scoring helpers) and `core/difficulty.ts` (difficulty zones, speed curve, spawn weight tables) as pure logic with no Phaser dependency. Created `engine/systems/Input.ts` (keyboard, touch, trick buttons, input priority resolution) and `engine/systems/Spawner.ts` (SlopeObject, all spawn helpers, collision checking, object lifecycle) as Phaser-dependent systems. RunScene slimmed to ~430 lines as a thin orchestrator: owns penguin state, scoring, UI, and wires the systems together. Build passes, gameplay behavior identical.
+
+### 2026-01-30: Centered camera + difficulty selection + HUD
+
+Switched from clamping the penguin to screen edges to a camera-follows-penguin model. The penguin stays fixed at screen center; the world scrolls horizontally via Phaser's `camera.scrollX = penguin.x - width/2`. Obstacles now spawn in world-space coordinates relative to the penguin's position, and off-screen objects are culled horizontally. All UI (buttons, HUD, game over text) uses `setScrollFactor(0)` to stay pinned to the screen. Touch steering simplified since the penguin is always at screen center.
+
+Added a difficulty selection screen to BootScene: three buttons (Easy, Medium, Hard) with color-coded backgrounds. Each level maps to a speed profile in `core/difficulty.ts` controlling start speed, acceleration rate, and speed cap. The selected level is passed to RunScene via scene data and preserved on restart. Obstacle spawn difficulty (distance-based zones 0-3) remains independent of the player-selected level.
+
+Added a top bar HUD: a semi-transparent dark bar (36px tall, 0.45 alpha) at the top of the screen showing score, distance in meters, current speed, and the difficulty level name. All HUD elements are screen-pinned with `setScrollFactor(0)`. RunScene is now ~490 lines.

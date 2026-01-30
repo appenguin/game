@@ -61,7 +61,7 @@ We pulled PWA support forward. The game is installable to your home screen and w
 
 - **Mobile meta tags** in index.html: theme-color, apple-mobile-web-app-capable, viewport-fit=cover, no user scaling. The game fills the screen edge to edge on mobile.
 
-- **Touch controls.** Four buttons in a row at the bottom: **< FLIP TUCK >**. The arrow buttons steer (rotating the penguin's heading with momentum, Ski or Die-style), and FLIP/TUCK perform tricks while airborne. Tapping or swiping above the button row also steers -- relative to the penguin's position, so tapping right of the penguin steers right. Multi-touch means you can steer with one thumb and tap tricks with the other.
+- **Touch controls.** Four buttons in a row at the bottom: **< FLIP TUCK >**. The arrow buttons steer (rotating the penguin's heading with momentum, Ski or Die-style), and FLIP/TUCK perform tricks while airborne. Tapping above the button row also steers -- left half steers left, right half steers right. Multi-touch means you can steer with one thumb and tap tricks with the other.
 
   We originally had tilt/gyroscope steering, then half-screen touch zones. The current layout with explicit steer buttons matches the angle-based steering model -- you hold a direction to carve into a turn, and release to drift back straight.
 
@@ -69,9 +69,19 @@ We pulled PWA support forward. The game is installable to your home screen and w
 
 Why do this early? Because an installable, offline-capable game with solid touch controls is already a better demo for appenguin than a desktop-only web page.
 
+## Camera, difficulty, and HUD
+
+A few more things landed before we move to game feel polish:
+
+**Centered camera.** The penguin now stays fixed at screen center while the world scrolls around it via Phaser's `camera.scrollX`. This means no more clamping at screen edges -- the penguin can carve freely in any direction. Obstacles spawn in world-space relative to the penguin, and off-screen objects get culled. All UI is pinned to the screen with `setScrollFactor(0)`.
+
+**Difficulty selection.** BootScene now shows three buttons -- Easy, Medium, Hard -- each with a different speed profile (start speed, acceleration, cap). Easy tops out at 350, Hard can hit 600. The distance-based obstacle zones (which control spawn density and types) are independent of this choice.
+
+**Top bar HUD.** A semi-transparent dark bar at the top shows score, distance, speed, and difficulty level at a glance.
+
 ## What's next
 
-The 814-line RunScene has been refactored into focused modules: pure game logic in `core/` (tricks, difficulty), Phaser systems in `engine/systems/` (input handling, obstacle spawning). RunScene is now a ~430-line orchestrator. Next up is game feel: particles, ski trails, near-miss slow-mo, snowfall. After that, menus, persistence, real art, and the Capacitor wrap for Android.
+The codebase has been refactored into focused modules: pure game logic in `core/` (tricks, difficulty), Phaser systems in `engine/systems/` (input handling, obstacle spawning). RunScene is now a ~490-line orchestrator. Next up is game feel: particles, ski trails, near-miss slow-mo, snowfall. After that, menus, persistence, real art, and the Capacitor wrap for Android.
 
 We'll document the entire build as we go. Every decision, every dead end, every time we spend an hour tweaking how it feels to almost hit a rock.
 

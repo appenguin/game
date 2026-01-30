@@ -387,7 +387,7 @@ export class RunScene extends Phaser.Scene {
 
     // --- UI ---
     this.scoreText.setText(
-      `${Math.floor(this.distanceTraveled)}m  ${this.score}pts`,
+      `${Math.floor(this.distanceTraveled / 10)}m  ${this.score}pts`,
     );
     this.comboText.setText(this.combo > 1 ? `x${this.combo} combo` : "");
 
@@ -751,7 +751,7 @@ export class RunScene extends Phaser.Scene {
       .text(
         width / 2,
         height * 0.45,
-        `Score: ${this.score}\nDistance: ${Math.floor(this.distanceTraveled)}m`,
+        `Score: ${this.score}\nDistance: ${Math.floor(this.distanceTraveled / 10)}m`,
         {
           fontSize: "22px",
           color: "#374151",

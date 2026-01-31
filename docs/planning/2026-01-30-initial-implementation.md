@@ -90,8 +90,8 @@
 
 - [x] Event particle bursts and screen effects (Phase 3 continued)
   - 7 particle textures generated in RunScene.preload() (loop-based, single Graphics instance)
-  - 6 new burst emitters in Effects.ts (gold, red, yellow, gray, cyan, white) — all `emitting: false`, manual `emitParticle`
-  - Gold burst on clean trick landing, red burst on crash landing
+  - 6 new burst emitters in Effects.ts — all `emitting: false`, manual `emitParticle`
+  - Snow burst on landing (clean and crash), using same snow-particle texture as spray
   - Yellow sparkle on fish collected, gray burst on rock/crevasse death
   - White puff on snowdrift contact, cyan sparkle trail while on ice patch
   - Camera bump (scrollY tween, 80ms yoyo) on every landing
@@ -101,9 +101,24 @@
   - Cut: snowfall background (tested particles and world-space circles, neither looked right)
   - Cut: speed lines, combo border glow (deferred to later)
 
+- [x] Game feel polish (Phase 3 continued)
+  - Ice steering: reduced to 8% turn acceleration and 15% max turn speed (sluggish, not locked)
+  - Three-tier landing system: clean / sloppy (no points) / crash (combo reset)
+  - Trick rotation: constant-speed (0.8s per trick) instead of lerp
+  - Spin scoring: 100 points per half rotation (doubled from 50)
+  - Landing particles: snow texture (consistent with spray), not gold/red
+
+- [x] Doom-style menu system (Phase 4 partial)
+  - Unified menu with arrow key (Up/Down/W/S) navigation + Enter to select
+  - Cursor highlight with ▶ prefix, wraps top/bottom
+  - ESC pauses game, shows pause menu (Resume, New Game, Quit)
+  - Game over screen uses same menu (Retry, Quit) after death animation
+  - Boot scene: keyboard-navigable difficulty selection, defaults to Medium
+  - All menus also support touch/click and pointer hover
+
 ### Current step
 
-- [ ] Phase 4: Menus and persistence
+- [ ] Phase 4: Persistence (high scores, settings)
 
 ### Next steps
 - [ ] Phase 4: Menus and persistence
@@ -555,3 +570,15 @@ Added event particle bursts for all collision and landing events. Seven particle
 Gold burst on clean trick landing, red burst + penguin bounce on crash landing. Yellow sparkle when collecting fish. Gray burst on rock/crevasse death. White puff on snowdrift contact. Cyan sparkle trail while sliding on ice (toggles on/off with slipperyTimer). Camera bump (scrollY tween, 80ms yoyo) fires on every landing.
 
 Tried and cut: near-miss slow-mo (distance-based detection triggered unreliably — too sensitive or too rare depending on threshold, and the slow-mo felt disruptive). Tried and cut: snowfall background (tested Phaser particle emitter with screen-fixed scrollFactor, then world-space circle objects scrolling at camera speed — neither produced convincing falling snow against the scrolling world). Speed lines and combo border glow deferred to later.
+
+### 2026-01-31: Game feel tuning + Doom-style menus
+
+**Ice steering rework:** Ice patches no longer disable steering entirely. Instead, turn acceleration is reduced to 8% and max turn speed to 15%, with low drag and slow centering. The penguin feels sluggish and drifty on ice rather than frozen.
+
+**Landing system:** Three tiers instead of binary pass/fail. Clean landing (< 0.5 rad off) gets full points with combo multiplier. Sloppy landing (0.5–1.2 rad) scores nothing but doesn't reset combo. Crash (> 1.2 rad) scores nothing and resets combo.
+
+**Trick timing:** Replaced lerp-based trick rotation with constant-speed rotation. Each trick (backflip/tuck) takes exactly 0.8s. If it hasn't finished by landing, you crash. Spin points doubled to 100 per half rotation.
+
+**Landing particles:** Switched from gold/red particles to snow-particle texture (same as spray), so landings look consistent with the ground effects.
+
+**Doom-style menu system:** All menus (boot screen, pause, game over) now use unified keyboard-navigable menus. Arrow keys or W/S move a ▶ cursor, Enter selects, ESC toggles pause or acts as back. Menus wrap around. Touch/click/hover also supported. Boot screen defaults to Medium difficulty. Game over menu appears after a 600ms death animation delay.

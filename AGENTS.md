@@ -32,10 +32,10 @@ src/
   engine/
     game.ts           Phaser config
     scenes/
-      BootScene.ts    Difficulty selection, music toggle, launches Run
-      RunScene.ts     Gameplay orchestrator (~620 lines)
+      BootScene.ts    Difficulty selection menu, music toggle, launches Run
+      RunScene.ts     Gameplay orchestrator, pause/game-over menus
     systems/
-      Input.ts        Keyboard + touch + steer/trick buttons
+      Input.ts        Keyboard + touch + steer/trick buttons + ESC pause
       Spawner.ts      Obstacle spawning + management
       Music.ts        Strudel lifecycle, score-driven layer progression
       Effects.ts      Snow spray, ski trail, event particle bursts, ice sparkle
@@ -68,40 +68,19 @@ docs/
 
 ## Controls
 
-**Ground steering (angle-based with momentum):**
-- Keyboard: Arrow keys or A/D rotate the penguin's heading angle
-- Touch: LEFT/RIGHT arrow buttons or tap left/right half of screen
-- Heading has momentum: builds up while held, drifts back to center on release
-- Penguin sprite rotates to show heading; lateral movement follows the angle
-- Ice patches reduce turn rate and increase drift (sluggish + slippery)
-
-**Air tricks (up/down) and spin (left/right):**
-- Keyboard: Up/W = Backflip, Down/S = Front Tuck (queued tricks, scored)
-- Keyboard: Left/A and Right/D = continuous spin (visual, not scored)
-- Touch: FLIP button = Backflip, TUCK button = Front Tuck
-- Touch: LEFT/RIGHT buttons add continuous spin while airborne
-- Heading rotation is preserved in air; tricks and spin layer on top
-- Penguin drifts passively from launch angle
-
-**Mobile button layout (single row at bottom):**
-```
-[<] [FLIP] [TUCK] [>]
-```
-
-Input priority: keyboard > touch buttons > touch half-screen.
+- **Steering:** Arrow keys or A/D (keyboard), LEFT/RIGHT buttons or tap screen halves (touch). Angle-based with momentum; ice patches reduce turn rate and increase drift.
+- **Air tricks:** Up/W = Backflip, Down/S = Front Tuck. Each takes 0.8s. Spin with Left/Right while airborne.
+- **Landing:** Clean = full points with combo; sloppy = no points; crash = no points + combo reset.
+- **Menus:** Arrow keys + Enter navigate all menus (Doom-style). ESC pauses/resumes. Touch also works.
+- **Mobile layout:** `[<] [FLIP] [TUCK] [>]` single row at bottom.
 
 ## Camera and rendering
 
-- Penguin uses a sprite image (`public/penguin.png`), loaded in RunScene preload
-- Background color is `#f8fbff` (near-white with subtle blue tint, icy snow)
-- Snow spray particles behind penguin (speed-scaled, blue-tinted, disabled when airborne)
-- Belly-slide trail: fading rectangles in world-space that scroll with obstacles
-- Event particle bursts: gold (trick landing), red (crash), yellow (fish), gray (death), white (snowdrift), cyan (ice sparkle)
-- Camera bump on every landing; penguin bounce on crash landing
-- Penguin stays fixed at screen center; the world scrolls via Phaser's `camera.scrollX`
-- Obstacles spawn in world-space relative to the penguin's position
-- All UI (HUD, buttons, game over text) uses `setScrollFactor(0)` to stay screen-pinned
-- Top bar HUD: semi-transparent dark bar showing score, distance (m/km), speed (km/h), and difficulty level
+- Penguin sprite at screen center; world scrolls via `camera.scrollX`
+- Obstacles spawn in world-space, scroll upward past the penguin
+- Snow spray particles + belly-slide trail behind penguin on ground
+- Event particle bursts on collisions and landings; camera bump on landing
+- UI pinned to screen with `setScrollFactor(0)`: HUD bar, buttons, menus
 
 ## Difficulty levels
 
@@ -148,6 +127,7 @@ Push to `main` triggers automatic deployment via GitHub Actions.
 - `ice_drift_pwa_capacitor_game_spec_appenguin_2.md` - Original game spec (drift runner concept)
 - `docs/planning/2026-01-30-initial-implementation.md` - MVP planning and progress
 - `docs/blog/2026-01-30-building-ice-drift.md` - Dev blog: project kickoff + PWA/touch controls
+- `docs/phaser-reference.md` - Local Phaser 3 API reference (game objects, scenes, input, particles, etc.)
 
 ## Git standards
 

@@ -2,12 +2,16 @@ import Phaser from "phaser";
 import { music } from "../systems/Music";
 
 const LEVELS = [
-  { label: "EASY", color: 0x22c55e, stroke: 0x16a34a },
-  { label: "MEDIUM", color: 0x3b82f6, stroke: 0x2563eb },
-  { label: "HARD", color: 0xef4444, stroke: 0xdc2626 },
+  { label: "EASY", color: "#22c55e" },
+  { label: "MEDIUM", color: "#3b82f6" },
+  { label: "HARD", color: "#ef4444" },
 ];
 
 export class BootScene extends Phaser.Scene {
+  private cursor = 0;
+  private menuTexts: Phaser.GameObjects.Text[] = [];
+  private musicText!: Phaser.GameObjects.Text;
+
   constructor() {
     super("Boot");
   }
@@ -15,9 +19,6 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
-    // Init Strudel (sets up AudioContext unlock on first click).
-    // play() is called on first tap — if init hasn't finished yet the
-    // request is queued and fulfilled once Strudel is ready.
     music.init();
     this.input.once("pointerdown", () => music.play());
 
@@ -41,37 +42,61 @@ export class BootScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Difficulty buttons
-    const btnW = 200;
-    const btnH = 56;
+    // Difficulty menu items
     const startY = height * 0.42;
-    const gap = 20;
+    const gap = 52;
+    this.menuTexts = [];
+    this.cursor = 1; // default to Medium
 
     for (let i = 0; i < LEVELS.length; i++) {
-      const { label, color, stroke } = LEVELS[i];
-      const y = startY + i * (btnH + gap);
-
-      const bg = this.add.rectangle(width / 2, y, btnW, btnH, color, 0.35);
-      bg.setStrokeStyle(2, stroke);
-      bg.setInteractive({ useHandCursor: true });
-
-      this.add
-        .text(width / 2, y, label, {
-          fontSize: "20px",
-          color: "#ffffff",
+      const txt = this.add
+        .text(width / 2, startY + i * gap, LEVELS[i].label, {
+          fontSize: "24px",
+          color: "#9ca3af",
           fontFamily: "system-ui, sans-serif",
           fontStyle: "bold",
         })
         .setOrigin(0.5);
+      txt.setInteractive({ useHandCursor: true });
+      txt.on("pointerdown", () => {
+        this.cursor = i;
+        this.selectLevel();
+      });
+      txt.on("pointerover", () => {
+        this.cursor = i;
+        this.updateHighlight();
+      });
+      this.menuTexts.push(txt);
+    }
 
-      bg.on("pointerdown", () => {
-        this.scene.start("Run", { level: i });
+    this.updateHighlight();
+
+    // Keyboard
+    if (this.input.keyboard) {
+      this.input.keyboard.on("keydown-UP", () => {
+        this.cursor = (this.cursor - 1 + LEVELS.length) % LEVELS.length;
+        this.updateHighlight();
+      });
+      this.input.keyboard.on("keydown-W", () => {
+        this.cursor = (this.cursor - 1 + LEVELS.length) % LEVELS.length;
+        this.updateHighlight();
+      });
+      this.input.keyboard.on("keydown-DOWN", () => {
+        this.cursor = (this.cursor + 1) % LEVELS.length;
+        this.updateHighlight();
+      });
+      this.input.keyboard.on("keydown-S", () => {
+        this.cursor = (this.cursor + 1) % LEVELS.length;
+        this.updateHighlight();
+      });
+      this.input.keyboard.on("keydown-ENTER", () => {
+        this.selectLevel();
       });
     }
 
     // Music toggle
     const musicLabel = () => music.muted ? "Music: OFF" : "Music: ON";
-    const musicText = this.add
+    this.musicText = this.add
       .text(width / 2, height * 0.85, musicLabel(), {
         fontSize: "16px",
         color: "#64748b",
@@ -80,9 +105,25 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
 
-    musicText.on("pointerdown", () => {
+    this.musicText.on("pointerdown", () => {
       music.toggleMute();
-      musicText.setText(musicLabel());
+      this.musicText.setText(musicLabel());
     });
+  }
+
+  private updateHighlight(): void {
+    for (let i = 0; i < this.menuTexts.length; i++) {
+      if (i === this.cursor) {
+        this.menuTexts[i].setColor(LEVELS[i].color);
+        this.menuTexts[i].setText("\u25B6 " + LEVELS[i].label);
+      } else {
+        this.menuTexts[i].setColor("#9ca3af");
+        this.menuTexts[i].setText("  " + LEVELS[i].label);
+      }
+    }
+  }
+
+  private selectLevel(): void {
+    this.scene.start("Run", { level: this.cursor });
   }
 }

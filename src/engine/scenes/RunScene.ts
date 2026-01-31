@@ -52,6 +52,8 @@ export class RunScene extends Phaser.Scene {
   private trickScore = 0;
   private combo = 0;
   private gameOver = false;
+  private paused = false;
+  private pauseOverlay: Phaser.GameObjects.Container | null = null;
 
   // UI
   private scoreText!: Phaser.GameObjects.Text;
@@ -118,6 +120,8 @@ export class RunScene extends Phaser.Scene {
     this.headingVelocity = 0;
     this.slipperyTimer = 0;
     this.slowTimer = 0;
+    this.paused = false;
+    this.pauseOverlay = null;
     this.cameras.main.setBackgroundColor("#f8fbff");
 
     // Penguin shadow
@@ -223,9 +227,11 @@ export class RunScene extends Phaser.Scene {
     this.inputHandler = new Input(this);
     this.spawner = new Spawner(this);
     this.effects = new Effects(this, this.penguin);
+    this.inputHandler.setPauseHandler(() => this.togglePause());
   }
 
   update(_time: number, delta: number): void {
+    if (this.paused) return;
     if (this.gameOver) {
       const dt = delta / 1000;
       this.effects.update(dt, this.penguin.x, this.penguin.y, this.heading, 0, false);
@@ -257,18 +263,22 @@ export class RunScene extends Phaser.Scene {
     // --- Steering (angle-based with momentum) ---
     if (!this.isAirborne) {
       const icy = this.slipperyTimer > 0;
-      const steerDir = icy ? 0 : this.inputHandler.getSteerDir();
+      const steerDir = this.inputHandler.getSteerDir();
 
       if (steerDir !== 0) {
         // Counter-steering (pressing opposite to current heading) gets a boost
         const counterSteer = (steerDir > 0 && this.heading < -0.05) ||
           (steerDir < 0 && this.heading > 0.05);
-        const effectiveAccel = counterSteer ? this.turnAccel * 2.0 : this.turnAccel;
+        const baseAccel = counterSteer ? this.turnAccel * 2.0 : this.turnAccel;
+        // Ice: 8% turn acceleration — barely any steering
+        const effectiveAccel = icy ? baseAccel * 0.08 : baseAccel;
         this.headingVelocity += steerDir * effectiveAccel * dt;
+        const maxTurn = icy ? this.maxTurnSpeed * 0.15 : this.maxTurnSpeed;
         this.headingVelocity = Phaser.Math.Clamp(
-          this.headingVelocity, -this.maxTurnSpeed, this.maxTurnSpeed,
+          this.headingVelocity, -maxTurn, maxTurn,
         );
       } else {
+        // Ice: very low drag — heading velocity persists (drifty)
         const drag = icy ? this.headingDrag * 0.2 : this.headingDrag;
         this.headingVelocity *= 1 - drag * dt;
         if (Math.abs(this.headingVelocity) < 0.05) this.headingVelocity = 0;
@@ -277,6 +287,7 @@ export class RunScene extends Phaser.Scene {
       this.heading += this.headingVelocity * dt;
 
       // Return heading toward straight downhill when not steering
+      // Ice: very slow centering — penguin keeps sliding at an angle
       if (steerDir === 0) {
         const center = icy ? this.headingCenter * 0.2 : this.headingCenter;
         this.heading *= 1 - center * dt;
@@ -332,13 +343,16 @@ export class RunScene extends Phaser.Scene {
       this.penguinShadow.setScale(1 - arc * 0.3);
       this.penguinShadow.setAlpha(0.2 * (1 - arc * 0.5));
 
-      if (Math.abs(this.targetTrickRotation - this.currentTrickRotation) > 0.05) {
-        const rotSpeed = 8;
-        this.currentTrickRotation = Phaser.Math.Linear(
-          this.currentTrickRotation,
-          this.targetTrickRotation,
-          rotSpeed * dt,
-        );
+      const rotRemaining = this.targetTrickRotation - this.currentTrickRotation;
+      if (Math.abs(rotRemaining) > 0.01) {
+        // Constant speed: full 2π rotation takes 0.8s
+        const rotSpeed = (Math.PI * 2) / 0.8;
+        const step = Math.sign(rotRemaining) * rotSpeed * dt;
+        if (Math.abs(step) >= Math.abs(rotRemaining)) {
+          this.currentTrickRotation = this.targetTrickRotation;
+        } else {
+          this.currentTrickRotation += step;
+        }
       }
       this.penguin.setRotation(-this.heading + this.currentTrickRotation + this.spinRotation);
 
@@ -413,22 +427,26 @@ export class RunScene extends Phaser.Scene {
     this.penguinAirHeight = 0;
 
     const rotDiff = Math.abs(this.currentTrickRotation - this.targetTrickRotation);
-    const landed = rotDiff < 0.5;
 
     // Award spin points (50 per half rotation)
     const spinHalves = Math.floor(Math.abs(this.spinRotation) / Math.PI);
-    const spinPoints = spinHalves * 50;
+    const spinPoints = spinHalves * 100;
     this.trickScore += spinPoints;
 
     if (this.trickQueue.length > 0 || spinPoints > 0) {
-      if (landed) {
+      if (rotDiff < 0.5) {
+        // Clean landing
         const comboMultiplier = Math.max(1, this.combo);
         const points = this.trickScore * comboMultiplier;
         this.score += points;
         this.combo++;
         this.effects.burstTrickLanding(this.penguin.x, this.penguin.y);
         this.showStatusText(`+${points}`, "#10b981");
+      } else if (rotDiff < 1.2) {
+        // Sloppy landing — no points, but don't reset combo
+        this.showStatusText("SLOPPY!", "#f59e0b");
       } else {
+        // Crash — too far off
         this.combo = 0;
         this.effects.burstCrashLanding(this.penguin.x, this.penguin.y);
         this.penguinBounce();
@@ -522,54 +540,187 @@ export class RunScene extends Phaser.Scene {
       ease: "Cubic.easeOut",
     });
 
-    const { width, height } = this.scale;
-    this.add
-      .text(width / 2, height * 0.35, "GAME OVER", {
-        fontSize: "36px",
-        color: "#1a1a2e",
-        fontFamily: "system-ui, sans-serif",
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5)
-      .setDepth(10)
-      .setScrollFactor(0);
+    const dist = Math.floor(this.distanceTraveled / 18);
+    const distStr = dist >= 1000 ? (dist / 1000).toFixed(1) + " km" : dist + " m";
+    const stats = `Score: ${this.score}  |  ${distStr}`;
 
-    this.add
-      .text(
-        width / 2,
-        height * 0.45,
-        `Score: ${this.score}\nDistance: ${Math.floor(this.distanceTraveled / 18) >= 1000 ? (Math.floor(this.distanceTraveled / 18) / 1000).toFixed(1) + " km" : Math.floor(this.distanceTraveled / 18) + " m"}\nDifficulty: ${["Easy", "Medium", "Hard"][this.level] ?? "Medium"}`,
-        {
-          fontSize: "22px",
-          color: "#374151",
-          fontFamily: "system-ui, sans-serif",
-          align: "center",
-        },
-      )
-      .setOrigin(0.5)
-      .setDepth(10)
-      .setScrollFactor(0);
-
-    this.add
-      .text(width / 2, height * 0.58, "Tap or press R to restart", {
-        fontSize: "16px",
-        color: "#6b7280",
-        fontFamily: "system-ui, sans-serif",
-      })
-      .setOrigin(0.5)
-      .setDepth(10)
-      .setScrollFactor(0);
-
-    this.inputHandler.bindRestart(() => this.restartGame());
-    this.inputHandler.setGameOverTapHandler(() => this.restartGame());
+    // Short delay so death animation plays before menu appears
+    this.time.delayedCall(600, () => {
+      this.showMenu(`GAME OVER\n\n${stats}`, [
+        { label: "RETRY", action: () => this.restartGame() },
+        { label: "QUIT", action: () => {
+          this.hidePauseMenu();
+          this.music.onRestart();
+          this.effects.destroy();
+          this.spawner.destroyAll();
+          this.inputHandler.reset();
+          this.scene.start("Boot");
+        }},
+      ]);
+    });
   }
 
   private restartGame(): void {
+    this.hidePauseMenu();
     this.music.onRestart();
     this.effects.destroy();
     this.spawner.destroyAll();
     this.inputHandler.reset();
     this.scene.restart({ level: this.level });
+  }
+
+  private togglePause(): void {
+    if (this.gameOver) {
+      if (this.menuOnBack) this.menuOnBack();
+      return;
+    }
+    if (this.paused) {
+      this.hidePauseMenu();
+      this.paused = false;
+    } else {
+      this.paused = true;
+      this.showPauseMenu();
+    }
+  }
+
+  private showPauseMenu(): void {
+    this.showMenu("PAUSED", [
+      { label: "RESUME", action: () => this.togglePause() },
+      { label: "NEW GAME", action: () => this.restartGame() },
+      {
+        label: "QUIT", action: () => {
+          this.hidePauseMenu();
+          this.music.onRestart();
+          this.effects.destroy();
+          this.spawner.destroyAll();
+          this.inputHandler.reset();
+          this.scene.start("Boot");
+        },
+      },
+    ], () => this.togglePause());
+  }
+
+  private menuCursor = 0;
+  private menuItems: { label: string; action: () => void }[] = [];
+  private menuTexts: Phaser.GameObjects.Text[] = [];
+  private menuKeys: Phaser.Input.Keyboard.Key[] = [];
+  private menuOnBack: (() => void) | null = null;
+
+  private showMenu(
+    title: string,
+    items: { label: string; action: () => void }[],
+    onBack?: () => void,
+  ): void {
+    const { width, height } = this.scale;
+    this.menuCursor = 0;
+    this.menuItems = items;
+    this.menuTexts = [];
+    this.menuOnBack = onBack ?? null;
+
+    const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6);
+
+    const titleText = this.add
+      .text(width / 2, height * 0.28, title, {
+        fontSize: "36px",
+        color: "#ffffff",
+        fontFamily: "system-ui, sans-serif",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+
+    const children: Phaser.GameObjects.GameObject[] = [bg, titleText];
+    const startY = height * 0.42;
+    const gap = 52;
+
+    for (let i = 0; i < items.length; i++) {
+      const txt = this.add
+        .text(width / 2, startY + i * gap, items[i].label, {
+          fontSize: "22px",
+          color: "#9ca3af",
+          fontFamily: "system-ui, sans-serif",
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5);
+      txt.setInteractive({ useHandCursor: true });
+      txt.on("pointerdown", () => {
+        this.menuCursor = i;
+        this.updateMenuHighlight();
+        items[i].action();
+      });
+      txt.on("pointerover", () => {
+        this.menuCursor = i;
+        this.updateMenuHighlight();
+      });
+      this.menuTexts.push(txt);
+      children.push(txt);
+    }
+
+    this.updateMenuHighlight();
+
+    this.pauseOverlay = this.add.container(0, 0, children);
+    this.pauseOverlay.setDepth(50).setScrollFactor(0);
+
+    // Keyboard navigation
+    if (this.input.keyboard) {
+      const upKey = this.input.keyboard.addKey("UP");
+      const downKey = this.input.keyboard.addKey("DOWN");
+      const enterKey = this.input.keyboard.addKey("ENTER");
+      const wKey = this.input.keyboard.addKey("W");
+      const sKey = this.input.keyboard.addKey("S");
+
+      upKey.on("down", this.menuUp, this);
+      wKey.on("down", this.menuUp, this);
+      downKey.on("down", this.menuDown, this);
+      sKey.on("down", this.menuDown, this);
+      enterKey.on("down", this.menuSelect, this);
+
+      this.menuKeys = [upKey, downKey, enterKey, wKey, sKey];
+    }
+  }
+
+  private menuUp(): void {
+    this.menuCursor = (this.menuCursor - 1 + this.menuItems.length) % this.menuItems.length;
+    this.updateMenuHighlight();
+  }
+
+  private menuDown(): void {
+    this.menuCursor = (this.menuCursor + 1) % this.menuItems.length;
+    this.updateMenuHighlight();
+  }
+
+  private menuSelect(): void {
+    if (this.menuItems[this.menuCursor]) {
+      this.menuItems[this.menuCursor].action();
+    }
+  }
+
+  private updateMenuHighlight(): void {
+    for (let i = 0; i < this.menuTexts.length; i++) {
+      if (i === this.menuCursor) {
+        this.menuTexts[i].setColor("#ffffff");
+        this.menuTexts[i].setText("\u25B6 " + this.menuItems[i].label);
+      } else {
+        this.menuTexts[i].setColor("#9ca3af");
+        this.menuTexts[i].setText("  " + this.menuItems[i].label);
+      }
+    }
+  }
+
+  private hidePauseMenu(): void {
+    // Clean up keyboard bindings
+    for (const key of this.menuKeys) {
+      key.removeAllListeners();
+      this.input.keyboard?.removeKey(key);
+    }
+    this.menuKeys = [];
+    this.menuTexts = [];
+    this.menuItems = [];
+    this.menuOnBack = null;
+
+    if (this.pauseOverlay) {
+      this.pauseOverlay.destroy();
+      this.pauseOverlay = null;
+    }
   }
 
   private cameraBump(): void {

@@ -50,22 +50,22 @@ export class Effects {
     });
     this.snowEmitter.setDepth(3);
 
-    // --- Gold burst (trick landing) ---
-    this.goldEmitter = scene.add.particles(0, 0, "gold-particle", {
+    // --- Landing burst (snow, same as spray) ---
+    this.goldEmitter = scene.add.particles(0, 0, "snow-particle", {
       speed: { min: 60, max: 140 },
       scale: { start: 1.4, end: 0.2 },
-      alpha: { start: 1, end: 0 },
+      alpha: { start: 0.9, end: 0 },
       lifespan: { min: 400, max: 700 },
       emitting: false,
-      angle: { min: 220, max: 320 },
+      angle: { min: 200, max: 340 },
     });
     this.goldEmitter.setDepth(6);
 
-    // --- Red burst (crash landing) ---
-    this.redEmitter = scene.add.particles(0, 0, "red-particle", {
+    // --- Crash landing burst (snow) ---
+    this.redEmitter = scene.add.particles(0, 0, "snow-particle", {
       speed: { min: 50, max: 120 },
       scale: { start: 1.3, end: 0.2 },
-      alpha: { start: 1, end: 0 },
+      alpha: { start: 0.9, end: 0 },
       lifespan: { min: 300, max: 600 },
       emitting: false,
       angle: { min: 0, max: 360 },

@@ -62,7 +62,7 @@ export function getMusicLevel(score: number): number {
 // ---------------------------------------------------------------------------
 
 export function getDeathPattern(): any {
-  const { note } = g();
+  const { n } = g();
 
   return note("e2").fast(32)
     .sound("sawtooth")

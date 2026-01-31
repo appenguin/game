@@ -106,8 +106,8 @@ Technical detail: Strudel is installed via npm and bundled by Vite. Drum sounds 
 
 Phase 3 is done. Every collision and landing now has visual feedback through particle bursts:
 
-- **Gold burst** when you nail a clean trick landing
-- **Red burst + penguin bounce** when you crash
+- **Snow burst** when you land from a jump (same blue-tinted particles as the spray)
+- **Penguin bounce** when you crash a landing
 - **Yellow sparkle** when collecting fish
 - **Gray burst** on death (rock or crevasse)
 - **White puff** when hitting a snowdrift
@@ -119,9 +119,27 @@ All seven particle textures are generated procedurally in `preload()` -- no imag
 
 We tried and cut two features: **near-miss slow-mo** (distance-based rock detection triggered too erratically -- either too sensitive or too rare) and **snowfall background** (tested both screen-fixed particles and world-space circles scrolling at camera speed, neither looked convincing against the scrolling world). Sometimes cutting is the right call.
 
+## Tuning the feel
+
+A few things felt wrong after playtesting:
+
+**Ice patches** originally disabled steering completely. That felt like a bug, not a game mechanic. Now ice reduces turn acceleration to 8% and max turn speed to 15% -- you *can* steer, but barely. The low drag means you keep sliding at whatever angle you entered. Much more "slippery", less "broken controller."
+
+**Landings** were binary: clean or crash. Now there's a middle tier. Clean landing (rotation close to target) gets full points with combo. Sloppy landing (almost there) scores nothing but doesn't break your combo. Full crash resets combo entirely. This gives the player something to feel -- "I almost had it" instead of "I failed for no reason."
+
+**Trick speed** used a lerp that asymptotically approached the target, making timing feel mushy. Replaced it with constant-speed rotation: each trick takes exactly 0.8 seconds. You know the timing, you can plan around it.
+
+**Spin scoring** was 50 points per half-rotation, barely worth the risk. Doubled it to 100. Now spinning is a real scoring strategy, not just for show.
+
+## Doom menus
+
+Every menu in the game now works the same way: arrow keys move a cursor, Enter selects, ESC goes back. The boot screen, pause menu, and game over screen all share the same pattern. It's the Doom approach -- simple, consistent, works with keyboard and touch. The cursor wraps around, highlighted items get a ▶ prefix.
+
+ESC pauses the game mid-run and shows Resume / New Game / Quit. ESC again resumes. After death, the game over menu offers Retry and Quit.
+
 ## What's next
 
-The codebase is now ~620 lines in RunScene, with game logic in `core/` (tricks, difficulty, music) and Phaser systems in `engine/systems/` (input, spawning, effects, music playback). Next up is menus and persistence: a proper game loop with a start screen, results breakdown, high score tracking. After that, real sprite art, sound effects, and the Capacitor wrap for Android.
+Game logic in `core/` (tricks, difficulty, music), Phaser systems in `engine/systems/` (input, spawning, effects, music). Next: persistence (high scores, settings), real sprite art, sound effects, and the Capacitor wrap for Android.
 
 We'll document the entire build as we go. Every decision, every dead end, every time we spend an hour tweaking how it feels to almost hit a rock.
 

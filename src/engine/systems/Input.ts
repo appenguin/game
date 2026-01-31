@@ -33,6 +33,7 @@ export class Input {
 
   // Callbacks
   private onGameOverTap: (() => void) | null = null;
+  private onPause: (() => void) | null = null;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -92,6 +93,11 @@ export class Input {
     }
   }
 
+  /** Set callback for ESC pause toggle */
+  setPauseHandler(handler: (() => void) | null): void {
+    this.onPause = handler;
+  }
+
   /** Reset input state (for scene restart) */
   reset(): void {
     this.touchSteerX = 0;
@@ -110,7 +116,11 @@ export class Input {
         w: this.scene.input.keyboard.addKey("W"),
         s: this.scene.input.keyboard.addKey("S"),
         r: this.scene.input.keyboard.addKey("R"),
+        esc: this.scene.input.keyboard.addKey("ESC"),
       };
+      this.keys.esc.on("down", () => {
+        if (this.onPause) this.onPause();
+      });
     }
   }
 

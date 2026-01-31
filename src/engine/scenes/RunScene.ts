@@ -75,14 +75,26 @@ export class RunScene extends Phaser.Scene {
   preload(): void {
     this.load.image("penguin", "penguin.png");
 
-    // Generate snow particle texture
-    if (!this.textures.exists("snow-particle")) {
-      const g = this.add.graphics();
-      g.fillStyle(0x9ec5e8);
-      g.fillCircle(4, 4, 4);
-      g.generateTexture("snow-particle", 8, 8);
-      g.destroy();
+    // Generate particle textures
+    const particles: [string, number, number, number][] = [
+      ["snow-particle", 0x9ec5e8, 4, 8],
+      ["gold-particle", 0xfbbf24, 3, 6],
+      ["red-particle", 0xef4444, 3, 6],
+      ["yellow-particle", 0xfde047, 2, 4],
+      ["gray-particle", 0x6b7280, 4, 8],
+      ["cyan-particle", 0x67e8f9, 2, 4],
+      ["white-particle", 0xe2e8f0, 2.5, 5],
+    ];
+    const g = this.add.graphics();
+    for (const [key, color, radius, size] of particles) {
+      if (!this.textures.exists(key)) {
+        g.clear();
+        g.fillStyle(color);
+        g.fillCircle(radius, radius, radius);
+        g.generateTexture(key, size, size);
+      }
     }
+    g.destroy();
   }
 
   create(): void {
@@ -106,7 +118,6 @@ export class RunScene extends Phaser.Scene {
     this.headingVelocity = 0;
     this.slipperyTimer = 0;
     this.slowTimer = 0;
-
     this.cameras.main.setBackgroundColor("#f8fbff");
 
     // Penguin shadow
@@ -238,9 +249,11 @@ export class RunScene extends Phaser.Scene {
     }
 
     // Tick down status effects
-    if (this.slipperyTimer > 0) this.slipperyTimer -= dt;
+    if (this.slipperyTimer > 0) {
+      this.slipperyTimer -= dt;
+      if (this.slipperyTimer <= 0) this.effects.stopIceSparkle();
+    }
     if (this.slowTimer > 0) this.slowTimer -= dt;
-
     // --- Steering (angle-based with momentum) ---
     if (!this.isAirborne) {
       const icy = this.slipperyTimer > 0;
@@ -413,12 +426,17 @@ export class RunScene extends Phaser.Scene {
         const points = this.trickScore * comboMultiplier;
         this.score += points;
         this.combo++;
+        this.effects.burstTrickLanding(this.penguin.x, this.penguin.y);
         this.showStatusText(`+${points}`, "#10b981");
       } else {
         this.combo = 0;
+        this.effects.burstCrashLanding(this.penguin.x, this.penguin.y);
+        this.penguinBounce();
         this.showStatusText("CRASH!", "#ef4444");
       }
     }
+
+    this.cameraBump();
 
     this.trickQueue = [];
     this.trickScore = 0;
@@ -446,6 +464,7 @@ export class RunScene extends Phaser.Scene {
     switch (obj.type) {
       case "rock":
       case "crevasse":
+        this.effects.burstDeath(this.penguin.x, this.penguin.y);
         this.endGame();
         break;
 
@@ -459,12 +478,14 @@ export class RunScene extends Phaser.Scene {
 
       case "snowdrift":
         this.slowTimer = 1.2;
+        this.effects.burstSnowdrift(obj.sprite.x, obj.sprite.y);
         this.showStatusText("SNOW!", "#94a3b8");
         this.spawner.removeObject(obj);
         break;
 
       case "ice":
         this.slipperyTimer = 2.5;
+        this.effects.startIceSparkle();
         this.spawner.removeObject(obj);
         break;
 
@@ -480,6 +501,7 @@ export class RunScene extends Phaser.Scene {
 
       case "fish":
         this.score += 10;
+        this.effects.burstFishCollected(obj.sprite.x, obj.sprite.y);
         this.spawner.removeObject(obj);
         break;
     }
@@ -548,6 +570,29 @@ export class RunScene extends Phaser.Scene {
     this.spawner.destroyAll();
     this.inputHandler.reset();
     this.scene.restart({ level: this.level });
+  }
+
+  private cameraBump(): void {
+    const cam = this.cameras.main;
+    const baseY = cam.scrollY;
+    this.tweens.add({
+      targets: cam,
+      scrollY: baseY + 6,
+      duration: 80,
+      yoyo: true,
+      ease: "Sine.easeInOut",
+    });
+  }
+
+  private penguinBounce(): void {
+    const baseY = this.penguin.y;
+    this.tweens.add({
+      targets: this.penguin,
+      y: baseY + 12,
+      duration: 100,
+      yoyo: true,
+      ease: "Sine.easeInOut",
+    });
   }
 
   private showTrickText(text: string): void {

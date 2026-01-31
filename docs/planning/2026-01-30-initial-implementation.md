@@ -88,13 +88,24 @@
   - Snow particle texture generated in RunScene.preload()
   - Note: Phaser `setFrequency` and `particleAngle` assignment break emitters; using manual `emitParticle` instead
 
+- [x] Event particle bursts and screen effects (Phase 3 continued)
+  - 7 particle textures generated in RunScene.preload() (loop-based, single Graphics instance)
+  - 6 new burst emitters in Effects.ts (gold, red, yellow, gray, cyan, white) — all `emitting: false`, manual `emitParticle`
+  - Gold burst on clean trick landing, red burst on crash landing
+  - Yellow sparkle on fish collected, gray burst on rock/crevasse death
+  - White puff on snowdrift contact, cyan sparkle trail while on ice patch
+  - Camera bump (scrollY tween, 80ms yoyo) on every landing
+  - Penguin bounce (y tween, 100ms yoyo) on crash landing
+  - Ice sparkle stops when slipperyTimer expires
+  - Cut: near-miss slow-mo (tested, removed — triggered too easily/unreliably)
+  - Cut: snowfall background (tested particles and world-space circles, neither looked right)
+  - Cut: speed lines, combo border glow (deferred to later)
+
 ### Current step
 
-- [ ] Phase 3: Game feel (remaining: screen effects, snowfall background)
+- [ ] Phase 4: Menus and persistence
 
 ### Next steps
-
-- [ ] Phase 3: Game feel
 - [ ] Phase 4: Menus and persistence
 - [ ] Phase 5: Art and audio (music done; SFX and sprites remaining)
 - [ ] Phase 7: Capacitor wrap
@@ -158,7 +169,7 @@ src/
   engine/
     scenes/
       BootScene.ts     Difficulty selection, music toggle, launches RunScene with level
-      RunScene.ts      Orchestrator (~540 lines): penguin state, camera, scoring, HUD, music, delegates to systems
+      RunScene.ts      Orchestrator (~620 lines): penguin state, camera, scoring, HUD, music, effects wiring, delegates to systems
     systems/
       Spawner.ts       SlopeObject interface, spawn helpers, collision check, object lifecycle
       Input.ts         Keyboard + touch + trick buttons, getSteerDir(), getTrickKey()
@@ -195,62 +206,54 @@ src/
 
 ---
 
-## Phase 3: Game feel
+## Phase 3: Game feel (implemented)
 
-Visual and audio polish that makes the game feel satisfying. This is where placeholder shapes start to feel like a real game even before sprite art.
+Visual polish that makes the game feel satisfying. Placeholder shapes start to feel like a real game even before sprite art.
 
-### Particles
+### Particles (implemented)
 
-| Event | Effect |
-|-------|--------|
-| Penguin moving on ground | Snow spray particles behind penguin, angled by steer direction |
-| Clean trick landing | Gold particle burst at penguin feet |
-| Crash landing | Red particle burst + penguin bounces |
-| Fish collected | Small yellow sparkle at fish position |
-| Rock/crevasse death | Large gray burst + penguin flash red |
-| Ice patch entered | Cyan sparkle trail while on ice |
-| Snowdrift entered | White puff at contact point |
+| Event | Effect | Status |
+|-------|--------|--------|
+| Penguin moving on ground | Snow spray particles behind penguin, angled by steer direction | Done |
+| Clean trick landing | Gold particle burst at penguin feet | Done |
+| Crash landing | Red particle burst + penguin bounces | Done |
+| Fish collected | Small yellow sparkle at fish position | Done |
+| Rock/crevasse death | Large gray burst | Done |
+| Ice patch entered | Cyan sparkle trail while on ice | Done |
+| Snowdrift entered | White puff at contact point | Done |
 
-### Screen effects
+All particle textures generated in RunScene.preload() (no external assets). All emitters use `emitting: false` + manual `emitParticle()` to avoid Phaser bugs with `setFrequency`/`particleAngle`.
 
-| Event | Effect |
-|-------|--------|
-| Rock/crevasse death | Strong camera shake (already have mild version) |
-| Tree hit | Quick shake (already exists) |
-| Near-miss (< 10px from rock) | Brief slow-motion (0.2s at 50% speed) + white flash outline on rock |
-| High speed (> 400) | Subtle speed lines on screen edges |
-| Combo x3+ | Screen border glow (gold, pulsing) |
-| Landing | Brief screen bump (camera offset down then back) |
+### Screen effects (partial)
 
-### Snowfall background
+| Event | Effect | Status |
+|-------|--------|--------|
+| Rock/crevasse death | Strong camera shake | Done (existed) |
+| Tree hit | Quick shake | Done (existed) |
+| Landing | Camera bump (scrollY tween, 80ms yoyo) | Done |
+| Crash landing | Penguin bounce (y tween, 100ms yoyo) | Done |
+| Near-miss | Slow-mo + flash | Cut (triggered unreliably) |
+| High speed (> 400) | Speed lines | Deferred |
+| Combo x3+ | Screen border glow | Deferred |
 
-- Constant light snowfall particles across the screen
-- Two layers: small slow flakes (far) and larger faster flakes (near)
-- Parallax: far layer moves at 30% scroll speed, near at 70%
-- Density increases with difficulty zone
+### Snowfall background — cut
 
-### Trail
+Tried two approaches (Phaser particle emitter with screen-fixed scrollFactor, and world-space circle objects scrolling at camera speed). Neither produced convincing snowfall. Cut for now.
 
-- Penguin leaves faint ski tracks on the slope
-- Two parallel thin lines behind penguin that fade over 1-2 seconds
-- When airborne, trail stops (penguin is in the air)
-- When steering hard, tracks curve
+### Trail (implemented)
 
-### Phaser features to use
-
-- `this.add.particles()` for all particle effects
-- `this.cameras.main.shake()` (already using)
-- `this.cameras.main.flash()` for near-miss flash
-- `this.time.timeScale` for slow-motion
-- `this.tweens` for screen border glow, UI animations
+- Penguin leaves fading belly-slide trail on the slope
+- Single-width rectangles in world-space, scroll with obstacles, fade over 2.5s
+- When airborne, trail stops
+- Max 200 segments for performance
 
 ### Verification
 
-- Particles fire for all listed events
-- Near-miss slow-mo triggers when barely dodging a rock
-- Snowfall visible at all times, denser in later zones
+- All event particles fire correctly
+- Camera bump on every landing, penguin bounce on crash
+- Ice sparkle activates on ice patch, stops when timer expires
 - Ski trail renders behind penguin on ground
-- No FPS drop below 55 on desktop
+- No FPS drop on desktop
 
 ---
 
@@ -544,3 +547,11 @@ Added layered procedural music using Strudel (`@strudel/web`). 16 levels of patt
 Architecture follows the existing core/engine split: `core/music.ts` holds all pattern definitions, level thresholds, and the `getPatternForLevel()` switch statement — edit this one file to change the music. `engine/systems/Music.ts` is a singleton that manages Strudel initialization, score-to-level mapping, and game event hooks (game over, restart). The singleton persists across scenes so the intro music on the boot screen flows seamlessly into gameplay.
 
 Music starts playing on the boot screen with a slow icy pad (E minor). A "Music: ON/OFF" toggle on the boot screen persists the preference to localStorage. AudioContext unlocks on the user's first tap. Key: E minor. Base tempo: 110 BPM, increasing +1 per level.
+
+### 2026-01-31: Event particles and screen effects (Phase 3)
+
+Added event particle bursts for all collision and landing events. Seven particle textures generated procedurally in RunScene.preload() using a single Graphics instance and a loop. Six new burst emitters in Effects.ts (gold, red, yellow, gray, cyan, white) — all use `emitting: false` with manual `emitParticle()` calls to avoid Phaser emitter bugs.
+
+Gold burst on clean trick landing, red burst + penguin bounce on crash landing. Yellow sparkle when collecting fish. Gray burst on rock/crevasse death. White puff on snowdrift contact. Cyan sparkle trail while sliding on ice (toggles on/off with slipperyTimer). Camera bump (scrollY tween, 80ms yoyo) fires on every landing.
+
+Tried and cut: near-miss slow-mo (distance-based detection triggered unreliably — too sensitive or too rare depending on threshold, and the slow-mo felt disruptive). Tried and cut: snowfall background (tested Phaser particle emitter with screen-fixed scrollFactor, then world-space circle objects scrolling at camera speed — neither produced convincing falling snow against the scrolling world). Speed lines and combo border glow deferred to later.

@@ -33,12 +33,12 @@ src/
     game.ts           Phaser config
     scenes/
       BootScene.ts    Difficulty selection, music toggle, launches Run
-      RunScene.ts     Gameplay orchestrator (~540 lines)
+      RunScene.ts     Gameplay orchestrator (~620 lines)
     systems/
       Input.ts        Keyboard + touch + steer/trick buttons
       Spawner.ts      Obstacle spawning + management
       Music.ts        Strudel lifecycle, score-driven layer progression
-      Effects.ts      Snow spray particles + belly-slide trail
+      Effects.ts      Snow spray, ski trail, event particle bursts, ice sparkle
   strudel.d.ts        TypeScript declarations for @strudel/web
   platform/           (planned) Platform adapters (web vs Capacitor)
 public/               Static assets (icons, manifest, penguin sprite)
@@ -96,6 +96,8 @@ Input priority: keyboard > touch buttons > touch half-screen.
 - Background color is `#f8fbff` (near-white with subtle blue tint, icy snow)
 - Snow spray particles behind penguin (speed-scaled, blue-tinted, disabled when airborne)
 - Belly-slide trail: fading rectangles in world-space that scroll with obstacles
+- Event particle bursts: gold (trick landing), red (crash), yellow (fish), gray (death), white (snowdrift), cyan (ice sparkle)
+- Camera bump on every landing; penguin bounce on crash landing
 - Penguin stays fixed at screen center; the world scrolls via Phaser's `camera.scrollX`
 - Obstacles spawn in world-space relative to the penguin's position
 - All UI (HUD, buttons, game over text) uses `setScrollFactor(0)` to stay screen-pinned

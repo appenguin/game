@@ -24,7 +24,7 @@ We're keeping it loose. Five phases:
 
 2. **PWA + mobile** -- pulled this forward. Service worker, manifest, offline play, touch controls with on-screen trick buttons. Install it to your home screen and play in portrait. Done.
 
-3. **Game feel polish** -- ski trails, screen shake, near-miss slow-mo, snowfall particles, basic sound effects. This is where it goes from "tech demo" to "game."
+3. **Game feel polish** -- ski trails, event particle bursts, camera effects, screen shake. This is where it goes from "tech demo" to "game." Done.
 
 4. **Menus and persistence** -- main menu, results screen, settings, best score saved locally. Full game loop.
 
@@ -102,9 +102,26 @@ The system is a singleton that persists across scenes, so the intro music on the
 
 Technical detail: Strudel is installed via npm and bundled by Vite. Drum sounds (kick, hi-hat, snare, open hat) come from the dirt-samples library loaded at init. All synth sounds (sawtooth, triangle, square, supersaw) are Web Audio oscillators -- no files needed.
 
+## Game feel: particles and screen effects
+
+Phase 3 is done. Every collision and landing now has visual feedback through particle bursts:
+
+- **Gold burst** when you nail a clean trick landing
+- **Red burst + penguin bounce** when you crash
+- **Yellow sparkle** when collecting fish
+- **Gray burst** on death (rock or crevasse)
+- **White puff** when hitting a snowdrift
+- **Cyan sparkle trail** while sliding on ice
+
+Every landing triggers a **camera bump** -- a quick downward nudge that yoyos back. It's subtle but makes landings feel physical. Crash landings also bounce the penguin sprite.
+
+All seven particle textures are generated procedurally in `preload()` -- no image files. Each emitter sits dormant (`emitting: false`) until a collision fires `emitParticle()` manually. This avoids a Phaser bug where `setFrequency` and `particleAngle` assignment silently kill emitters.
+
+We tried and cut two features: **near-miss slow-mo** (distance-based rock detection triggered too erratically -- either too sensitive or too rare) and **snowfall background** (tested both screen-fixed particles and world-space circles scrolling at camera speed, neither looked convincing against the scrolling world). Sometimes cutting is the right call.
+
 ## What's next
 
-The codebase has been refactored into focused modules: pure game logic in `core/` (tricks, difficulty, music), Phaser systems in `engine/systems/` (input, spawning, music playback). RunScene is now a ~540-line orchestrator. Next up is game feel: particles, ski trails, near-miss slow-mo, snowfall. After that, menus, persistence, real art, and the Capacitor wrap for Android.
+The codebase is now ~620 lines in RunScene, with game logic in `core/` (tricks, difficulty, music) and Phaser systems in `engine/systems/` (input, spawning, effects, music playback). Next up is menus and persistence: a proper game loop with a start screen, results breakdown, high score tracking. After that, real sprite art, sound effects, and the Capacitor wrap for Android.
 
 We'll document the entire build as we go. Every decision, every dead end, every time we spend an hour tweaking how it feels to almost hit a rock.
 

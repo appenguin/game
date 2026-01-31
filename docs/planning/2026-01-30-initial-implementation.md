@@ -148,7 +148,7 @@ Our version: a penguin slides downhill on ice. Steer left/right to avoid obstacl
 
 | Mechanic | How it works |
 |----------|-------------|
-| Steering | Left/right rotates penguin heading with momentum; lateral movement follows angle (Ski or Die style) |
+| Steering | Left/right rotates penguin heading with momentum; lateral movement follows angle; downhill speed reduced by `cos(heading)` — slalom costs forward momentum |
 | Auto-scroll | Obstacles scroll upward (penguin at top = downhill perspective), speed increases over time |
 | Obstacles | Rocks (game over), trees (slow + lose combo), ice patches (reduced steering), crevasses (game over), moguls (small bump/air), snowdrifts (slow) |
 | Ramps | Hit a ramp to launch into the air. Airtime depends on speed |
@@ -509,7 +509,7 @@ Bundle into a native Android app. The appenguin showcase.
 | Difficulty | Distance-based zones | Gradual learning curve, gets hard after 1500m |
 | Refactor before features | Yes, done | 814-line RunScene split into 4 modules: core/tricks, core/difficulty, systems/Input, systems/Spawner. RunScene now ~430 lines |
 | PWA early | Yes | Installability and offline support are cheap to add now with vite-plugin-pwa; touch controls need testing on real devices early |
-| Steering model | Angle-based with momentum | Ski or Die feel: carving turns, momentum, drift back to center |
+| Steering model | Angle-based with momentum + cos speed cost | Carving turns with momentum; slalom costs forward speed via cos(heading) |
 | Touch controls | 4-button row: `[<] [FLIP] [TUCK] [>]` + half-screen fallback | Explicit steer buttons for angle-based steering; trick buttons for air |
 | Camera | Centered on penguin, world scrolls | Infinite horizontal movement, no screen-edge clamping |
 | Difficulty levels | Easy/Medium/Hard speed profiles | Player choice at start; obstacle zones still distance-based |
@@ -598,3 +598,9 @@ Replaced the static `penguin.png` with a 2-frame sprite sheet (`penguin-sheet.pn
 Penguin type changed from `Phaser.GameObjects.Image` to `Phaser.GameObjects.Sprite`. Effects constructor widened to `{ x: number; y: number }` since it only reads position at init.
 
 **Trick system rework:** Tricks (Backflip, Front Tuck) no longer rotate the penguin — rotation set to 0. Only L/R spin rotates. Tricks are hold-to-perform: holding the trick key shows the tucked sprite frame, releasing returns to open wings. Spin is always allowed (not blocked by tricks).
+
+### 2026-01-31: Steering physics — slalom speed cost
+
+Added `cos(heading)` factor to downhill speed. When the penguin carves at an angle, forward speed (distance, score, obstacle scroll) is reduced — at max ±45° steering, forward speed drops to ~71%. Lateral movement uses the full speed so steering responsiveness isn't affected. This makes slalom a meaningful tradeoff: safer obstacle avoidance at the cost of forward momentum.
+
+Tuned steering constants: turn accel 5.0, max turn speed 2.5, drag 4.0, centering 2.5, lateral factor 1.2. Snappy turn initiation with strong bleed-off — turns start quickly but don't sustain without continued input.

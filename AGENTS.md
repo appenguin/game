@@ -72,7 +72,7 @@ docs/
 
 ## Controls
 
-- **Steering:** Arrow keys or A/D (keyboard), LEFT/RIGHT buttons or tap screen halves (touch). Angle-based with momentum; ice patches reduce turn rate and increase drift.
+- **Steering:** Arrow keys or A/D (keyboard), LEFT/RIGHT buttons or tap screen halves (touch). Angle-based with momentum; steering reduces downhill speed via `cos(heading)`. Ice patches reduce turn rate and increase drift.
 - **Air tricks:** Up/W = Backflip, Down/S = Front Tuck. Hold to perform (shows tucked sprite). Spin with Left/Right while airborne. Tricks don't rotate the penguin; only L/R spin does.
 - **Landing:** Clean = full points with combo; sloppy = no points; crash = no points + combo reset.
 - **Menus:** Arrow keys + Enter/Space navigate all menus (Doom-style). ESC pauses/resumes. Touch also works.

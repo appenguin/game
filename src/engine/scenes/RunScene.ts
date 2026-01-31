@@ -33,12 +33,12 @@ export class RunScene extends Phaser.Scene {
   // Heading (angle-based steering with momentum)
   private heading = 0; // current angle (radians, 0 = straight down)
   private headingVelocity = 0; // angular velocity (rad/s)
-  private readonly maxAngle = (Math.PI / 180) * 40; // ±40° max steering
-  private readonly turnAccel = 6.0; // angular acceleration (rad/s²)
-  private readonly maxTurnSpeed = 4.0; // max angular velocity (rad/s)
-  private readonly headingDrag = 5.0; // angular velocity decay when no input
-  private readonly headingCenter = 3.0; // heading return-to-center rate (when no input)
-  private readonly lateralFactor = 1.6; // lateral speed = sin(heading) * scrollSpeed * factor
+  private readonly maxAngle = (Math.PI / 180) * 45; // ±45° max steering
+  private readonly turnAccel = 5.0; // angular acceleration (rad/s²)
+  private readonly maxTurnSpeed = 2.5; // max angular velocity (rad/s)
+  private readonly headingDrag = 4.0; // angular velocity decay when no input
+  private readonly headingCenter = 2.5; // heading return-to-center rate (when no input)
+  private readonly lateralFactor = 1.2; // lateral speed = sin(heading) * scrollSpeed * factor
 
   // Difficulty level (0=Easy, 1=Medium, 2=Hard)
   private level = 1;
@@ -250,6 +250,8 @@ export class RunScene extends Phaser.Scene {
     this.scrollSpeed = this.slowTimer > 0
       ? this.baseScrollSpeed * 0.5
       : this.baseScrollSpeed;
+    const fullSpeed = this.scrollSpeed;
+    this.scrollSpeed *= Math.cos(this.heading);
     this.distanceTraveled += this.scrollSpeed * dt;
     this.scoreFrac += this.scrollSpeed * dt * 0.02;
     const earned = Math.floor(this.scoreFrac);
@@ -300,7 +302,7 @@ export class RunScene extends Phaser.Scene {
 
       this.heading = Phaser.Math.Clamp(this.heading, -this.maxAngle, this.maxAngle);
 
-      this.penguin.x += Math.sin(this.heading) * this.scrollSpeed * this.lateralFactor * dt;
+      this.penguin.x += Math.sin(this.heading) * fullSpeed * this.lateralFactor * dt;
       this.penguin.setRotation(-this.heading);
       this.penguinShadow.x = this.penguin.x;
 

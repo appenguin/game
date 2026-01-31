@@ -690,6 +690,7 @@ export class RunScene extends Phaser.Scene {
       const upKey = this.input.keyboard.addKey("UP");
       const downKey = this.input.keyboard.addKey("DOWN");
       const enterKey = this.input.keyboard.addKey("ENTER");
+      const spaceKey = this.input.keyboard.addKey("SPACE");
       const wKey = this.input.keyboard.addKey("W");
       const sKey = this.input.keyboard.addKey("S");
 
@@ -698,8 +699,9 @@ export class RunScene extends Phaser.Scene {
       downKey.on("down", this.menuDown, this);
       sKey.on("down", this.menuDown, this);
       enterKey.on("down", this.menuSelect, this);
+      spaceKey.on("down", this.menuSelect, this);
 
-      this.menuKeys = [upKey, downKey, enterKey, wKey, sKey];
+      this.menuKeys = [upKey, downKey, enterKey, spaceKey, wKey, sKey];
     }
   }
 

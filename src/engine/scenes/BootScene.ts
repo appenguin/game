@@ -90,6 +90,13 @@ export class BootScene extends Phaser.Scene {
         this.cursor = (this.cursor + 1) % MENU_COUNT;
         this.updateHighlight();
       });
+      this.input.keyboard.on("keydown-SPACE", () => {
+        if (this.cursor === MUSIC_INDEX) {
+          this.toggleMusic();
+        } else {
+          this.selectLevel();
+        }
+      });
       this.input.keyboard.on("keydown-ENTER", () => {
         if (this.cursor === MUSIC_INDEX) {
           this.toggleMusic();

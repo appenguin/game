@@ -41,7 +41,11 @@ src/
       Effects.ts      Snow spray, ski trail, event particle bursts, ice sparkle
   strudel.d.ts        TypeScript declarations for @strudel/web
   platform/           (planned) Platform adapters (web vs Capacitor)
-public/               Static assets (icons, manifest, penguin sprite)
+public/               Static assets (icons, manifest, sprites)
+  penguin-sheet.png   Penguin sprite sheet (2 frames @ 46x46: tucked, open wings)
+penguin_images/       Source penguin images (processed by build script)
+scripts/
+  build-sprites.py    Generates public/penguin-sheet.png from penguin_images/
 index.html            HTML entry point
 vite.config.ts        Vite + PWA config
 docs/
@@ -69,14 +73,14 @@ docs/
 ## Controls
 
 - **Steering:** Arrow keys or A/D (keyboard), LEFT/RIGHT buttons or tap screen halves (touch). Angle-based with momentum; ice patches reduce turn rate and increase drift.
-- **Air tricks:** Up/W = Backflip, Down/S = Front Tuck. Each takes 0.8s. Spin with Left/Right while airborne.
+- **Air tricks:** Up/W = Backflip, Down/S = Front Tuck. Hold to perform (shows tucked sprite). Spin with Left/Right while airborne. Tricks don't rotate the penguin; only L/R spin does.
 - **Landing:** Clean = full points with combo; sloppy = no points; crash = no points + combo reset.
-- **Menus:** Arrow keys + Enter navigate all menus (Doom-style). ESC pauses/resumes. Touch also works.
+- **Menus:** Arrow keys + Enter/Space navigate all menus (Doom-style). ESC pauses/resumes. Touch also works.
 - **Mobile layout:** `[<] [FLIP] [TUCK] [>]` single row at bottom.
 
 ## Camera and rendering
 
-- Penguin sprite at screen center; world scrolls via `camera.scrollX`
+- Penguin sprite sheet (2 frames: tucked/open wings) at screen center; world scrolls via `camera.scrollX`
 - Obstacles spawn in world-space, scroll upward past the penguin
 - Snow spray particles + belly-slide trail behind penguin on ground
 - Event particle bursts on collisions and landings; camera bump on landing

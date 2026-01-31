@@ -109,12 +109,21 @@
   - Landing particles: snow texture (consistent with spray), not gold/red
 
 - [x] Doom-style menu system (Phase 4 partial)
-  - Unified menu with arrow key (Up/Down/W/S) navigation + Enter to select
+  - Unified menu with arrow key (Up/Down/W/S) navigation + Enter/Space to select
   - Cursor highlight with ▶ prefix, wraps top/bottom
   - ESC pauses game, shows pause menu (Resume, New Game, Quit)
   - Game over screen uses same menu (Retry, Quit) after death animation
-  - Boot scene: keyboard-navigable difficulty selection, defaults to Medium
+  - Boot scene: keyboard-navigable difficulty selection + music toggle, defaults to Medium
   - All menus also support touch/click and pointer hover
+
+- [x] Penguin sprite sheet (Phase 5 partial)
+  - Replaced static `penguin.png` with 2-frame sprite sheet (`penguin-sheet.png`, 46x46 per frame)
+  - Frame 0: wings tucked (default slide, trick held, crash landing)
+  - Frame 1: wings open (airborne, death)
+  - Source images in `penguin_images/`, build script at `scripts/build-sprites.py`
+  - Penguin type changed from `Image` to `Sprite` in RunScene
+  - Tricks no longer rotate the penguin; only L/R spin rotates
+  - Tricks are hold-to-perform: shows tucked sprite while trick key held
 
 ### Current step
 
@@ -157,15 +166,14 @@ While airborne, directional inputs perform tricks:
 |-------|-------|--------|
 | Up / W | Backflip | 300 |
 | Down / S | Front tuck | 250 |
-| Left/Right | Spin | 50 per half rotation |
+| Left/Right | Spin | 100 per half rotation |
 
-Left/Right arrows add continuous spin while airborne (scored on landing).
+Left/Right arrows add continuous spin while airborne (scored on landing). Tricks are hold-to-perform and show the tucked sprite while held. Tricks do not rotate the penguin; only L/R spin rotates.
 
 - Each trick can only be performed once per jump
 - Performing multiple different tricks scores a variety bonus (+50 per extra trick)
-- Must finish trick rotation before landing or it counts as a crash
 - Crash landing = zero trick points for that jump, combo reset
-- Heading rotation is preserved in air; tricks and spin layer on top
+- Heading rotation is preserved in air; spin layers on top
 
 ---
 
@@ -355,8 +363,8 @@ Replace colored shapes with sprites and add sound. Transforms the look and feel.
 
 | Object | Sprite description | Size |
 |--------|--------------------|------|
-| Penguin (ground) | Top-down belly-slide penguin with beanie (already using `public/penguin.png`) | 48x64 |
-| Penguin (air) | Same sprite, rotates with tricks + spin | 48x64 |
+| Penguin (ground) | Top-down belly-slide penguin with beanie, wings tucked (frame 0 of `penguin-sheet.png`) | 46x46 |
+| Penguin (air) | Wings open pose (frame 1), rotates with L/R spin only | 46x46 |
 | Rock | Gray boulder, irregular shape | 30x30 |
 | Tree | Pine tree, top-down (dark green triangle with trunk dot) | 30x36 |
 | Ramp | Blue/white ski ramp, perspective | 50x24 |
@@ -494,10 +502,10 @@ Bundle into a native Android app. The appenguin showcase.
 |----------|--------|-----------|
 | Game framework | Phaser 3 | Mature, good mobile perf, rich feature set for polish |
 | Bundler | Vite | Fast dev, good TS support |
-| Art style (MVP) | Penguin sprite + colored shapes for obstacles | Penguin sprite loaded from `public/penguin.png`; obstacles still placeholder shapes |
+| Art style (MVP) | Penguin sprite sheet + colored shapes for obstacles | 2-frame sprite sheet (`penguin-sheet.png`, 46x46): tucked + open wings; obstacles still placeholder shapes |
 | Game style | Ski or Die downhill + tricks | More depth than pure drift runner, iconic reference |
 | Scrolling | Top-down, penguin at screen center, camera follows | Infinite horizontal freedom, classic downhill feel |
-| Trick system | Up/down for tricks, left/right for spin | Tricks scored, spin is visual flair |
+| Trick system | Up/down for tricks (hold to perform), left/right for spin | Tricks change sprite (tucked), spin rotates; both scored |
 | Difficulty | Distance-based zones | Gradual learning curve, gets hard after 1500m |
 | Refactor before features | Yes, done | 814-line RunScene split into 4 modules: core/tricks, core/difficulty, systems/Input, systems/Spawner. RunScene now ~430 lines |
 | PWA early | Yes | Installability and offline support are cheap to add now with vite-plugin-pwa; touch controls need testing on real devices early |
@@ -581,4 +589,12 @@ Tried and cut: near-miss slow-mo (distance-based detection triggered unreliably 
 
 **Landing particles:** Switched from gold/red particles to snow-particle texture (same as spray), so landings look consistent with the ground effects.
 
-**Doom-style menu system:** All menus (boot screen, pause, game over) now use unified keyboard-navigable menus. Arrow keys or W/S move a ▶ cursor, Enter selects, ESC toggles pause or acts as back. Menus wrap around. Touch/click/hover also supported. Boot screen defaults to Medium difficulty. Game over menu appears after a 600ms death animation delay.
+**Doom-style menu system:** All menus (boot screen, pause, game over) now use unified keyboard-navigable menus. Arrow keys or W/S move a ▶ cursor, Enter/Space selects, ESC toggles pause or acts as back. Menus wrap around. Touch/click/hover also supported. Boot screen defaults to Medium difficulty, music toggle is part of the menu. Game over menu appears after a 600ms death animation delay.
+
+### 2026-01-31: Penguin sprite sheet
+
+Replaced the static `penguin.png` with a 2-frame sprite sheet (`penguin-sheet.png`, 46x46 per frame). Frame 0 is the tucked pose (wings against body) used while sliding on the ground and while holding a trick key. Frame 1 is the open wings pose used while airborne and on death. Source images live in `penguin_images/` and are processed by `scripts/build-sprites.py` which handles background removal, consistent scaling, and strip assembly.
+
+Penguin type changed from `Phaser.GameObjects.Image` to `Phaser.GameObjects.Sprite`. Effects constructor widened to `{ x: number; y: number }` since it only reads position at init.
+
+**Trick system rework:** Tricks (Backflip, Front Tuck) no longer rotate the penguin — rotation set to 0. Only L/R spin rotates. Tricks are hold-to-perform: holding the trick key shows the tucked sprite frame, releasing returns to open wings. Spin is always allowed (not blocked by tricks).

@@ -15,8 +15,9 @@ import { music } from "../systems/Music";
  */
 export class RunScene extends Phaser.Scene {
   // Penguin
-  private penguin!: Phaser.GameObjects.Image;
+  private penguin!: Phaser.GameObjects.Sprite;
   private penguinShadow!: Phaser.GameObjects.Ellipse;
+  private isDead = false;
   private penguinAirHeight = 0;
   private isAirborne = false;
   private airTime = 0;
@@ -25,7 +26,6 @@ export class RunScene extends Phaser.Scene {
   private currentTrickRotation = 0;
   private targetTrickRotation = 0;
   private spinRotation = 0;
-
   // Status effects
   private slipperyTimer = 0;
   private slowTimer = 0;
@@ -75,7 +75,10 @@ export class RunScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image("penguin", "penguin.png");
+    this.load.spritesheet("penguin", "penguin-sheet.png", {
+      frameWidth: 46,
+      frameHeight: 46,
+    });
 
     // Generate particle textures
     const particles: [string, number, number, number][] = [
@@ -108,6 +111,7 @@ export class RunScene extends Phaser.Scene {
 
     // Reset state
     this.gameOver = false;
+    this.isDead = false;
     this.score = 0;
     this.scoreFrac = 0;
     this.distanceTraveled = 0;
@@ -131,7 +135,7 @@ export class RunScene extends Phaser.Scene {
     this.penguinShadow.setDepth(4);
 
     // Penguin
-    this.penguin = this.add.image(width / 2, height * 0.25, "penguin");
+    this.penguin = this.add.sprite(width / 2, height * 0.25, "penguin", 0);
     this.penguin.setDepth(5);
 
 
@@ -309,6 +313,17 @@ export class RunScene extends Phaser.Scene {
       this.handleAirTricks(dt);
     }
 
+    // --- Sprite frame selection ---
+    // 0=tucked (default slide + trick active), 1=open wings (airborne)
+    if (!this.isDead) {
+      if (this.isAirborne) {
+        const trickHeld = this.inputHandler.getTrickKey() !== "";
+        this.penguin.setFrame(trickHeld ? 0 : 1);
+      } else {
+        this.penguin.setFrame(0);
+      }
+    }
+
     // --- Effects (snow spray + ski trail) ---
     this.effects.update(dt, this.penguin.x, this.penguin.y, this.heading, this.scrollSpeed, this.isAirborne);
 
@@ -387,7 +402,7 @@ export class RunScene extends Phaser.Scene {
   }
 
   private handleAirTricks(dt: number): void {
-    // Tricks: up/down only
+    // Tricks: up/down only (held = tucked, blocks spin)
     const trickKey = this.inputHandler.getTrickKey();
     if (trickKey && TRICKS[trickKey]) {
       const trick = TRICKS[trickKey];
@@ -451,6 +466,14 @@ export class RunScene extends Phaser.Scene {
         this.effects.burstCrashLanding(this.penguin.x, this.penguin.y);
         this.penguinBounce();
         this.showStatusText("CRASH!", "#ef4444");
+        // Lock tucked frame briefly during crash
+        this.isDead = true;
+        this.penguin.setFrame(0);
+        this.time.delayedCall(500, () => {
+          if (!this.gameOver) {
+            this.isDead = false;
+          }
+        });
       }
     }
 
@@ -527,6 +550,8 @@ export class RunScene extends Phaser.Scene {
 
   private endGame(): void {
     this.gameOver = true;
+    this.isDead = true;
+    this.penguin.setFrame(1);
     this.music.onGameOver();
     this.cameras.main.shake(400, 0.02);
 

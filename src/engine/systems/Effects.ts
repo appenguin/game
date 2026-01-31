@@ -36,7 +36,7 @@ export class Effects {
   private readonly TRAIL_MAX_SEGMENTS = 200;
   private readonly TRAIL_ALPHA = 0.35;
 
-  constructor(scene: Phaser.Scene, penguin: Phaser.GameObjects.Image) {
+  constructor(scene: Phaser.Scene, penguin: { x: number; y: number }) {
     this.scene = scene;
 
     // --- Snow spray (existing) ---

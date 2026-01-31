@@ -7,6 +7,9 @@ const LEVELS = [
   { label: "HARD", color: "#ef4444" },
 ];
 
+const MENU_COUNT = LEVELS.length + 1; // difficulties + music toggle
+const MUSIC_INDEX = LEVELS.length;
+
 export class BootScene extends Phaser.Scene {
   private cursor = 0;
   private menuTexts: Phaser.GameObjects.Text[] = [];
@@ -69,46 +72,53 @@ export class BootScene extends Phaser.Scene {
       this.menuTexts.push(txt);
     }
 
-    this.updateHighlight();
-
     // Keyboard
     if (this.input.keyboard) {
       this.input.keyboard.on("keydown-UP", () => {
-        this.cursor = (this.cursor - 1 + LEVELS.length) % LEVELS.length;
+        this.cursor = (this.cursor - 1 + MENU_COUNT) % MENU_COUNT;
         this.updateHighlight();
       });
       this.input.keyboard.on("keydown-W", () => {
-        this.cursor = (this.cursor - 1 + LEVELS.length) % LEVELS.length;
+        this.cursor = (this.cursor - 1 + MENU_COUNT) % MENU_COUNT;
         this.updateHighlight();
       });
       this.input.keyboard.on("keydown-DOWN", () => {
-        this.cursor = (this.cursor + 1) % LEVELS.length;
+        this.cursor = (this.cursor + 1) % MENU_COUNT;
         this.updateHighlight();
       });
       this.input.keyboard.on("keydown-S", () => {
-        this.cursor = (this.cursor + 1) % LEVELS.length;
+        this.cursor = (this.cursor + 1) % MENU_COUNT;
         this.updateHighlight();
       });
       this.input.keyboard.on("keydown-ENTER", () => {
-        this.selectLevel();
+        if (this.cursor === MUSIC_INDEX) {
+          this.toggleMusic();
+        } else {
+          this.selectLevel();
+        }
       });
     }
 
-    // Music toggle
-    const musicLabel = () => music.muted ? "Music: OFF" : "Music: ON";
+    // Music toggle (part of the menu)
     this.musicText = this.add
-      .text(width / 2, height * 0.85, musicLabel(), {
-        fontSize: "16px",
-        color: "#64748b",
+      .text(width / 2, startY + LEVELS.length * gap, "", {
+        fontSize: "24px",
+        color: "#9ca3af",
         fontFamily: "system-ui, sans-serif",
+        fontStyle: "bold",
       })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
 
     this.musicText.on("pointerdown", () => {
-      music.toggleMute();
-      this.musicText.setText(musicLabel());
+      this.toggleMusic();
     });
+    this.musicText.on("pointerover", () => {
+      this.cursor = MUSIC_INDEX;
+      this.updateHighlight();
+    });
+
+    this.updateHighlight();
   }
 
   private updateHighlight(): void {
@@ -121,6 +131,20 @@ export class BootScene extends Phaser.Scene {
         this.menuTexts[i].setText("  " + LEVELS[i].label);
       }
     }
+
+    const musicLabel = music.muted ? "MUSIC: OFF" : "MUSIC: ON";
+    if (this.cursor === MUSIC_INDEX) {
+      this.musicText.setColor("#a855f7");
+      this.musicText.setText("\u25B6 " + musicLabel);
+    } else {
+      this.musicText.setColor("#9ca3af");
+      this.musicText.setText("  " + musicLabel);
+    }
+  }
+
+  private toggleMusic(): void {
+    music.toggleMute();
+    this.updateHighlight();
   }
 
   private selectLevel(): void {

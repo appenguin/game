@@ -23,20 +23,20 @@ const g = () => globalThis as any;
 
 export const LEVEL_THRESHOLDS = [
   0,    // 0  Silence
-  20,   // 1  Bass intro
-  60,   // 2  + kick
-  110,  // 3  + hi-hats
-  170,  // 4  + snare
-  240,  // 5  + ghost snares, deep bass
-  320,  // 6  + lead (b4)
-  410,  // 7  + lead shift (d5)
-  510,  // 8  + lead shift (c#5)
-  620,  // 9  bass change + lead
-  740,  // 10 + lead shift (d5)
-  870,  // 11 + lead shift (c#5)
-  1010, // 12 bass progression
-  1160, // 13 bass double-time
-  1320, // 14 + lead melody
+  5,    // 1  Bass intro
+  15,   // 2  + kick
+  30,   // 3  + hi-hats
+  50,   // 4  + snare
+  75,   // 5  + ghost snares, deep bass
+  110,  // 6  + lead (b4)
+  200,  // 7  + lead shift (d5)
+  300,  // 8  + lead shift (c#5)
+  420,  // 9  bass change + lead
+  550,  // 10 + lead shift (d5)
+  700,  // 11 + lead shift (c#5)
+  870,  // 12 bass progression
+  1050, // 13 bass double-time
+  1250, // 14 + lead melody
   1500, // 15 full solo
 ];
 
@@ -113,11 +113,11 @@ export function getPatternForLevel(level: number): any {
     .degradeBy(0.8).sustain(0.4).gain(0.3);
 
   const bass = note("b2 f#2 d2 <a1 a2>").fast(4)
-    .sound("supersaw")
+    .sound("sawtooth")
     .lpf(sine.range(1000, 5000).slow(4))
     .orbit(2);
 
-  const lead1a = note("- b4").fast(4).sound("saw")
+  const lead1a = note("- b4").fast(4).sound("sawtooth")
     .lpf(sine.range(800, 4000).lpq(4).slow(8))
     .gain(0.5).delay(0.2);
   const lead1b = lead1a.note("d5").delay(0.4);
@@ -134,7 +134,7 @@ b4 d5 f#5 d5 f#5 e5 f#5 g5 a5 b5 f#5 d5 f#5 e5 d5 c#5
 b4 c#5 d5 c#5 e5 d5 c#5 d5 f#5 e5 d5 e5 f#5 e5 d5 bb4
 b4 _ _ _ b4 d5 f#5 b5 a5 b5 f#5 d5 f#5 e5 d5 c#5
 b4 c#5 d5 c#5 e5 d5 c#5 d5 f#5 e5 d5 e5 f#5 e5 d5 bb4
->`).fast(16).sound("saw").lpf(3000).lpq(2).gain(0.2);
+>`).fast(16).sound("sawtooth").lpf(3000).lpq(2).gain(0.2);
 
   // -- Arrangement ----------------------------------------------------------
 

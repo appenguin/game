@@ -22,17 +22,22 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
-    // Defer AudioContext creation to first user gesture (browser requirement)
+    // Defer Strudel init to first user gesture (browser AudioContext requirement).
+    // Create AudioContext synchronously inside the gesture callback so the browser
+    // trusts it, then pass it to Strudel via setAudioContext (superdough).
+    // Note: Strudel's built-in initAudioOnFirstClick only listens for mousedown,
+    // so we handle all gesture types ourselves.
     let musicStarted = false;
     const startMusic = () => {
       if (musicStarted) return;
       musicStarted = true;
-      music.init().then(() => music.play());
+      document.removeEventListener("pointerdown", startMusic);
+      document.removeEventListener("keydown", startMusic);
+      const ctx = new AudioContext();
+      music.init(ctx).then(() => music.play());
     };
-    this.input.on("pointerdown", startMusic);
-    if (this.input.keyboard) {
-      this.input.keyboard.on("keydown", startMusic);
-    }
+    document.addEventListener("pointerdown", startMusic);
+    document.addEventListener("keydown", startMusic);
 
     this.cameras.main.setBackgroundColor("#f8fbff");
 

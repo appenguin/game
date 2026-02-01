@@ -9,12 +9,14 @@
  */
 
 import { initStrudel } from "@strudel/web";
+import { setAudioContext } from "superdough";
 import {
   getMusicLevel,
   getPatternForLevel,
   getDeathPattern,
   BASE_BPM,
   LEVEL_BPM,
+  LEVEL_THRESHOLDS,
 } from "../../core/music";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -29,6 +31,8 @@ class Music {
   private wantsPlay = false; // true if play() was called before init finished
   private deathTimer: ReturnType<typeof setTimeout> | null = null;
   private difficultyLevel = 1; // 0=easy, 1=medium, 2=hard
+  private pendingLevel = -1;   // queued level, applied on next 4-bar boundary
+  private lastChangeTime = 0;  // timestamp (seconds) of last level change
 
   constructor() {
     this._muted = localStorage.getItem(STORAGE_KEY) === "off";
@@ -43,18 +47,28 @@ class Music {
     return LEVEL_BPM[this.difficultyLevel] ?? BASE_BPM;
   }
 
-  /** Call once (idempotent). Resolves when Strudel is ready. */
-  async init(): Promise<void> {
+  /** Call once (idempotent). Pass an AudioContext created during a user gesture. */
+  async init(ctx?: AudioContext): Promise<void> {
     if (this.initialized) return;
     try {
+      // Pre-set the AudioContext so Strudel reuses it (avoids browser autoplay block)
+      if (ctx) setAudioContext(ctx);
       await initStrudel({
         prebake: () => g().samples("github:tidalcycles/dirt-samples"),
       });
       this.initialized = true;
+      // Play the full arrangement silently to preload all samples + warm up oscillators
+      const cps = this.baseBpm / 4 / 60;
+      const full = getPatternForLevel(LEVEL_THRESHOLDS.length - 1);
+      if (full) full.gain(0).cps(cps).play();
+      // Brief pause then hush, so Strudel fetches everything
+      setTimeout(() => this.hush(), 500);
       // Fulfil any play() that arrived before init finished
       if (this.wantsPlay) {
         this.wantsPlay = false;
         this.musicLevel = 0;
+        this.pendingLevel = -1;
+        this.lastChangeTime = 0; // allow first level change immediately
         if (!this._muted) this.applyLevel(0);
       }
     } catch (e) {
@@ -69,6 +83,8 @@ class Music {
       return;
     }
     this.musicLevel = 0;
+    this.pendingLevel = -1;
+    this.lastChangeTime = 0; // allow first level change immediately
     if (!this._muted) this.applyLevel(0);
   }
 
@@ -89,7 +105,7 @@ class Music {
   }
 
   // -----------------------------------------------------------------------
-  // Score-driven layer progression
+  // Distance-driven layer progression (quantised to 4-bar boundaries)
   // -----------------------------------------------------------------------
 
   /** Call every frame to update music layers based on distance (meters). */
@@ -97,8 +113,17 @@ class Music {
     if (!this.initialized) return;
     const next = getMusicLevel(meters);
     if (next !== this.musicLevel) {
-      this.musicLevel = next;
-      if (!this._muted) this.applyLevel(next);
+      this.pendingLevel = next;
+    }
+    if (this.pendingLevel < 0 || this.pendingLevel === this.musicLevel) return;
+
+    const now = performance.now() / 1000;
+    const fourBars = 4 / (this.baseBpm / 4 / 60); // 4 cycles in seconds
+    if (now - this.lastChangeTime >= fourBars) {
+      this.musicLevel = this.pendingLevel;
+      this.pendingLevel = -1;
+      this.lastChangeTime = now;
+      if (!this._muted) this.applyLevel(this.musicLevel);
     }
   }
 
@@ -124,6 +149,8 @@ class Music {
   onRestart(): void {
     this.clearDeathTimer();
     this.musicLevel = 0;
+    this.pendingLevel = -1;
+    this.lastChangeTime = 0; // allow first level change immediately
     if (!this._muted) {
       this.applyLevel(0);
     }

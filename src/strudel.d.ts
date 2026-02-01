@@ -4,3 +4,8 @@ declare module "@strudel/web" {
     prebake?: () => unknown;
   }): Promise<unknown>;
 }
+
+declare module "superdough" {
+  export function setAudioContext(ctx: AudioContext | null): AudioContext | null;
+  export function getAudioContext(): AudioContext;
+}

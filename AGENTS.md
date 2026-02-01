@@ -151,12 +151,15 @@ Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by leve
 Procedural layered music powered by **Strudel** (`@strudel/web`). Samples loaded from `github:tidalcycles/dirt-samples`.
 
 - 16-level progressive arrangement driven by distance (meters), not score — instruments enter one at a time
-- Supersaw bass, saw leads, drum samples (bd, hh, sd) build up as distance increases (solo at 1500m)
+- Sawtooth bass, saw leads, drum samples (bd, hh, sd) build up as distance increases (solo at 1500m)
 - Key: B minor. Tempo per difficulty: Easy 110, Medium 124, Hard 140 BPM (fixed throughout game)
+- Level changes quantised to 4-bar boundaries for musical coherence
+- On init, the full arrangement plays silently (`gain(0)`) for 500ms to preload all samples
 - Pattern definitions live in `src/core/music.ts` — edit that file to change the music
 - Music system (`src/engine/systems/Music.ts`) is a singleton shared across scenes
 - Music toggle on boot screen, preference persisted in localStorage
-- Strudel init deferred to first user gesture (pointer or keyboard) to satisfy browser AudioContext policy
+- AudioContext created synchronously inside native DOM gesture handler (`pointerdown`/`keydown`), then injected into superdough via `setAudioContext()` before `initStrudel()` runs. This bypasses Strudel's built-in `initAudioOnFirstClick()` which only listens for `mousedown`
+- Phaser audio disabled (`noAudio: true` in game config) — all audio goes through Strudel. Re-enable when adding Phaser sound effects
 
 ## Development
 

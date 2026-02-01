@@ -26,11 +26,15 @@ We're keeping it loose. Five phases:
 
 3. **Game feel polish** -- ski trails, event particle bursts, camera effects, screen shake. This is where it goes from "tech demo" to "game." Done.
 
-4. **Menus and persistence** -- main menu, results screen, settings, best score saved locally. Full game loop.
+4. **Menus and persistence** -- Doom-style menus with keyboard + touch. Difficulty selection, pause, game over. Done. High score persistence still to come.
 
-5. **Art and audio** -- replace placeholder shapes with sprites. Sound effects and music.
+5. **Physics and controls rework** -- force-based speed model (gravity vs friction vs wing drag), wing spread/tuck for speed control, simplified tricks. Done.
 
-6. **Capacitor wrap** -- bundle into an Android app with haptic feedback. The appenguin pipeline in action.
+6. **Sprite art** -- animated penguin sprite sheet, snow-covered tree sprites (4 variants), collision particle effects. In progress. Rocks, ice, and other obstacles still placeholder shapes.
+
+7. **Procedural music** -- Strudel-powered 16-layer progressive soundtrack. Done.
+
+8. **Capacitor wrap** -- bundle into an Android app with haptic feedback. The appenguin pipeline in action.
 
 ## Tech stack
 
@@ -62,9 +66,9 @@ We pulled PWA support forward. The game is installable to your home screen and w
 
 - **Mobile meta tags** in index.html: theme-color, apple-mobile-web-app-capable, viewport-fit=cover, no user scaling. The game fills the screen edge to edge on mobile.
 
-- **Touch controls.** Four buttons in a row at the bottom: **< FLIP TUCK >**. The arrow buttons steer (rotating the penguin's heading with momentum, Ski or Die-style), and FLIP/TUCK perform tricks while airborne. Tapping above the button row also steers -- left half steers left, right half steers right. Multi-touch means you can steer with one thumb and tap tricks with the other.
+- **Touch controls.** Four buttons in a row at the bottom: **< ▼TUCK ★TRICK >**. The arrow buttons steer (rotating the penguin's heading with momentum, Ski or Die-style). TUCK is a hold button -- hold it to tuck wings (speed up on ground, tuck sprite in air). TRICK is a tap button for performing a flip while airborne. Tapping above the button row also steers -- left half steers left, right half steers right. Multi-touch means you can steer with one thumb and control speed/tricks with the other.
 
-  We originally had tilt/gyroscope steering, then half-screen touch zones. The current layout with explicit steer buttons matches the angle-based steering model -- you hold a direction to carve into a turn, and release to drift back straight.
+  We originally had tilt/gyroscope steering, then half-screen touch zones, then FLIP/TUCK trick buttons. The current layout reflects the physics rework -- wing control replaced directional tricks, so the buttons changed to match.
 
   Portrait orientation is locked via the PWA manifest and the Screen Orientation API.
 
@@ -82,9 +86,9 @@ A few more things landed before we move to game feel polish:
 
 ## First real sprite
 
-The placeholder blue rectangle is gone. The penguin now has a proper sprite -- a top-down belly-sliding penguin wearing a red beanie, processed from a generated image down to 48x64px with transparent background. It loads in `preload()` and uses Phaser's `Image` instead of `Rectangle`. Icy state tints the sprite cyan; crashing tints it red.
+The placeholder blue rectangle is gone. The penguin now has a proper sprite sheet -- two frames (tucked and wings-open), processed from generated images by a Python build script. Frame switching is instantaneous based on player input: tucked on ground by default, wings spread when braking. Icy state tints the sprite cyan.
 
-We also cleaned up the air controls. Left and right arrows used to trigger "Left Spin" and "Right Spin" as scored tricks -- but that felt wrong. Now left/right add continuous visual spin while airborne (hold to keep spinning, purely cosmetic), while up/down remain the real tricks (Backflip and Front Tuck, scored). The penguin's heading rotation carries through the jump, with tricks and spin layering on top.
+We also cleaned up the air controls. Left and right arrows add continuous visual spin while airborne (hold to keep spinning, purely cosmetic). Tricks moved to Space/Enter. The penguin's heading rotation carries through the jump, with tricks and spin layering on top.
 
 The background got brighter too -- `#f2f7ff`, a near-white with just enough blue to read as snow under a clear sky. The old grey felt too overcast.
 
@@ -137,9 +141,41 @@ Every menu in the game now works the same way: arrow keys move a cursor, Enter s
 
 ESC pauses the game mid-run and shows Resume / New Game / Quit. ESC again resumes. After death, the game over menu offers Retry and Quit.
 
+## Animated sprite sheet
+
+The blue rectangle penguin is gone for good. We now have a proper sprite sheet: two frames, tucked and wings-open, generated from source images by a Python build script (`scripts/build-sprites.py`). The script handles background removal, scaling, cropping, and composing a horizontal strip that Phaser loads as a spritesheet.
+
+Frame 0 is tucked (ground default, air tuck). Frame 1 is wings spread (braking on ground, air default, death). The frame switches based on player input -- hold Down/S to tuck, Up/W to spread.
+
+## Force-based physics
+
+The original speed model was a simple distance curve: `speed = start + distance * accel`, clamped to a cap. It worked but felt like riding an escalator. You couldn't slow down. Speed just went up.
+
+We replaced it with a force model. Each frame: `accel = gravity - friction - wingDrag`. Gravity is a constant 120 pulling the penguin downhill. Friction is proportional to speed (coefficient 0.15 normally, 0.03 on ice, +0.25 in snowdrifts). Wing drag is the player's lever: tuck wings (Down/S) for zero drag and maximum acceleration, neutral for a light 10 drag, spread wings (Up/W) for heavy 60 drag that brakes hard.
+
+Speed now rises and falls dynamically. You can actually slow down before a dense obstacle section, then tuck to blast through an open stretch. Ice patches become terrifying -- with friction near zero, speed climbs fast and steering barely works. Snowdrifts now add friction drag instead of a flat 50% speed multiplier, which feels more physical.
+
+Tricks were simplified too. Instead of Backflip (Up) and Front Tuck (Down), there's now a single Flip triggered by Space/Enter or the TRICK touch button. One trick per jump, 300 points. Up/Down are freed up for wing control at all times. Touch layout changed from `[< FLIP TUCK >]` to `[< TUCK TRICK >]`.
+
+## Snow-covered trees
+
+First real obstacle art. We generated four snow-covered tree variants and packed them into a sprite sheet via the same build pipeline. The source image is a 2x2 grid (`penguin_images/trees.png`); the build script splits it into quadrants, removes backgrounds, scales to 48px, and composes a horizontal strip (`public/tree-sheet.png`, 4 frames @ 44x48).
+
+Trees spawn at 2.2x scale and render above the penguin (depth 7 vs penguin's 5). Each tree gets a random variant. They're the most common obstacle now -- 40% of spawns at easy difficulty, 25% at expert.
+
+The collision system got a major rework for trees:
+
+**Persistence.** Obstacles no longer vanish on hit. They stay on screen, marked with a `hit` flag so the speed penalty doesn't re-trigger. Only fish disappear (they're collected). This makes the slope feel more real -- you crash through a tree and it's still there behind you.
+
+**Centeredness scaling.** Tree slowdown uses acceleration, not a flat multiplier. A grazing hit subtracts 30 from speed. A dead center hit subtracts 300 -- nearly a full stop. The formula measures how far the penguin's center is from the tree's center relative to their combined widths.
+
+**Continuous snow burst.** While the penguin overlaps a tree, white particles spray from the tree position *and* from under the penguin every frame. The ski trail pauses during overlap so it doesn't render on top of the tree. This was our depth-ordering solution -- rather than fighting Phaser's display list (newly created trail marks always ended up above older tree sprites regardless of depth settings), we just stop drawing the trail while inside a tree.
+
+**Tree shake.** On each frame of overlap, the tree sprite is destroyed and recreated with a ±3px random offset from its stored origin. This serves two purposes: it places the sprite fresh at the top of the display list (fixing the depth issue for non-trail elements), and it gives the tree a satisfying shudder as the penguin plows through it. The origin point scrolls with the world so the shake stays centered.
+
 ## What's next
 
-Game logic in `core/` (tricks, difficulty, music), Phaser systems in `engine/systems/` (input, spawning, effects, music). Next: persistence (high scores, settings), real sprite art, sound effects, and the Capacitor wrap for Android.
+Rocks and ice are still colored rectangles. More sprites coming. Then: persistence (high scores, settings), sound effects, and the Capacitor wrap for Android.
 
 We'll document the entire build as we go. Every decision, every dead end, every time we spend an hour tweaking how it feels to almost hit a rock.
 

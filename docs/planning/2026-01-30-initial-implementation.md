@@ -126,13 +126,42 @@
   - Tricks no longer rotate the penguin; only L/R spin rotates
   - Tricks are hold-to-perform: shows tucked sprite while trick key held
 
+- [x] Force-based physics and wing drag speed control
+  - Replaced distance-based speed curve (`getBaseSpeed()`) with force integration
+  - `accel = gravity(120) - friction(speed * coeff) - wingDrag(0/10/60)`
+  - Up/W = spread wings (brake, 60 drag), Down/S = tuck wings (speed up, 0 drag), neutral = 10 drag
+  - Ice: friction coeff 0.03 (fast acceleration), snowdrifts: +0.25 friction (replaces 50% multiplier)
+  - Starting speed from difficulty profile, clamped to level cap
+  - Tricks consolidated: single "Flip" (300 pts) triggered by Space/Enter or TRICK touch button
+  - Touch buttons changed from `[< FLIP TUCK >]` to `[< ▼TUCK ★TRICK >]`
+  - TUCK is held (ground + air), TRICK is one-shot (air only)
+  - Sprite frames: ground neutral=0, ground spread=1, air default=1, air tuck=0
+
+- [x] Snow-covered tree sprites (Phase 5 continued)
+  - 4 tree variants from `penguin_images/trees.png` (2x2 grid), built to `public/tree-sheet.png` (4 frames @ 44x48)
+  - Build script extended with `build_tree_sheet()`: splits grid, removes bg, scales, composes horizontal strip
+  - `SlopeObject.sprite` type widened to `Shape | Sprite` union
+  - Trees spawn at 2.2x scale, random frame, depth 7 (above penguin at 5)
+  - Tree spawn rates doubled: 40% easy, 35% medium, 30% hard, 25% expert
+  - Collision rework: acceleration-based slowdown scaled by hit centeredness (grazing -30, center -300)
+  - Obstacles persist after hit (`hit` flag prevents re-triggering); only fish removed on collection
+  - Continuous snow burst while penguin overlaps tree (white particles from tree + under penguin each frame)
+  - Tree shakes ±3px around stored origin while overlapping (sprite destroyed/recreated to fix display list depth)
+  - Ski trail pauses inside trees (`inTree` flag passed to Effects.update)
+  - `SlopeObject` extended with `hit`, `originX`, `originY` fields
+
+- [x] Music/boot fixes
+  - Silenced intro music layer (was a slow pad, now silence until first layer kicks in)
+  - Silenced death pattern (was a sawtooth buzz, now silence)
+  - Fixed boot menu music toggle showing empty string on initial render
+
 ### Current step
 
-- [ ] Phase 4: Persistence (high scores, settings)
+- [ ] Phase 5: More obstacle sprites (rocks, ice, etc.)
 
 ### Next steps
-- [ ] Phase 4: Menus and persistence
-- [ ] Phase 5: Art and audio (music done; SFX and sprites remaining)
+- [ ] Phase 4: Persistence (high scores, settings)
+- [ ] Phase 5: Art and audio (more sprites, SFX remaining)
 - [ ] Phase 7: Capacitor wrap
 
 ---
@@ -150,8 +179,9 @@ Our version: a penguin slides downhill on ice. Steer left/right to avoid obstacl
 | Mechanic | How it works |
 |----------|-------------|
 | Steering | Left/right rotates penguin heading with momentum; lateral movement follows angle; downhill speed reduced by `cos(heading)` — slalom costs forward momentum |
-| Auto-scroll | Obstacles scroll upward (penguin at top = downhill perspective), speed increases over time |
-| Obstacles | Rocks (game over), trees (slow + lose combo), ice patches (reduced steering), crevasses (game over), moguls (small bump/air), snowdrifts (slow) |
+| Speed control | Up/W spreads wings (brake), Down/S tucks wings (speed up). Force model: gravity - friction - wingDrag each frame |
+| Auto-scroll | Obstacles scroll upward (penguin at top = downhill perspective), speed driven by force-based physics |
+| Obstacles | Rocks (game over), trees (speed loss scaled by hit center, persist on screen), ice patches (reduced steering + low friction), crevasses (game over), moguls (small bump/air), snowdrifts (extra friction drag) |
 | Ramps | Hit a ramp to launch into the air. Airtime depends on speed |
 | Tricks | While airborne, tap directions to perform tricks (flip, spin). Each trick has a point value |
 | Landing | Clean = keep trick points. Crash = lose trick points + penalty |
@@ -159,20 +189,18 @@ Our version: a penguin slides downhill on ice. Steer left/right to avoid obstacl
 | Combo | Consecutive clean trick landings increase multiplier |
 | Scoring | Slow distance trickle + fish + (tricks + spin) * combo multiplier |
 
-### Trick system (Ski or Die style)
+### Trick system
 
-While airborne, directional inputs perform tricks:
+Single trick triggered while airborne:
 
 | Input | Trick | Points |
 |-------|-------|--------|
-| Up / W | Backflip | 300 |
-| Down / S | Front tuck | 250 |
+| Space / Enter / TRICK button | Flip | 300 |
 | Left/Right | Spin | 100 per half rotation |
 
-Left/Right arrows add continuous spin while airborne (scored on landing). Tricks are hold-to-perform and show the tucked sprite while held. Tricks do not rotate the penguin; only L/R spin rotates.
+Up/Down keys now control wing tuck/spread (speed), not tricks. Left/Right add continuous spin while airborne (scored on landing). Tricks do not rotate the penguin; only L/R spin rotates.
 
-- Each trick can only be performed once per jump
-- Performing multiple different tricks scores a variety bonus (+50 per extra trick)
+- One trick per jump (Flip)
 - Crash landing = zero trick points for that jump, combo reset
 - Heading rotation is preserved in air; spin layers on top
 
@@ -187,16 +215,16 @@ RunScene.ts was 814 lines. Extracted game logic into focused modules to keep it 
 ```
 src/
   core/
-    tricks.ts          Trick interface, TRICKS constant, calcTrickScore(), canQueueTrick()
-    difficulty.ts      Difficulty zones, spawn weights, speed curve, pickObstacleType()
+    tricks.ts          Trick interface, single TRICKS constant, calcTrickScore(), canQueueTrick()
+    difficulty.ts      Difficulty zones, spawn weights, speed profiles, pickObstacleType()
     music.ts           Music pattern definitions, level thresholds, getMusicLevel()
   engine/
     scenes/
       BootScene.ts     Difficulty selection, music toggle, launches RunScene with level
       RunScene.ts      Orchestrator (~620 lines): penguin state, camera, scoring, HUD, music, effects wiring, delegates to systems
     systems/
-      Spawner.ts       SlopeObject interface, spawn helpers, collision check, object lifecycle
-      Input.ts         Keyboard + touch + trick buttons, getSteerDir(), getTrickKey()
+      Spawner.ts       SlopeObject interface (Shape|Sprite, hit/origin tracking), spawn helpers, collision, redrawTree
+      Input.ts         Keyboard + touch + steer/tuck/trick buttons, getTuckHeld(), getSpreadHeld()
       Music.ts         Strudel lifecycle, score-driven layer progression, singleton
   strudel.d.ts         TypeScript declarations for @strudel/web
 ```
@@ -364,10 +392,10 @@ Replace colored shapes with sprites and add sound. Transforms the look and feel.
 
 | Object | Sprite description | Size |
 |--------|--------------------|------|
-| Penguin (ground) | Top-down belly-slide penguin with beanie, wings tucked (frame 0 of `penguin-sheet.png`) | 46x46 |
-| Penguin (air) | Wings open pose (frame 1), rotates with L/R spin only | 46x46 |
-| Rock | Gray boulder, irregular shape | 30x30 |
-| Tree | Pine tree, top-down (dark green triangle with trunk dot) | 30x36 |
+| Penguin (ground) | Top-down belly-slide penguin with beanie, wings tucked (frame 0 of `penguin-sheet.png`) | 46x46 | Done |
+| Penguin (air) | Wings open pose (frame 1), rotates with L/R spin only | 46x46 | Done |
+| Rock | Gray boulder, irregular shape | 30x30 | Placeholder |
+| Tree | Snow-covered trees, 4 variants (frames 0-3 of `tree-sheet.png`, 2.2x scale) | 44x48 @ 2.2x | Done |
 | Ramp | Blue/white ski ramp, perspective | 50x24 |
 | Fish | Gold fish shape | 16x16 |
 | Ice patch | Translucent blue texture | 60-100 x 20 |
@@ -503,15 +531,17 @@ Bundle into a native Android app. The appenguin showcase.
 |----------|--------|-----------|
 | Game framework | Phaser 3 | Mature, good mobile perf, rich feature set for polish |
 | Bundler | Vite | Fast dev, good TS support |
-| Art style (MVP) | Penguin sprite sheet + colored shapes for obstacles | 2-frame sprite sheet (`penguin-sheet.png`, 46x46): tucked + open wings; obstacles still placeholder shapes |
+| Art style (MVP) | Sprite sheets for penguin + trees, colored shapes for other obstacles | Penguin: 2-frame sheet (46x46). Trees: 4-variant sheet (44x48, 2.2x scale). Others still placeholder shapes |
 | Game style | Ski or Die downhill + tricks | More depth than pure drift runner, iconic reference |
 | Scrolling | Top-down, penguin at screen center, camera follows | Infinite horizontal freedom, classic downhill feel |
-| Trick system | Up/down for tricks (hold to perform), left/right for spin | Tricks change sprite (tucked), spin rotates; both scored |
+| Trick system | Space/Enter for Flip trick, left/right for spin | Single trick per jump; Up/Down freed for wing speed control |
 | Difficulty | Distance-based zones | Gradual learning curve, gets hard after 1500m |
 | Refactor before features | Yes, done | 814-line RunScene split into 4 modules: core/tricks, core/difficulty, systems/Input, systems/Spawner. RunScene now ~430 lines |
 | PWA early | Yes | Installability and offline support are cheap to add now with vite-plugin-pwa; touch controls need testing on real devices early |
 | Steering model | Angle-based with momentum + cos speed cost | Carving turns with momentum; slalom costs forward speed via cos(heading) |
-| Touch controls | 4-button row: `[<] [FLIP] [TUCK] [>]` + half-screen fallback | Explicit steer buttons for angle-based steering; trick buttons for air |
+| Touch controls | 4-button row: `[<] [▼TUCK] [★TRICK] [>]` + half-screen fallback | Steer buttons + TUCK (hold, ground+air) + TRICK (tap, air only) |
+| Speed model | Force-based: gravity vs friction vs wing drag | Replaces distance curve; speed rises/falls dynamically; player has speed agency |
+| Tree collision | Acceleration-based, centeredness-scaled, persistent | Trees don't disappear; center hit = near stop; continuous snow burst while overlapping |
 | Camera | Centered on penguin, world scrolls | Infinite horizontal movement, no screen-edge clamping |
 | Difficulty levels | Easy/Medium/Hard speed profiles | Player choice at start; obstacle zones still distance-based |
 | HUD | Semi-transparent top bar | Labeled score, distance (m/km), speed (km/h), level -- always visible, non-intrusive |
@@ -609,3 +639,35 @@ Tuned steering constants: turn accel 5.0, max turn speed 2.5, drag 4.0, centerin
 ### 2026-01-31: Mobile menu touch fix
 
 Fixed pause/game-over menus not responding to touch on mobile. The issue was that menu items inside a Phaser `Container` with `setScrollFactor(0)` don't get correct hit testing when the camera has scrolled — Phaser checks world coordinates but the container renders at screen coordinates. Fix: set `setScrollFactor(0)` on each element individually instead of on the container. Also enlarged all menu touch targets with 16px hit area padding in both BootScene and RunScene.
+
+### 2026-02-01: Force-based physics and wing drag speed control
+
+Replaced the distance-based speed curve (`getBaseSpeed()`) with a force integration model. Each frame: `accel = gravity(120) - friction(speed * coeff) - wingDrag`. Wing drag is controlled by player input: tuck (Down/S) = 0 drag (fastest), neutral = 10 drag, spread (Up/W) = 60 drag (heavy braking). Speed can now decrease when braking — previously it only went up. Ice patches use friction coeff 0.03 (near-zero friction = rapid acceleration). Snowdrifts add +0.25 friction instead of a flat 50% speed multiplier, which feels more physical.
+
+Tricks consolidated from two (Backflip 300pts, Front Tuck 250pts) to one (Flip 300pts) triggered by Space/Enter or the TRICK touch button. Up/Down freed for wing control at all times. Touch buttons changed from `[< FLIP TUCK >]` to `[< ▼TUCK ★TRICK >]`. TUCK is a held button (works ground + air), TRICK is a one-shot tap (air only).
+
+Sprite frames reworked: ground neutral = frame 0 (tucked), ground spread/brake = frame 1 (open wings), air default = frame 1, air tuck = frame 0. Removed `baseScrollSpeed` and `slowTimer` fields from RunScene.
+
+Exported `SPEED_PROFILES` from `core/difficulty.ts` so RunScene can access start speed and cap directly.
+
+### 2026-02-01: Snow-covered tree sprites and collision rework
+
+First real obstacle art. Four snow-covered tree variants generated from `penguin_images/trees.png` (2x2 grid). Extended `build-sprites.py` with `build_tree_sheet()` that splits the grid into quadrants, removes light backgrounds, scales to 48px target height, and composes a horizontal strip at `public/tree-sheet.png` (4 frames @ 44x48). Each tree spawns with a random variant at 2.2x scale.
+
+**SlopeObject type widening:** Changed `sprite` field from `Phaser.GameObjects.Shape` to `Shape | Sprite` union. Both types share `x`, `y`, `setDepth()`, `destroy()`, `setAlpha()` — all call sites compatible without changes.
+
+**Collision rework — persistence:** Obstacles no longer vanish when hit. Added `hit` flag to `SlopeObject`; collision loop skips flagged objects. Only fish use `removeObject()` (they're collected). Everything else stays on screen via `markHit()`.
+
+**Collision rework — tree slowdown:** Replaced flat `speed *= 0.7` with acceleration-based decel scaled by hit centeredness. Measures horizontal distance from penguin center to tree center, normalized against combined widths. Grazing hit = -30 speed (barely noticeable), dead center = -300 (near full stop from most speeds). Subtle camera shake on initial hit (150ms, 0.005 intensity).
+
+**Continuous effects while overlapping:** The collision loop now checks hit trees for ongoing overlap. While the penguin is inside a tree: white snow particles burst each frame from both the tree position and under the penguin (30 total: 20 from tree + 10 from penguin). The tree sprite is destroyed and recreated each frame with ±3px random offset from its stored `originX`/`originY`, producing a visible shake. The redraw also fixes depth ordering — newly created tree sprites render above older trail marks.
+
+**Ski trail pauses inside trees:** Added `inTree` flag computed before effects update. When true, trail creation is skipped (same path as airborne check). This avoids the depth-ordering problem where continuously-created trail rectangles rendered above trees despite lower depth values. The origin position scrolls with the world (`originY -= scrollDy` in the spawner update loop) so the shake stays centered as the tree moves up the screen.
+
+**Spawn rates:** Tree percentages roughly doubled across all difficulty zones: 40% easy (was 20%), 35% medium (was 18%), 30% hard (was 15%), 25% expert (was 12%). Trees are now the most common obstacle.
+
+### 2026-02-01: Music and boot screen fixes
+
+Silenced the intro music layer (level 0) and the death pattern. The intro pad sounded harsh and the death buzzer was grating. Both now return `silence` from Strudel. First audible layer kicks in when score triggers level 1.
+
+Fixed the boot screen music toggle label: was showing an empty string on initial render because the text was set to `""` and only updated on toggle. Now initializes with `"MUSIC: ON"` or `"MUSIC: OFF"` based on the muted state.

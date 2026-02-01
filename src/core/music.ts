@@ -44,6 +44,7 @@ export const LEVEL_THRESHOLDS = [
 
 /** Base BPM at level 0. Increases +1 per level. */
 export const BASE_BPM = 110;
+export const LEVEL_BPM = [110, 124, 140]; // Easy, Medium, Hard
 
 // ---------------------------------------------------------------------------
 // Helpers

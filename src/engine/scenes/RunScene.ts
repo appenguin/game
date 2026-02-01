@@ -111,6 +111,7 @@ export class RunScene extends Phaser.Scene {
     // Read difficulty level from scene data
     const data = this.scene.settings.data as { level?: number } | undefined;
     this.level = data?.level ?? 1;
+    this.music.setDifficulty(this.level);
 
     // Reset state
     this.gameOver = false;

@@ -14,6 +14,7 @@ import {
   getPatternForLevel,
   getDeathPattern,
   BASE_BPM,
+  LEVEL_BPM,
 } from "../../core/music";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -27,9 +28,19 @@ class Music {
   private _muted: boolean;
   private wantsPlay = false; // true if play() was called before init finished
   private deathTimer: ReturnType<typeof setTimeout> | null = null;
+  private difficultyLevel = 1; // 0=easy, 1=medium, 2=hard
 
   constructor() {
     this._muted = localStorage.getItem(STORAGE_KEY) === "off";
+  }
+
+  /** Set difficulty level to control base BPM. */
+  setDifficulty(level: number): void {
+    this.difficultyLevel = level;
+  }
+
+  private get baseBpm(): number {
+    return LEVEL_BPM[this.difficultyLevel] ?? BASE_BPM;
   }
 
   /** Call once (idempotent). Resolves when Strudel is ready. */
@@ -99,7 +110,7 @@ class Music {
     if (!this.initialized || this._muted) return;
     this.clearDeathTimer();
     // Play death pattern immediately
-    const cps = BASE_BPM / 4 / 60;
+    const cps = this.baseBpm / 4 / 60;
     getDeathPattern().cps(cps).play();
     // After 2 bars, drop to intro pad
     const barDuration = 2 / cps; // 2 cycles in seconds
@@ -133,8 +144,7 @@ class Music {
     if (!this.initialized) return;
     const { stack } = g();
 
-    const bpm = BASE_BPM + next;
-    const cps = bpm / 4 / 60; // cycles per second
+    const cps = this.baseBpm / 4 / 60; // cycles per second
 
     const layers: any[] = [];
     for (let i = 0; i <= next; i++) {

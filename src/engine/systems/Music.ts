@@ -142,18 +142,11 @@ class Music {
 
   private applyLevel(next: number): void {
     if (!this.initialized) return;
-    const { stack } = g();
 
     const cps = this.baseBpm / 4 / 60; // cycles per second
-
-    const layers: any[] = [];
-    for (let i = 0; i <= next; i++) {
-      const pat = getPatternForLevel(i);
-      if (pat) layers.push(pat);
-    }
-
-    if (layers.length > 0) {
-      stack(...layers).cps(cps).play();
+    const pat = getPatternForLevel(next);
+    if (pat) {
+      pat.cps(cps).play();
     }
   }
 

@@ -22,6 +22,7 @@ export class Effects {
   private grayEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
   private cyanEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
   private whiteEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
+  private treeSnowEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
   // Ski trail
   private trailSegments: TrailSegment[] = [];
   private trailTimer = 0;
@@ -116,6 +117,17 @@ export class Effects {
     });
     this.whiteEmitter.setDepth(3);
 
+    // --- Tree hit snow burst (white, small, lots of particles) ---
+    this.treeSnowEmitter = scene.add.particles(0, 0, "white-particle", {
+      speed: { min: 30, max: 100 },
+      scale: { start: 0.8, end: 0.1 },
+      alpha: { start: 0.95, end: 0 },
+      lifespan: { min: 350, max: 650 },
+      emitting: false,
+      angle: { min: 0, max: 360 },
+    });
+    this.treeSnowEmitter.setDepth(6);
+
   }
 
   update(
@@ -125,9 +137,10 @@ export class Effects {
     heading: number,
     scrollSpeed: number,
     isAirborne: boolean,
+    inTree = false,
   ): void {
     this.updateSnowSpray(penguinX, penguinY, heading, scrollSpeed, isAirborne, dt);
-    this.updateTrail(dt, penguinX, penguinY, scrollSpeed, isAirborne);
+    this.updateTrail(dt, penguinX, penguinY, scrollSpeed, isAirborne || inTree);
     this.updateIceSparkle(dt, penguinX, penguinY, isAirborne);
   }
 
@@ -156,6 +169,15 @@ export class Effects {
   burstSnowdrift(x: number, y: number): void {
     this.whiteEmitter.setPosition(x, y);
     this.whiteEmitter.emitParticle(8);
+  }
+
+  burstTreeHit(treeX: number, treeY: number, penguinX: number, penguinY: number): void {
+    // Snow from the tree
+    this.treeSnowEmitter.setPosition(treeX, treeY);
+    this.treeSnowEmitter.emitParticle(20);
+    // Snow from under the penguin on impact
+    this.treeSnowEmitter.setPosition(penguinX, penguinY + 10);
+    this.treeSnowEmitter.emitParticle(10);
   }
 
   startIceSparkle(): void {
@@ -260,7 +282,7 @@ export class Effects {
     const mark = this.scene.add.rectangle(
       penguinX, markY, 18, markH, 0xb0c4de, this.TRAIL_ALPHA,
     );
-    mark.setDepth(1);
+    mark.setDepth(0);
 
     this.trailSegments.push({ mark, age: 0 });
   }
@@ -273,6 +295,7 @@ export class Effects {
     this.grayEmitter.destroy();
     this.cyanEmitter.destroy();
     this.whiteEmitter.destroy();
+    this.treeSnowEmitter.destroy();
     for (const seg of this.trailSegments) {
       seg.mark.destroy();
     }

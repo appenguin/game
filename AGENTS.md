@@ -36,16 +36,18 @@ src/
       RunScene.ts     Gameplay orchestrator, pause/game-over menus
     systems/
       Input.ts        Keyboard + touch + steer/trick buttons + ESC pause
-      Spawner.ts      Obstacle spawning + management
+      Spawner.ts      Obstacle spawning, scrolling, collision, hit tracking
       Music.ts        Strudel lifecycle, score-driven layer progression
-      Effects.ts      Snow spray, ski trail, event particle bursts, ice sparkle
+      Effects.ts      Snow spray, ski trail, event particle bursts, ice sparkle, tree snow
   strudel.d.ts        TypeScript declarations for @strudel/web
   platform/           (planned) Platform adapters (web vs Capacitor)
 public/               Static assets (icons, manifest, sprites)
   penguin-sheet.png   Penguin sprite sheet (2 frames @ 46x46: tucked, open wings)
-penguin_images/       Source penguin images (processed by build script)
+  tree-sheet.png      Tree sprite sheet (4 frames @ 44x48: snow-covered variants)
+penguin_images/       Source images (processed by build script)
+  trees.png           Source tree image (2x2 grid of 4 snow-covered trees)
 scripts/
-  build-sprites.py    Generates public/penguin-sheet.png from penguin_images/
+  build-sprites.py    Generates penguin-sheet.png + tree-sheet.png from penguin_images/
 index.html            HTML entry point
 vite.config.ts        Vite + PWA config
 docs/
@@ -82,10 +84,27 @@ docs/
 ## Camera and rendering
 
 - Penguin sprite sheet (2 frames: tucked/open wings) at screen center; world scrolls via `camera.scrollX`
-- Obstacles spawn in world-space, scroll upward past the penguin
-- Snow spray particles + belly-slide trail behind penguin on ground
+- Trees are sprite-based (4 variants from `tree-sheet.png`, randomly selected, 2.2x scale, depth 7 — above penguin at depth 5)
+- Other obstacles use procedural shapes (rectangles, triangles, ellipses, circles)
+- Snow spray particles + belly-slide trail behind penguin on ground; trail pauses inside trees
+- Tree collision: continuous snow burst (white particles from tree + under penguin) while overlapping, tree shakes ±3px around origin, speed penalty scaled by hit centeredness
+- Obstacles persist after being hit (marked with `hit` flag to prevent re-triggering); only fish are removed on collection
 - Event particle bursts on collisions and landings; camera bump on landing
 - UI pinned to screen with `setScrollFactor(0)` on each element individually (not via container, which breaks Phaser touch hit testing): HUD bar, buttons, menus
+
+## Depth layering
+
+| Depth | Element |
+|-------|---------|
+| -1–0 | Ski trail marks |
+| 3 | Snow spray, ice sparkle, snowdrift puff |
+| 4 | Penguin shadow |
+| 5 | Penguin (ground), burst emitters at 6 |
+| 7 | Trees |
+| 8 | Penguin (airborne) |
+| 10–11 | HUD bar, text |
+| 20 | Touch buttons |
+| 50–51 | Menu overlays |
 
 ## Speed physics
 
@@ -112,6 +131,8 @@ Three player-selected levels on the start screen:
 | Hard | 280 | 600 |
 
 Speed is no longer a function of distance — it emerges from the force model. Players control speed via wing tuck/spread. Ice patches reduce friction (fast acceleration). Snowdrifts add extra friction drag.
+
+Trees are the most common obstacle (40% at easy, 25% at expert). Tree collision uses acceleration-based slowdown: grazing = -30 speed, dead center = -300 speed (near full stop). Resets combo.
 
 Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by level selection.
 

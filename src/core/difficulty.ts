@@ -48,40 +48,40 @@ export function getRampInterval(difficulty: number): number {
 type SpawnEntry = [number, SlopeObjectType];
 
 const SPAWN_TABLES: SpawnEntry[][] = [
-  // Difficulty 0 — Easy: fish heavy, some trees, rare rocks
+  // Difficulty 0 — Easy: lots of trees, fish, rare rocks
+  [
+    [0.10, "rock"],
+    [0.50, "tree"],
+    [0.58, "snowdrift"],
+    [1.0, "fish"],
+  ],
+  // Difficulty 1 — Medium: trees dominant, ice patches, some rocks
   [
     [0.15, "rock"],
-    [0.35, "tree"],
-    [0.45, "snowdrift"],
+    [0.50, "tree"],
+    [0.58, "ice"],
+    [0.64, "snowdrift"],
+    [0.70, "crevasse"],
     [1.0, "fish"],
   ],
-  // Difficulty 1 — Medium: ice patches, more rocks
+  // Difficulty 2 — Hard: dense trees, moguls, crevasses
   [
-    [0.2, "rock"],
-    [0.38, "tree"],
-    [0.48, "ice"],
-    [0.55, "snowdrift"],
-    [0.62, "crevasse"],
+    [0.18, "rock"],
+    [0.48, "tree"],
+    [0.56, "ice"],
+    [0.63, "crevasse"],
+    [0.72, "mogul"],
+    [0.78, "snowdrift"],
     [1.0, "fish"],
   ],
-  // Difficulty 2 — Hard: moguls, crevasses, dense
+  // Difficulty 3 — Expert: everything, trees still common
   [
-    [0.22, "rock"],
-    [0.37, "tree"],
-    [0.47, "ice"],
-    [0.55, "crevasse"],
-    [0.65, "mogul"],
-    [0.72, "snowdrift"],
-    [1.0, "fish"],
-  ],
-  // Difficulty 3 — Expert: everything, high density
-  [
-    [0.25, "rock"],
-    [0.37, "tree"],
-    [0.47, "crevasse"],
-    [0.57, "ice"],
-    [0.67, "mogul"],
-    [0.73, "snowdrift"],
+    [0.20, "rock"],
+    [0.45, "tree"],
+    [0.53, "crevasse"],
+    [0.61, "ice"],
+    [0.70, "mogul"],
+    [0.76, "snowdrift"],
     [1.0, "fish"],
   ],
 ];

@@ -9,10 +9,13 @@ import {
 
 /** An object on the slope (obstacle, collectible, or ramp) */
 export interface SlopeObject {
-  sprite: Phaser.GameObjects.Shape;
+  sprite: Phaser.GameObjects.Shape | Phaser.GameObjects.Sprite;
   type: SlopeObjectType;
   width: number;
   height: number;
+  hit?: boolean;
+  originX?: number;
+  originY?: number;
 }
 
 /**
@@ -57,9 +60,11 @@ export class Spawner {
     }
 
     // Scroll and cull (vertical + horizontal)
+    const scrollDy = scrollSpeed * dt;
     for (let i = this.objects.length - 1; i >= 0; i--) {
       const obj = this.objects[i];
-      obj.sprite.y -= scrollSpeed * dt;
+      obj.sprite.y -= scrollDy;
+      if (obj.originY != null) obj.originY -= scrollDy;
       if (obj.sprite.y < -50 || Math.abs(obj.sprite.x - penguinX) > width * 2) {
         obj.sprite.destroy();
         this.objects.splice(i, 1);
@@ -69,6 +74,30 @@ export class Spawner {
 
   getObjects(): SlopeObject[] {
     return this.objects;
+  }
+
+  markHit(obj: SlopeObject): void {
+    obj.hit = true;
+  }
+
+  /** Destroy and re-create a tree sprite so it's on top of the display list, shaking around its origin */
+  redrawTree(obj: SlopeObject): void {
+    const oldSprite = obj.sprite as Phaser.GameObjects.Sprite;
+    // Store origin on first hit
+    if (obj.originX == null) {
+      obj.originX = oldSprite.x;
+      obj.originY = oldSprite.y;
+    }
+    const frame = oldSprite.frame.name;
+    oldSprite.destroy();
+    const tree = this.scene.add.sprite(
+      obj.originX + Phaser.Math.Between(-3, 3),
+      obj.originY! + Phaser.Math.Between(-3, 3),
+      "tree", frame,
+    );
+    tree.setScale(2.2);
+    tree.setDepth(7);
+    obj.sprite = tree;
   }
 
   removeObject(obj: SlopeObject): void {
@@ -169,8 +198,11 @@ export class Spawner {
   }
 
   private spawnTree(x: number, y: number): void {
-    const tree = this.scene.add.triangle(x, y, 0, 0, 15, 30, 30, 0, 0x16a34a);
-    this.objects.push({ sprite: tree, type: "tree", width: 30, height: 30 });
+    const frame = Phaser.Math.Between(0, 3);
+    const tree = this.scene.add.sprite(x, y, "tree", frame);
+    tree.setScale(2.2);
+    tree.setDepth(7);
+    this.objects.push({ sprite: tree, type: "tree", width: 40, height: 50 });
   }
 
   private spawnFish(x: number, y: number): void {

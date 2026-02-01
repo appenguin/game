@@ -78,6 +78,10 @@ export class RunScene extends Phaser.Scene {
       frameWidth: 46,
       frameHeight: 46,
     });
+    this.load.spritesheet("tree", "tree-sheet.png", {
+      frameWidth: 44,
+      frameHeight: 48,
+    });
 
     // Generate particle textures
     const particles: [string, number, number, number][] = [
@@ -336,8 +340,16 @@ export class RunScene extends Phaser.Scene {
       }
     }
 
+    // --- Check if penguin is inside a tree (skip trail) ---
+    const inTree = !this.isAirborne && this.spawner.getObjects().some(
+      (obj) => obj.type === "tree" && this.spawner.checkCollision(
+        this.penguin.x, this.penguin.y,
+        this.penguin.displayWidth * 0.7, this.penguin.displayHeight * 0.7, obj,
+      ),
+    );
+
     // --- Effects (snow spray + ski trail) ---
-    this.effects.update(dt, this.penguin.x, this.penguin.y, this.heading, this.scrollSpeed, this.isAirborne);
+    this.effects.update(dt, this.penguin.x, this.penguin.y, this.heading, this.scrollSpeed, this.isAirborne, inTree);
 
     // --- Camera follows penguin horizontally ---
     this.cameras.main.scrollX = this.penguin.x - width / 2;
@@ -352,10 +364,17 @@ export class RunScene extends Phaser.Scene {
       const pw = this.penguin.displayWidth * 0.7;
       const ph = this.penguin.displayHeight * 0.7;
       for (const obj of this.spawner.getObjects()) {
-        if (this.spawner.checkCollision(px, py, pw, ph, obj)) {
-          this.handleCollision(obj);
-          if (this.gameOver) return;
+        if (!this.spawner.checkCollision(px, py, pw, ph, obj)) continue;
+        if (obj.hit) {
+          // Continuous effects for trees while penguin overlaps
+          if (obj.type === "tree") {
+            this.effects.burstTreeHit(obj.sprite.x, obj.sprite.y, px, py);
+            this.spawner.redrawTree(obj);
+          }
+          continue;
         }
+        this.handleCollision(obj);
+        if (this.gameOver) return;
       }
     }
 
@@ -522,35 +541,45 @@ export class RunScene extends Phaser.Scene {
         this.endGame();
         break;
 
-      case "tree":
-        this.scrollSpeed *= 0.7;
+      case "tree": {
+        // Center hit = huge decel, grazing = small nudge
+        const dx = Math.abs(this.penguin.x - obj.sprite.x);
+        const maxDx = (obj.width + this.penguin.displayWidth) * 0.35;
+        const centeredness = 1 - Phaser.Math.Clamp(dx / maxDx, 0, 1);
+        // grazing: -30, dead center: -300
+        const decel = 30 + centeredness * 270;
+        this.scrollSpeed = Math.max(0, this.scrollSpeed - decel);
         this.combo = 0;
-        this.cameras.main.shake(200, 0.01);
+        this.effects.burstTreeHit(obj.sprite.x, obj.sprite.y, this.penguin.x, this.penguin.y);
+        this.cameras.main.shake(150, 0.005);
         this.showStatusText("HIT!", "#ef4444");
-        this.spawner.removeObject(obj);
+        // Redraw tree so it renders above trail marks, with a shake
+        this.spawner.redrawTree(obj);
+        this.spawner.markHit(obj);
         break;
+      }
 
       case "snowdrift":
         this.snowdriftTimer = 1.2;
         this.effects.burstSnowdrift(obj.sprite.x, obj.sprite.y);
         this.showStatusText("SNOW!", "#94a3b8");
-        this.spawner.removeObject(obj);
+        this.spawner.markHit(obj);
         break;
 
       case "ice":
         this.slipperyTimer = 2.5;
         this.effects.startIceSparkle();
-        this.spawner.removeObject(obj);
+        this.spawner.markHit(obj);
         break;
 
       case "mogul":
         this.launch(0.5);
-        this.spawner.removeObject(obj);
+        this.spawner.markHit(obj);
         break;
 
       case "ramp":
         this.launch();
-        this.spawner.removeObject(obj);
+        this.spawner.markHit(obj);
         break;
 
       case "fish":

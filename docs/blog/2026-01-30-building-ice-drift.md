@@ -96,15 +96,15 @@ The background got brighter too -- `#f2f7ff`, a near-white with just enough blue
 
 Games need music. We didn't want a static loop -- we wanted the music to grow with the player. Enter [Strudel](https://strudel.cc/), a live coding music system that runs entirely in the browser.
 
-The music system has 16 layers that stack as your score increases. At score 0 you hear a slow, icy pad. A cold E minor chord fades in next. Then the kick drum arrives. Arpeggios. Hi-hats. A lead melody. By the time you hit 1500 score, all 16 layers are playing together.
+The music has 16 levels of arrangement that build as you travel further. At the start you hear silence. A few meters in, a driving sawtooth bass line kicks in. Then the kick drum. Hi-hats. Snare. Ghost snares. Leads shift between notes, the bass line evolves through progressions, and by 1500 meters the full solo melody is playing. Key: B minor, dark and driving.
 
-The key design choice: **synths come first, drums come later.** The early game is atmospheric -- pads and bass setting the mood. Drums enter gradually, interleaved with new melodic layers. This keeps the progression feeling musical rather than just "add another drum loop."
+The key design choice: **instruments enter one at a time.** Each level is a complete mix, not an additive layer -- so transitions sound clean. Level changes are quantised to 4-bar boundaries so the music never stutters mid-phrase. The early game builds quickly (full drum kit by 75m), then the leads and bass variations spread out over the longer run.
 
-All pattern definitions live in one file (`src/core/music.ts`). Each level is a clearly commented `case` in a switch statement using Strudel's pattern language. Want to change the key from E minor to D minor? Edit one string. Want the snare to hit on different beats? Change the pattern. The musical content is completely separated from the playback engine.
+All pattern definitions live in one file (`src/core/music.ts`). Each level is a clearly commented `case` in a switch statement using Strudel's pattern language. Want to change the key from B minor to D minor? Edit one string. Want the snare to hit on different beats? Change the pattern. The musical content is completely separated from the playback engine.
 
-The system is a singleton that persists across scenes, so the intro music on the boot screen flows seamlessly into gameplay. A toggle on the start screen lets you turn it off (persisted to localStorage for next time).
+The system is a singleton that persists across scenes, so the intro music on the boot screen flows seamlessly into gameplay. A toggle on the start screen lets you turn it off (persisted to localStorage for next time). Tempo scales with difficulty: Easy 110, Medium 124, Hard 140 BPM.
 
-Technical detail: Strudel is installed via npm and bundled by Vite. Drum sounds (kick, hi-hat, snare, open hat) come from the dirt-samples library loaded at init. All synth sounds (sawtooth, triangle, square, supersaw) are Web Audio oscillators -- no files needed.
+Technical detail: Strudel is installed via npm and bundled by Vite. Drum sounds (kick, hi-hat, snare) come from the dirt-samples library. Sawtooth oscillators handle bass and leads -- no sample files needed. AudioContext is created synchronously in a native DOM gesture handler and injected into superdough before Strudel initializes, bypassing a browser limitation where Strudel's built-in audio init only listens for mouse clicks. On init, the full arrangement plays silently to preload all samples.
 
 ## Game feel: particles and screen effects
 

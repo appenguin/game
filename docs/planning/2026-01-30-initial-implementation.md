@@ -71,15 +71,17 @@
 
 - [x] Music system (Strudel)
   - `@strudel/web` integrated via npm, bundled by Vite
-  - 16-level score-driven layer progression (full arrangement at 1500 score)
-  - Synth oscillators (sawtooth, triangle, square) for pads, bass, arps, melodies
-  - Drum samples (bd, hh, sd, oh) from dirt-samples, interleaved with synths
+  - 16-level progressive arrangement driven by distance (meters), instruments enter one at a time
+  - Sawtooth bass, saw leads, drum samples (bd, hh, sd) from dirt-samples
+  - Each level is a full mix (not additive layers); level changes quantised to 4-bar boundaries
   - Pattern definitions in `src/core/music.ts` (pure, no Phaser), easy to edit
   - Music system singleton in `src/engine/systems/Music.ts`, shared across scenes
-  - Music starts on boot screen (intro pad), layers build during gameplay
+  - Full arrangement plays silently on init to preload all samples
   - Music toggle on boot screen, preference persisted in localStorage
   - Music stops on game over, resets on restart
-  - Key: E minor, base tempo 110 BPM (+1 per level)
+  - AudioContext created in gesture handler, injected via superdough `setAudioContext()`
+  - Phaser audio disabled (`noAudio: true`); all audio via Strudel
+  - Key: B minor. Tempo per difficulty: Easy 110, Medium 124, Hard 140 BPM (fixed)
 
 - [x] Snow spray and belly-slide trail (Phase 3 partial)
   - `engine/systems/Effects.ts`: snow particle emitter + trail system
@@ -547,7 +549,7 @@ Bundle into a native Android app. The appenguin showcase.
 | HUD | Semi-transparent top bar | Labeled score, distance (m/km), speed (km/h), level -- always visible, non-intrusive |
 | Orientation | Portrait locked | Screen Orientation API + PWA manifest |
 | Music engine | Strudel (@strudel/web) | Procedural layered music, no static audio files needed, patterns easy to edit |
-| Music progression | 16 score-based levels | Synths introduced first, drums interleaved later; full arrangement at 1500 score |
+| Music progression | 16 distance-based levels | Progressive arrangement, instruments enter one at a time; full solo at 1500m |
 | Music architecture | core/music.ts + engine/systems/Music.ts | Pattern definitions separated from playback engine; edit music.ts to change the music |
 
 ---
@@ -596,11 +598,11 @@ Added a top bar HUD: a semi-transparent dark bar (36px tall, 0.45 alpha) at the 
 
 ### 2026-01-30: Procedural music with Strudel
 
-Added layered procedural music using Strudel (`@strudel/web`). 16 levels of patterns that stack as score increases, reaching full arrangement at 1500 score. Synth oscillators (sawtooth, triangle, square, supersaw) provide pads, bass, arpeggios, and melodies. Drum samples (bd, hh, sd, oh) from dirt-samples are interleaved with synths rather than clustered together — synths come first to set the mood, drums enter gradually.
+Added progressive procedural music using Strudel (`@strudel/web`). 16 levels of arrangement driven by distance (meters), reaching full solo at 1500m. Each level is a complete mix — instruments enter one at a time (bass → kick → hh → snare → ghost → leads → bass progressions → solo melody). Sawtooth oscillators for bass and leads, drum samples (bd, hh, sd) from dirt-samples. Level changes quantised to 4-bar boundaries for musical coherence.
 
-Architecture follows the existing core/engine split: `core/music.ts` holds all pattern definitions, level thresholds, and the `getPatternForLevel()` switch statement — edit this one file to change the music. `engine/systems/Music.ts` is a singleton that manages Strudel initialization, score-to-level mapping, and game event hooks (game over, restart). The singleton persists across scenes so the intro music on the boot screen flows seamlessly into gameplay.
+Architecture follows the existing core/engine split: `core/music.ts` holds all pattern definitions, level thresholds, and the `getPatternForLevel()` switch statement — edit this one file to change the music. `engine/systems/Music.ts` is a singleton that manages Strudel initialization, distance-to-level mapping, and game event hooks (game over, restart). The singleton persists across scenes so the intro music on the boot screen flows seamlessly into gameplay.
 
-Music starts playing on the boot screen with a slow icy pad (E minor). A "Music: ON/OFF" toggle on the boot screen persists the preference to localStorage. AudioContext unlocks on the user's first tap. Key: E minor. Base tempo: 110 BPM, increasing +1 per level.
+AudioContext is created synchronously inside a native DOM gesture handler (`pointerdown`/`keydown`) and injected into superdough via `setAudioContext()` before `initStrudel()` runs — this bypasses Strudel's built-in `initAudioOnFirstClick()` which only listens for `mousedown`. Phaser audio is disabled (`noAudio: true`). On init, the full arrangement plays silently to preload all samples. Key: B minor. Tempo per difficulty: Easy 110, Medium 124, Hard 140 BPM (fixed throughout game).
 
 ### 2026-01-31: Event particles and screen effects (Phase 3)
 

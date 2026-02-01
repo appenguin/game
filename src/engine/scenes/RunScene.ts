@@ -63,6 +63,9 @@ export class RunScene extends Phaser.Scene {
   private statusText!: Phaser.GameObjects.Text;
   private effectText!: Phaser.GameObjects.Text;
 
+  // Background
+  private snowBg!: Phaser.GameObjects.TileSprite;
+
   // Systems
   private inputHandler!: Input;
   private spawner!: Spawner;
@@ -103,6 +106,49 @@ export class RunScene extends Phaser.Scene {
       }
     }
     g.destroy();
+
+    // Snow background texture (tileable)
+    if (!this.textures.exists("snow-bg")) {
+      const bg = this.add.graphics();
+      const size = 128;
+      bg.fillStyle(0xf6f9ff);
+      bg.fillRect(0, 0, size, size);
+      const snow = (v: number) => (v << 16) | (v << 8) | v;
+      // Soft broad variation
+      for (let i = 0; i < 40; i++) {
+        const sx = Math.random() * size;
+        const sy = Math.random() * size;
+        const sr = 2 + Math.random() * 5;
+        bg.fillStyle(snow(244 + Math.floor(Math.random() * 12)), 0.1 + Math.random() * 0.1);
+        bg.fillCircle(sx, sy, sr);
+      }
+      // Fine grain
+      for (let i = 0; i < 250; i++) {
+        const sx = Math.random() * size;
+        const sy = Math.random() * size;
+        const sr = 0.3 + Math.random() * 0.8;
+        bg.fillStyle(snow(240 + Math.floor(Math.random() * 16)), 0.2 + Math.random() * 0.3);
+        bg.fillCircle(sx, sy, sr);
+      }
+      // Sparkle pinpoints
+      for (let i = 0; i < 100; i++) {
+        const sx = Math.random() * size;
+        const sy = Math.random() * size;
+        const sr = 0.2 + Math.random() * 0.4;
+        bg.fillStyle(0xffffff, 0.3 + Math.random() * 0.5);
+        bg.fillCircle(sx, sy, sr);
+      }
+      // Shadow pinpoints
+      for (let i = 0; i < 60; i++) {
+        const sx = Math.random() * size;
+        const sy = Math.random() * size;
+        const sr = 0.3 + Math.random() * 0.6;
+        bg.fillStyle(snow(230 + Math.floor(Math.random() * 16)), 0.15 + Math.random() * 0.15);
+        bg.fillCircle(sx, sy, sr);
+      }
+      bg.generateTexture("snow-bg", size, size);
+      bg.destroy();
+    }
   }
 
   create(): void {
@@ -131,6 +177,12 @@ export class RunScene extends Phaser.Scene {
     this.paused = false;
     this.pauseOverlay = null;
     this.cameras.main.setBackgroundColor("#f8fbff");
+
+    // Snow background tile
+    this.snowBg = this.add.tileSprite(0, 0, width, height, "snow-bg")
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(-10);
 
     // Penguin shadow
     this.penguinShadow = this.add.ellipse(
@@ -354,6 +406,10 @@ export class RunScene extends Phaser.Scene {
 
     // --- Camera follows penguin horizontally ---
     this.cameras.main.scrollX = this.penguin.x - width / 2;
+
+    // --- Scroll snow background with world ---
+    this.snowBg.tilePositionX = this.cameras.main.scrollX;
+    this.snowBg.tilePositionY += this.scrollSpeed * dt;
 
     // --- Spawn & scroll slope objects ---
     this.spawner.update(dt, this.scrollSpeed, this.distanceTraveled, this.penguin.x);

@@ -83,6 +83,7 @@ docs/
 
 ## Camera and rendering
 
+- Procedural snow texture background (128×128 TileSprite, scrolls with world at depth -10)
 - Penguin sprite sheet (2 frames: tucked/open wings) at screen center; world scrolls via `camera.scrollX`
 - Trees are sprite-based (4 variants from `tree-sheet.png`, randomly selected, 2.2x scale, depth 7 — above penguin at depth 5)
 - Other obstacles use procedural shapes (rectangles, triangles, ellipses, circles)
@@ -96,6 +97,7 @@ docs/
 
 | Depth | Element |
 |-------|---------|
+| -10 | Snow background TileSprite |
 | -1–0 | Ski trail marks |
 | 3 | Snow spray, ice sparkle, snowdrift puff |
 | 4 | Penguin shadow |

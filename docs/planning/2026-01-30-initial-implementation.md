@@ -586,7 +586,7 @@ Replaced the placeholder blue rectangle with a real penguin sprite (`public/peng
 
 Reworked air controls: Left/Right Spin tricks removed from the trick queue system. Left/right arrows now add continuous visual spin while airborne (not scored). Up/down arrows remain as queued tricks (Backflip/Front Tuck). Heading rotation is preserved throughout the jump — tricks and spin layer on top of it. Added `getSpinDir()` to Input system.
 
-Increased lateral movement factor from 0.8 to 1.6 so sideways movement is more pronounced relative to the visual tilt. Moved penguin shadow to same Y as penguin (was offset below). Background color changed to `#f2f7ff` (bright white with subtle blue tint).
+Increased lateral movement factor from 0.8 to 1.6 so sideways movement is more pronounced relative to the visual tilt. Moved penguin shadow to same Y as penguin (was offset below). Background is now a procedurally generated snow texture (128×128 TileSprite with subtle speckled variations, scrolls with the world at depth -10).
 
 ### 2026-01-30: Centered camera + difficulty selection + HUD
 

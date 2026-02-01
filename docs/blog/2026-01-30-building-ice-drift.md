@@ -90,7 +90,7 @@ The placeholder blue rectangle is gone. The penguin now has a proper sprite shee
 
 We also cleaned up the air controls. Left and right arrows add continuous visual spin while airborne (hold to keep spinning, purely cosmetic). Tricks moved to Space/Enter. The penguin's heading rotation carries through the jump, with tricks and spin layering on top.
 
-The background got brighter too -- `#f2f7ff`, a near-white with just enough blue to read as snow under a clear sky. The old grey felt too overcast.
+The background is now a procedurally generated snow texture -- a 128×128 TileSprite with subtle speckled variations in brightness that tiles seamlessly and scrolls with the world. Much better than the old flat color.
 
 ## Procedural music with Strudel
 

@@ -84,7 +84,7 @@ docs/
 - Obstacles spawn in world-space, scroll upward past the penguin
 - Snow spray particles + belly-slide trail behind penguin on ground
 - Event particle bursts on collisions and landings; camera bump on landing
-- UI pinned to screen with `setScrollFactor(0)`: HUD bar, buttons, menus
+- UI pinned to screen with `setScrollFactor(0)` on each element individually (not via container, which breaks Phaser touch hit testing): HUD bar, buttons, menus
 
 ## Difficulty levels
 

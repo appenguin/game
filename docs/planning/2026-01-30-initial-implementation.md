@@ -114,7 +114,8 @@
   - ESC pauses game, shows pause menu (Resume, New Game, Quit)
   - Game over screen uses same menu (Retry, Quit) after death animation
   - Boot scene: keyboard-navigable difficulty selection + music toggle, defaults to Medium
-  - All menus also support touch/click and pointer hover
+  - All menus support touch/click with enlarged hit areas (16px padding) and pointer hover
+  - Menu elements use individual `setScrollFactor(0)` (not via container) so touch works with camera scroll
 
 - [x] Penguin sprite sheet (Phase 5 partial)
   - Replaced static `penguin.png` with 2-frame sprite sheet (`penguin-sheet.png`, 46x46 per frame)
@@ -604,3 +605,7 @@ Penguin type changed from `Phaser.GameObjects.Image` to `Phaser.GameObjects.Spri
 Added `cos(heading)` factor to downhill speed. When the penguin carves at an angle, forward speed (distance, score, obstacle scroll) is reduced — at max ±45° steering, forward speed drops to ~71%. Lateral movement uses the full speed so steering responsiveness isn't affected. This makes slalom a meaningful tradeoff: safer obstacle avoidance at the cost of forward momentum.
 
 Tuned steering constants: turn accel 5.0, max turn speed 2.5, drag 4.0, centering 2.5, lateral factor 1.2. Snappy turn initiation with strong bleed-off — turns start quickly but don't sustain without continued input.
+
+### 2026-01-31: Mobile menu touch fix
+
+Fixed pause/game-over menus not responding to touch on mobile. The issue was that menu items inside a Phaser `Container` with `setScrollFactor(0)` don't get correct hit testing when the camera has scrolled — Phaser checks world coordinates but the container renders at screen coordinates. Fix: set `setScrollFactor(0)` on each element individually instead of on the container. Also enlarged all menu touch targets with 16px hit area padding in both BootScene and RunScene.

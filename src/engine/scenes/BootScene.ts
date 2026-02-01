@@ -48,6 +48,7 @@ export class BootScene extends Phaser.Scene {
     // Difficulty menu items
     const startY = height * 0.42;
     const gap = 52;
+    const hitPad = 16;
     this.menuTexts = [];
     this.cursor = 1; // default to Medium
 
@@ -60,7 +61,15 @@ export class BootScene extends Phaser.Scene {
           fontStyle: "bold",
         })
         .setOrigin(0.5);
-      txt.setInteractive({ useHandCursor: true });
+      txt.setInteractive({
+        useHandCursor: true,
+        hitArea: new Phaser.Geom.Rectangle(
+          -hitPad, -hitPad,
+          txt.width + hitPad * 2,
+          txt.height + hitPad * 2,
+        ),
+        hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      });
       txt.on("pointerdown", () => {
         this.cursor = i;
         this.selectLevel();
@@ -114,8 +123,16 @@ export class BootScene extends Phaser.Scene {
         fontFamily: "system-ui, sans-serif",
         fontStyle: "bold",
       })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true });
+      .setOrigin(0.5);
+    this.musicText.setInteractive({
+      useHandCursor: true,
+      hitArea: new Phaser.Geom.Rectangle(
+        -hitPad, -hitPad,
+        this.musicText.width + hitPad * 2,
+        this.musicText.height + hitPad * 2,
+      ),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+    });
 
     this.musicText.on("pointerdown", () => {
       this.toggleMusic();

@@ -645,6 +645,7 @@ export class RunScene extends Phaser.Scene {
     this.menuOnBack = onBack ?? null;
 
     const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6);
+    bg.setDepth(50).setScrollFactor(0);
 
     const titleText = this.add
       .text(width / 2, height * 0.28, title, {
@@ -653,11 +654,14 @@ export class RunScene extends Phaser.Scene {
         fontFamily: "system-ui, sans-serif",
         fontStyle: "bold",
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setDepth(51)
+      .setScrollFactor(0);
 
     const children: Phaser.GameObjects.GameObject[] = [bg, titleText];
     const startY = height * 0.42;
     const gap = 52;
+    const hitPad = 16;
 
     for (let i = 0; i < items.length; i++) {
       const txt = this.add
@@ -667,8 +671,19 @@ export class RunScene extends Phaser.Scene {
           fontFamily: "system-ui, sans-serif",
           fontStyle: "bold",
         })
-        .setOrigin(0.5);
-      txt.setInteractive({ useHandCursor: true });
+        .setOrigin(0.5)
+        .setDepth(51)
+        .setScrollFactor(0);
+      // Enlarged touch target
+      txt.setInteractive({
+        useHandCursor: true,
+        hitArea: new Phaser.Geom.Rectangle(
+          -hitPad, -hitPad,
+          txt.width + hitPad * 2,
+          txt.height + hitPad * 2,
+        ),
+        hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      });
       txt.on("pointerdown", () => {
         this.menuCursor = i;
         this.updateMenuHighlight();
@@ -685,7 +700,7 @@ export class RunScene extends Phaser.Scene {
     this.updateMenuHighlight();
 
     this.pauseOverlay = this.add.container(0, 0, children);
-    this.pauseOverlay.setDepth(50).setScrollFactor(0);
+    this.pauseOverlay.setDepth(50);
 
     // Keyboard navigation
     if (this.input.keyboard) {

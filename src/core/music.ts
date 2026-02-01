@@ -25,19 +25,19 @@ export const LEVEL_THRESHOLDS = [
   0,    // 0  Silence
   20,   // 1  Bass intro
   60,   // 2  + kick
-  100,  // 3  + hi-hats
-  160,  // 4  + snare
+  110,  // 3  + hi-hats
+  170,  // 4  + snare
   240,  // 5  + ghost snares, deep bass
-  340,  // 6  + lead (b4)
-  460,  // 7  + lead shift (d5)
-  580,  // 8  + lead shift (c#5)
-  720,  // 9  bass change + lead
-  880,  // 10 + lead shift (d5)
-  1040, // 11 + lead shift (c#5)
-  1240, // 12 bass progression
-  1480, // 13 bass double-time
-  1720, // 14 + lead melody
-  2000, // 15 full solo
+  320,  // 6  + lead (b4)
+  410,  // 7  + lead shift (d5)
+  510,  // 8  + lead shift (c#5)
+  620,  // 9  bass change + lead
+  740,  // 10 + lead shift (d5)
+  870,  // 11 + lead shift (c#5)
+  1010, // 12 bass progression
+  1160, // 13 bass double-time
+  1320, // 14 + lead melody
+  1500, // 15 full solo
 ];
 
 // ---------------------------------------------------------------------------

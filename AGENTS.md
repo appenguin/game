@@ -151,7 +151,7 @@ Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by leve
 Procedural layered music powered by **Strudel** (`@strudel/web`). Samples loaded from `github:tidalcycles/dirt-samples`.
 
 - 16-level progressive arrangement driven by distance (meters), not score — instruments enter one at a time
-- Supersaw bass, saw leads, drum samples (bd, hh, sd) build up as distance increases (solo at 2000m)
+- Supersaw bass, saw leads, drum samples (bd, hh, sd) build up as distance increases (solo at 1500m)
 - Key: B minor. Tempo per difficulty: Easy 110, Medium 124, Hard 140 BPM (fixed throughout game)
 - Pattern definitions live in `src/core/music.ts` — edit that file to change the music
 - Music system (`src/engine/systems/Music.ts`) is a singleton shared across scenes

@@ -340,22 +340,39 @@ export class RunScene extends Phaser.Scene {
       }
     }
 
-    // --- Check if penguin is inside a tree (skip trail) ---
-    const inTree = !this.isAirborne && this.spawner.getObjects().some(
-      (obj) => obj.type === "tree" && this.spawner.checkCollision(
+    // --- Check if penguin overlaps any obstacle (skip trail) ---
+    const inObstacle = !this.isAirborne && this.spawner.getObjects().some(
+      (obj) => this.spawner.checkCollision(
         this.penguin.x, this.penguin.y,
         this.penguin.displayWidth * 0.7, this.penguin.displayHeight * 0.7, obj,
       ),
     );
 
     // --- Effects (snow spray + ski trail) ---
-    this.effects.update(dt, this.penguin.x, this.penguin.y, this.heading, this.scrollSpeed, this.isAirborne, inTree);
+    this.effects.update(dt, this.penguin.x, this.penguin.y, this.heading, this.scrollSpeed, this.isAirborne, inObstacle);
 
     // --- Camera follows penguin horizontally ---
     this.cameras.main.scrollX = this.penguin.x - width / 2;
 
     // --- Spawn & scroll slope objects ---
     this.spawner.update(dt, this.scrollSpeed, this.distanceTraveled, this.penguin.x);
+
+    // --- Airborne flyover bonus ---
+    if (this.isAirborne) {
+      const px = this.penguin.x;
+      const py = this.penguin.y;
+      const pw = this.penguin.displayWidth * 0.7;
+      const ph = this.penguin.displayHeight * 0.7;
+      for (const obj of this.spawner.getObjects()) {
+        if (obj.hit) continue;
+        if (obj.type !== "rock" && obj.type !== "tree" && obj.type !== "crevasse") continue;
+        if (!this.spawner.checkCollision(px, py, pw, ph, obj)) continue;
+        const pts = 50 * Math.max(1, this.combo);
+        this.score += pts;
+        this.showStatusText(`FLYOVER +${pts}`, "#a78bfa");
+        this.spawner.markHit(obj);
+      }
+    }
 
     // --- Collisions ---
     if (!this.isAirborne) {
@@ -366,10 +383,12 @@ export class RunScene extends Phaser.Scene {
       for (const obj of this.spawner.getObjects()) {
         if (!this.spawner.checkCollision(px, py, pw, ph, obj)) continue;
         if (obj.hit) {
-          // Continuous effects for trees while penguin overlaps
+          // Continuous effects while penguin overlaps hit objects
           if (obj.type === "tree") {
             this.effects.burstTreeHit(obj.sprite.x, obj.sprite.y, px, py);
             this.spawner.redrawTree(obj);
+          } else if (obj.type === "ice") {
+            this.slipperyTimer = 2.5;
           }
           continue;
         }
@@ -566,11 +585,18 @@ export class RunScene extends Phaser.Scene {
         this.spawner.markHit(obj);
         break;
 
-      case "ice":
+      case "ice": {
         this.slipperyTimer = 2.5;
+        const cap = (SPEED_PROFILES[this.level] ?? SPEED_PROFILES[1]).cap;
+        this.scrollSpeed = Math.min(this.scrollSpeed + 40, cap);
+        const icePoints = 25 * Math.max(1, this.combo);
+        this.score += icePoints;
+        this.combo++;
         this.effects.startIceSparkle();
+        this.showStatusText(`ICE +${icePoints}`, "#0ea5e9");
         this.spawner.markHit(obj);
         break;
+      }
 
       case "mogul":
         this.launch(0.5);

@@ -27,7 +27,7 @@ src/
   main.ts             Entry point + orientation lock
   core/
     tricks.ts         Trick types, constants, scoring helpers (pure, no Phaser)
-    difficulty.ts     Difficulty zones, spawn weights, speed curve (pure, no Phaser)
+    difficulty.ts     Difficulty zones, spawn weights, speed profiles (pure, no Phaser)
     music.ts          Music pattern definitions, level thresholds (pure, no Phaser)
   engine/
     game.ts           Phaser config
@@ -73,10 +73,11 @@ docs/
 ## Controls
 
 - **Steering:** Arrow keys or A/D (keyboard), LEFT/RIGHT buttons or tap screen halves (touch). Angle-based with momentum; steering reduces downhill speed via `cos(heading)`. Ice patches reduce turn rate and increase drift.
-- **Air tricks:** Up/W = Backflip, Down/S = Front Tuck. Hold to perform (shows tucked sprite). Spin with Left/Right while airborne. Tricks don't rotate the penguin; only L/R spin does.
+- **Wing control (speed):** Up/W = spread wings (brake, +60 drag). Down/S = tuck wings (speed up, 0 drag). Neutral = 10 drag. Works on ground; tuck also works in air (changes sprite).
+- **Air trick:** Space/Enter or TRICK touch button. Single "Flip" trick (300 pts), once per jump. Spin with Left/Right while airborne.
 - **Landing:** Clean = full points with combo; sloppy = no points; crash = no points + combo reset.
 - **Menus:** Arrow keys + Enter/Space navigate all menus (Doom-style). ESC pauses/resumes. Touch also works.
-- **Mobile layout:** `[<] [FLIP] [TUCK] [>]` single row at bottom.
+- **Mobile layout:** `[<] [▼ TUCK] [★ TRICK] [>]` single row at bottom.
 
 ## Camera and rendering
 
@@ -86,15 +87,31 @@ docs/
 - Event particle bursts on collisions and landings; camera bump on landing
 - UI pinned to screen with `setScrollFactor(0)` on each element individually (not via container, which breaks Phaser touch hit testing): HUD bar, buttons, menus
 
+## Speed physics
+
+Force-based model: speed changes each frame based on forces, clamped to difficulty cap.
+
+```
+gravity      = 120            (constant downhill pull)
+friction     = speed * coeff  (normal 0.15, ice 0.03, snowdrift +0.25)
+wingDrag     = 0 / 10 / 60   (tuck / neutral / spread)
+
+accel = gravity - friction - wingDrag
+speed += accel * dt
+speed = clamp(speed, 0, cap)
+```
+
 ## Difficulty levels
 
 Three player-selected levels on the start screen:
 
-| Level | Start speed | Acceleration | Cap |
-|-------|------------|--------------|-----|
-| Easy | 150 | 0.02/dist | 350 |
-| Medium | 200 | 0.04/dist | 500 |
-| Hard | 280 | 0.07/dist | 600 |
+| Level | Start speed | Cap |
+|-------|------------|-----|
+| Easy | 150 | 350 |
+| Medium | 200 | 500 |
+| Hard | 280 | 600 |
+
+Speed is no longer a function of distance — it emerges from the force model. Players control speed via wing tuck/spread. Ice patches reduce friction (fast acceleration). Snowdrifts add extra friction drag.
 
 Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by level selection.
 

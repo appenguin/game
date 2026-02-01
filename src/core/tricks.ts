@@ -6,8 +6,7 @@ export interface Trick {
 }
 
 export const TRICKS: Record<string, Trick> = {
-  up: { name: "Backflip", points: 300, rotation: 0 },
-  down: { name: "Front Tuck", points: 250, rotation: 0 },
+  trick: { name: "Flip", points: 300, rotation: 0 },
 };
 
 /** Sum base points + variety bonus (+50 per extra trick) */

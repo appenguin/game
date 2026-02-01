@@ -18,7 +18,7 @@ export function getDifficulty(distance: number): number {
 }
 
 /** Speed profiles per player-selected level (Easy/Medium/Hard) */
-const SPEED_PROFILES = [
+export const SPEED_PROFILES = [
   { start: 150, accel: 0.02, cap: 350 }, // Easy
   { start: 200, accel: 0.04, cap: 500 }, // Medium
   { start: 280, accel: 0.07, cap: 600 }, // Hard

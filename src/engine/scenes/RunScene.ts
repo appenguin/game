@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { type Trick, TRICKS, canQueueTrick } from "../../core/tricks";
-import { getBaseSpeed } from "../../core/difficulty";
+import { SPEED_PROFILES } from "../../core/difficulty";
 import { Input } from "../systems/Input";
 import { Spawner, type SlopeObject } from "../systems/Spawner";
 import { Effects } from "../systems/Effects";
@@ -28,7 +28,7 @@ export class RunScene extends Phaser.Scene {
   private spinRotation = 0;
   // Status effects
   private slipperyTimer = 0;
-  private slowTimer = 0;
+  private snowdriftTimer = 0;
 
   // Heading (angle-based steering with momentum)
   private heading = 0; // current angle (radians, 0 = straight down)
@@ -44,7 +44,6 @@ export class RunScene extends Phaser.Scene {
   private level = 1;
 
   // Speed & scoring
-  private baseScrollSpeed = 200;
   private scrollSpeed = 200;
   private distanceTraveled = 0;
   private score = 0;
@@ -118,12 +117,12 @@ export class RunScene extends Phaser.Scene {
     this.combo = 0;
     this.trickScore = 0;
     this.isAirborne = false;
-    this.baseScrollSpeed = 200;
-    this.scrollSpeed = 200;
+    const profile = SPEED_PROFILES[this.level] ?? SPEED_PROFILES[1];
+    this.scrollSpeed = profile.start;
     this.heading = 0;
     this.headingVelocity = 0;
     this.slipperyTimer = 0;
-    this.slowTimer = 0;
+    this.snowdriftTimer = 0;
     this.paused = false;
     this.pauseOverlay = null;
     this.cameras.main.setBackgroundColor("#f8fbff");
@@ -245,15 +244,26 @@ export class RunScene extends Phaser.Scene {
     const dt = delta / 1000;
     const { width, height } = this.scale;
 
-    // Speed: base increases with distance, capped at 500
-    this.baseScrollSpeed = getBaseSpeed(this.distanceTraveled, this.level);
-    this.scrollSpeed = this.slowTimer > 0
-      ? this.baseScrollSpeed * 0.5
-      : this.baseScrollSpeed;
+    // Force-based speed: gravity vs friction vs wing drag
+    const profile = SPEED_PROFILES[this.level] ?? SPEED_PROFILES[1];
+    const gravity = 120;
+    const icy = this.slipperyTimer > 0;
+    const drifting = this.snowdriftTimer > 0;
+    const baseFriction = icy ? 0.03 : 0.15;
+    const frictionCoeff = drifting ? baseFriction + 0.25 : baseFriction;
+    const friction = this.scrollSpeed * frictionCoeff;
+    const spread = this.inputHandler.getSpreadHeld() && !this.isAirborne;
+    const tucked = this.inputHandler.getTuckHeld();
+    const wingDrag = spread ? 60 : (tucked ? 0 : 10);
+    const accel = gravity - friction - wingDrag;
+    this.scrollSpeed = Phaser.Math.Clamp(
+      this.scrollSpeed + accel * dt, 0, profile.cap,
+    );
+
     const fullSpeed = this.scrollSpeed;
-    this.scrollSpeed *= Math.cos(this.heading);
-    this.distanceTraveled += this.scrollSpeed * dt;
-    this.scoreFrac += this.scrollSpeed * dt * 0.02;
+    const forwardSpeed = this.scrollSpeed * Math.cos(this.heading);
+    this.distanceTraveled += forwardSpeed * dt;
+    this.scoreFrac += forwardSpeed * dt * 0.02;
     const earned = Math.floor(this.scoreFrac);
     if (earned > 0) {
       this.score += earned;
@@ -265,10 +275,9 @@ export class RunScene extends Phaser.Scene {
       this.slipperyTimer -= dt;
       if (this.slipperyTimer <= 0) this.effects.stopIceSparkle();
     }
-    if (this.slowTimer > 0) this.slowTimer -= dt;
+    if (this.snowdriftTimer > 0) this.snowdriftTimer -= dt;
     // --- Steering (angle-based with momentum) ---
     if (!this.isAirborne) {
-      const icy = this.slipperyTimer > 0;
       const steerDir = this.inputHandler.getSteerDir();
 
       if (steerDir !== 0) {
@@ -316,13 +325,14 @@ export class RunScene extends Phaser.Scene {
     }
 
     // --- Sprite frame selection ---
-    // 0=tucked (default slide + trick active), 1=open wings (airborne)
+    // Ground: 0=neutral/tuck, 1=spread (brake)
+    // Air: 1=default (spread), 0=tuck held
+    // Death: 1
     if (!this.isDead) {
       if (this.isAirborne) {
-        const trickHeld = this.inputHandler.getTrickKey() !== "";
-        this.penguin.setFrame(trickHeld ? 0 : 1);
+        this.penguin.setFrame(tucked ? 0 : 1);
       } else {
-        this.penguin.setFrame(0);
+        this.penguin.setFrame(spread ? 1 : 0);
       }
     }
 
@@ -390,9 +400,10 @@ export class RunScene extends Phaser.Scene {
 
     if (this.slipperyTimer > 0) {
       this.effectText.setText("ICY!");
+      this.effectText.setColor("#0ea5e9");
       this.effectText.setAlpha(0.8);
-    } else if (this.slowTimer > 0) {
-      this.effectText.setText("SLOW");
+    } else if (this.snowdriftTimer > 0) {
+      this.effectText.setText("DRAG!");
       this.effectText.setColor("#94a3b8");
       this.effectText.setAlpha(0.8);
     } else {
@@ -404,7 +415,7 @@ export class RunScene extends Phaser.Scene {
   }
 
   private handleAirTricks(dt: number): void {
-    // Tricks: up/down only (held = tucked, blocks spin)
+    // Trick: Space/Enter or TRICK button (once per jump)
     const trickKey = this.inputHandler.getTrickKey();
     if (trickKey && TRICKS[trickKey]) {
       const trick = TRICKS[trickKey];
@@ -520,7 +531,7 @@ export class RunScene extends Phaser.Scene {
         break;
 
       case "snowdrift":
-        this.slowTimer = 1.2;
+        this.snowdriftTimer = 1.2;
         this.effects.burstSnowdrift(obj.sprite.x, obj.sprite.y);
         this.showStatusText("SNOW!", "#94a3b8");
         this.spawner.removeObject(obj);

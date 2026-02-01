@@ -15,12 +15,13 @@ export class Input {
   private touchSteerX = 0;
   private steerPointerId: number | null = null;
 
-  // Touch trick buttons
-  private touchTrickKey = "";
-  private flipButton!: Phaser.GameObjects.Container;
+  // Touch buttons
+  private touchTrickActive = false; // one-shot: tapped TRICK button
+  private touchTuckHeld = false; // held: TUCK button
   private tuckButton!: Phaser.GameObjects.Container;
-  private flipButtonBounds!: Phaser.Geom.Rectangle;
+  private trickButton!: Phaser.GameObjects.Container;
   private tuckButtonBounds!: Phaser.Geom.Rectangle;
+  private trickButtonBounds!: Phaser.Geom.Rectangle;
 
   // Touch steer buttons
   private leftButton!: Phaser.GameObjects.Container;
@@ -30,6 +31,7 @@ export class Input {
 
   // State
   private _airborne = false;
+  private tuckPointerId: number | null = null;
 
   // Callbacks
   private onGameOverTap: (() => void) | null = null;
@@ -55,16 +57,25 @@ export class Input {
     return 0;
   }
 
-  /** Resolve trick key: keyboard > buttons. Returns "up", "down", or "" */
-  getTrickKey(): string {
-    if (this.cursors?.up.isDown || this.keys?.w.isDown) return "up";
-    if (this.cursors?.down.isDown || this.keys?.s.isDown) return "down";
+  /** Is tuck held? Down/S key or TUCK touch button held */
+  getTuckHeld(): boolean {
+    if (this.cursors?.down.isDown || this.keys?.s.isDown) return true;
+    return this.touchTuckHeld;
+  }
 
-    // Touch trick buttons
-    if (this.touchTrickKey) {
-      const key = this.touchTrickKey;
-      this.touchTrickKey = "";
-      return key;
+  /** Is spread/brake held? Up/W key */
+  getSpreadHeld(): boolean {
+    if (this.cursors?.up.isDown || this.keys?.w.isDown) return true;
+    return false;
+  }
+
+  /** Resolve trick key: Space/Enter or TRICK touch button. Returns "trick" or "" */
+  getTrickKey(): string {
+    if (this.keys?.space.isDown || this.keys?.enter.isDown) return "trick";
+
+    if (this.touchTrickActive) {
+      this.touchTrickActive = false;
+      return "trick";
     }
 
     return "";
@@ -81,9 +92,8 @@ export class Input {
   /** Update trick button alpha and internal airborne flag */
   setAirborne(airborne: boolean): void {
     this._airborne = airborne;
-    const alpha = airborne ? 0.9 : 0.4;
-    this.flipButton.setAlpha(alpha);
-    this.tuckButton.setAlpha(alpha);
+    // TUCK always available; TRICK only in air
+    this.trickButton.setAlpha(airborne ? 0.9 : 0.4);
   }
 
   /** Bind R key to restart handler */
@@ -102,7 +112,9 @@ export class Input {
   reset(): void {
     this.touchSteerX = 0;
     this.steerPointerId = null;
-    this.touchTrickKey = "";
+    this.touchTrickActive = false;
+    this.touchTuckHeld = false;
+    this.tuckPointerId = null;
   }
 
   // --- Internal setup ---
@@ -117,6 +129,8 @@ export class Input {
         s: this.scene.input.keyboard.addKey("S"),
         r: this.scene.input.keyboard.addKey("R"),
         esc: this.scene.input.keyboard.addKey("ESC"),
+        space: this.scene.input.keyboard.addKey("SPACE"),
+        enter: this.scene.input.keyboard.addKey("ENTER"),
       };
       this.keys.esc.on("down", () => {
         if (this.onPause) this.onPause();
@@ -130,8 +144,12 @@ export class Input {
         this.onGameOverTap();
         return;
       }
+      if (this.isOnTuckButton(pointer)) {
+        this.handleTuckButtonPress(pointer);
+        return;
+      }
       if (this.isOnTrickButton(pointer)) {
-        this.handleTrickButtonPress(pointer);
+        this.handleTrickButtonPress();
         return;
       }
       if (this.isOnSteerButton(pointer)) {
@@ -151,6 +169,10 @@ export class Input {
         this.steerPointerId = null;
         this.touchSteerX = 0;
       }
+      if (pointer.id === this.tuckPointerId) {
+        this.tuckPointerId = null;
+        this.touchTuckHeld = false;
+      }
     });
   }
 
@@ -167,7 +189,7 @@ export class Input {
     const btnY = height - 44;
     const margin = 12;
     const gap = 6;
-    // 4 buttons in a row: [<] [FLIP] [TUCK] [>]
+    // 4 buttons in a row: [<] [▼ TUCK] [★ TRICK] [>]
     const totalGaps = gap * 3;
     const btnW = Math.floor((width - margin * 2 - totalGaps) / 4);
 
@@ -185,23 +207,23 @@ export class Input {
     this.leftButton = this.scene.add.container(x0, btnY, [leftBg, leftLabel]);
     this.leftButton.setDepth(20).setAlpha(0.7).setScrollFactor(0);
 
-    // FLIP trick
-    const flipBg = this.scene.add.rectangle(0, 0, btnW, btnH, 0x3b82f6, 0.35);
-    flipBg.setStrokeStyle(2, 0x60a5fa);
-    const flipLabel = this.scene.add
-      .text(0, 0, "FLIP", { fontSize: "14px", color: "#ffffff", fontFamily: "system-ui, sans-serif", fontStyle: "bold" })
-      .setOrigin(0.5);
-    this.flipButton = this.scene.add.container(x1, btnY, [flipBg, flipLabel]);
-    this.flipButton.setDepth(20).setAlpha(0.4).setScrollFactor(0);
-
-    // TUCK trick
+    // TUCK (hold to tuck wings — ground + air)
     const tuckBg = this.scene.add.rectangle(0, 0, btnW, btnH, 0x7c3aed, 0.35);
     tuckBg.setStrokeStyle(2, 0xa78bfa);
     const tuckLabel = this.scene.add
-      .text(0, 0, "TUCK", { fontSize: "14px", color: "#ffffff", fontFamily: "system-ui, sans-serif", fontStyle: "bold" })
+      .text(0, 0, "\u25BC TUCK", { fontSize: "13px", color: "#ffffff", fontFamily: "system-ui, sans-serif", fontStyle: "bold" })
       .setOrigin(0.5);
-    this.tuckButton = this.scene.add.container(x2, btnY, [tuckBg, tuckLabel]);
-    this.tuckButton.setDepth(20).setAlpha(0.4).setScrollFactor(0);
+    this.tuckButton = this.scene.add.container(x1, btnY, [tuckBg, tuckLabel]);
+    this.tuckButton.setDepth(20).setAlpha(0.7).setScrollFactor(0);
+
+    // TRICK (tap for trick — air only)
+    const trickBg = this.scene.add.rectangle(0, 0, btnW, btnH, 0x3b82f6, 0.35);
+    trickBg.setStrokeStyle(2, 0x60a5fa);
+    const trickLabel = this.scene.add
+      .text(0, 0, "\u2605 TRICK", { fontSize: "13px", color: "#ffffff", fontFamily: "system-ui, sans-serif", fontStyle: "bold" })
+      .setOrigin(0.5);
+    this.trickButton = this.scene.add.container(x2, btnY, [trickBg, trickLabel]);
+    this.trickButton.setDepth(20).setAlpha(0.4).setScrollFactor(0);
 
     // RIGHT steer
     const rightBg = this.scene.add.rectangle(0, 0, btnW, btnH, 0x475569, 0.35);
@@ -216,10 +238,10 @@ export class Input {
     this.leftButtonBounds = new Phaser.Geom.Rectangle(
       margin, btnY - btnH / 2, btnW, btnH,
     );
-    this.flipButtonBounds = new Phaser.Geom.Rectangle(
+    this.tuckButtonBounds = new Phaser.Geom.Rectangle(
       margin + btnW + gap, btnY - btnH / 2, btnW, btnH,
     );
-    this.tuckButtonBounds = new Phaser.Geom.Rectangle(
+    this.trickButtonBounds = new Phaser.Geom.Rectangle(
       margin + (btnW + gap) * 2, btnY - btnH / 2, btnW, btnH,
     );
     this.rightButtonBounds = new Phaser.Geom.Rectangle(
@@ -243,19 +265,21 @@ export class Input {
     }
   }
 
-  private isOnTrickButton(pointer: Phaser.Input.Pointer): boolean {
-    return (
-      this.flipButtonBounds.contains(pointer.x, pointer.y) ||
-      this.tuckButtonBounds.contains(pointer.x, pointer.y)
-    );
+  private isOnTuckButton(pointer: Phaser.Input.Pointer): boolean {
+    return this.tuckButtonBounds.contains(pointer.x, pointer.y);
   }
 
-  private handleTrickButtonPress(pointer: Phaser.Input.Pointer): void {
+  private isOnTrickButton(pointer: Phaser.Input.Pointer): boolean {
+    return this.trickButtonBounds.contains(pointer.x, pointer.y);
+  }
+
+  private handleTuckButtonPress(pointer: Phaser.Input.Pointer): void {
+    this.touchTuckHeld = true;
+    this.tuckPointerId = pointer.id;
+  }
+
+  private handleTrickButtonPress(): void {
     if (!this._airborne) return;
-    if (this.flipButtonBounds.contains(pointer.x, pointer.y)) {
-      this.touchTrickKey = "up";
-    } else if (this.tuckButtonBounds.contains(pointer.x, pointer.y)) {
-      this.touchTrickKey = "down";
-    }
+    this.touchTrickActive = true;
   }
 }

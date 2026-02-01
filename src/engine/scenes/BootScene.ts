@@ -22,8 +22,17 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
-    music.init();
-    this.input.once("pointerdown", () => music.play());
+    // Defer AudioContext creation to first user gesture (browser requirement)
+    let musicStarted = false;
+    const startMusic = () => {
+      if (musicStarted) return;
+      musicStarted = true;
+      music.init().then(() => music.play());
+    };
+    this.input.on("pointerdown", startMusic);
+    if (this.input.keyboard) {
+      this.input.keyboard.on("keydown", startMusic);
+    }
 
     this.cameras.main.setBackgroundColor("#f8fbff");
 

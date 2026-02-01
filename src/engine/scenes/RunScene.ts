@@ -679,7 +679,6 @@ export class RunScene extends Phaser.Scene {
   private showPauseMenu(): void {
     this.showMenu("PAUSED", [
       { label: "RESUME", action: () => this.togglePause() },
-      { label: "NEW GAME", action: () => this.restartGame() },
       {
         label: "QUIT", action: () => {
           this.hidePauseMenu();
@@ -777,14 +776,19 @@ export class RunScene extends Phaser.Scene {
       const wKey = this.input.keyboard.addKey("W");
       const sKey = this.input.keyboard.addKey("S");
 
+      const rKey = this.input.keyboard.addKey("R");
+      const qKey = this.input.keyboard.addKey("Q");
+
       upKey.on("down", this.menuUp, this);
       wKey.on("down", this.menuUp, this);
       downKey.on("down", this.menuDown, this);
       sKey.on("down", this.menuDown, this);
       enterKey.on("down", this.menuSelect, this);
       spaceKey.on("down", this.menuSelect, this);
+      rKey.on("down", () => this.menuAction("RETRY"));
+      qKey.on("down", () => this.menuAction("QUIT"));
 
-      this.menuKeys = [upKey, downKey, enterKey, spaceKey, wKey, sKey];
+      this.menuKeys = [upKey, downKey, enterKey, spaceKey, wKey, sKey, rKey, qKey];
     }
   }
 
@@ -802,6 +806,11 @@ export class RunScene extends Phaser.Scene {
     if (this.menuItems[this.menuCursor]) {
       this.menuItems[this.menuCursor].action();
     }
+  }
+
+  private menuAction(label: string): void {
+    const item = this.menuItems.find((i) => i.label === label);
+    if (item) item.action();
   }
 
   private updateMenuHighlight(): void {

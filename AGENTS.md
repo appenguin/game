@@ -78,7 +78,7 @@ docs/
 - **Wing control (speed):** Up/W = spread wings (brake, +60 drag). Down/S = tuck wings (speed up, 0 drag). Neutral = 10 drag. Works on ground; tuck also works in air (changes sprite).
 - **Air trick:** Space/Enter or TRICK touch button. Single "Flip" trick (300 pts), once per jump. Spin with Left/Right while airborne.
 - **Landing:** Clean = full points with combo; sloppy = no points; crash = no points + combo reset.
-- **Menus:** Arrow keys + Enter/Space navigate all menus (Doom-style). ESC pauses/resumes. Touch also works.
+- **Menus:** Arrow keys + Enter/Space navigate all menus (Doom-style). ESC pauses/resumes. R = retry, Q = quit. Touch also works. Pause menu: Resume / Quit. Game over menu: Retry / Quit.
 - **Mobile layout:** `[<] [▼ TUCK] [★ TRICK] [>]` single row at bottom.
 
 ## Camera and rendering
@@ -136,6 +136,16 @@ Trees are the most common obstacle (40% at easy, 25% at expert). Tree collision 
 
 Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by level selection.
 
+## Scoring
+
+- **Distance:** slow trickle from forward movement
+- **Fish:** +10 pts on collection
+- **Trick (Flip):** 300 pts × combo on clean landing
+- **Spin:** 100 pts per half rotation on clean landing
+- **Ice:** 25 pts × combo, increments combo (chains with tricks)
+- **Flyover:** 50 pts × combo for flying over rocks, trees, or crevasses while airborne
+- **Combo:** increments on clean trick landings and ice patches; resets on crash or tree hit
+
 ## Music
 
 Procedural layered music powered by **Strudel** (`@strudel/web`). Samples loaded from `github:tidalcycles/dirt-samples`.
@@ -147,7 +157,7 @@ Procedural layered music powered by **Strudel** (`@strudel/web`). Samples loaded
 - Pattern definitions live in `src/core/music.ts` — edit that file to change the music
 - Music system (`src/engine/systems/Music.ts`) is a singleton shared across scenes
 - Music toggle on boot screen, preference persisted in localStorage
-- AudioContext unlocks on first user interaction (tap)
+- Strudel init deferred to first user gesture (pointer or keyboard) to satisfy browser AudioContext policy
 
 ## Development
 

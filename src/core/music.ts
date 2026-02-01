@@ -62,14 +62,8 @@ export function getMusicLevel(score: number): number {
 // ---------------------------------------------------------------------------
 
 export function getDeathPattern(): any {
-  const { note } = g();
-
-  return note("e2").fast(32)
-    .sound("sawtooth")
-    .lpf(600)
-    .gain(0.3)
-    .room(0.4)
-    .slow(2);
+  const { silence } = g();
+  return silence;
 }
 
 // ---------------------------------------------------------------------------
@@ -95,17 +89,9 @@ export function getPatternForLevel(level: number): any {
   const { sound, note, n, silence, sine, rand, irand } = g();
 
   switch (level) {
-    // ---- intro — slow icy pad, sets the mood ----------------------------
+    // ---- intro — silence until first layer kicks in ----------------------
     case 0:
-      return note("<[e3,b3]>")
-        .sound("triangle")
-        .attack(0.8)
-        .sustain(0.5)
-        .release(1.0)
-        .lpf(900)
-        .gain(0.15)
-        .room(0.5)
-        .slow(2);
+      return silence;
 
     // ---- cold pad — sustained E minor chord -----------------------------
     case 1:

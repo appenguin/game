@@ -116,8 +116,9 @@ export class BootScene extends Phaser.Scene {
     }
 
     // Music toggle (part of the menu)
+    const musicLabel = music.muted ? "MUSIC: OFF" : "MUSIC: ON";
     this.musicText = this.add
-      .text(width / 2, startY + LEVELS.length * gap, "", {
+      .text(width / 2, startY + LEVELS.length * gap, "\u25B6 " + musicLabel, {
         fontSize: "24px",
         color: "#9ca3af",
         fontFamily: "system-ui, sans-serif",

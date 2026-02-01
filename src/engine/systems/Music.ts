@@ -92,10 +92,10 @@ class Music {
   // Score-driven layer progression
   // -----------------------------------------------------------------------
 
-  /** Call every frame (or when score changes) to update music layers. */
-  updateScore(score: number): void {
+  /** Call every frame to update music layers based on distance (meters). */
+  updateDistance(meters: number): void {
     if (!this.initialized) return;
-    const next = getMusicLevel(score);
+    const next = getMusicLevel(meters);
     if (next !== this.musicLevel) {
       this.musicLevel = next;
       if (!this._muted) this.applyLevel(next);

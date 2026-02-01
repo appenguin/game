@@ -450,7 +450,7 @@ export class RunScene extends Phaser.Scene {
     }
 
     this.inputHandler.setAirborne(this.isAirborne);
-    this.music.updateScore(this.score);
+    this.music.updateDistance(Math.floor(this.distanceTraveled / 18));
   }
 
   private handleAirTricks(dt: number): void {

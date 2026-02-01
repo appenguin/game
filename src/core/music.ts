@@ -17,27 +17,27 @@
 const g = () => globalThis as any;
 
 // ---------------------------------------------------------------------------
-// Score thresholds — score required to unlock each level (0-15)
+// Distance thresholds (meters) — distance required to unlock each level (0-15)
 // Instruments enter one at a time for a progressive build.
 // ---------------------------------------------------------------------------
 
 export const LEVEL_THRESHOLDS = [
   0,    // 0  Silence
-  10,   // 1  Bass intro
-  30,   // 2  + kick
-  50,   // 3  + hi-hats
-  80,   // 4  + snare
-  120,  // 5  + ghost snares, deep bass
-  170,  // 6  + lead (b4)
-  230,  // 7  + lead shift (d5)
-  290,  // 8  + lead shift (c#5)
-  360,  // 9  bass change + lead
-  440,  // 10 + lead shift (d5)
-  520,  // 11 + lead shift (c#5)
-  620,  // 12 bass progression
-  740,  // 13 bass double-time
-  860,  // 14 + lead melody
-  1000, // 15 full solo
+  20,   // 1  Bass intro
+  60,   // 2  + kick
+  100,  // 3  + hi-hats
+  160,  // 4  + snare
+  240,  // 5  + ghost snares, deep bass
+  340,  // 6  + lead (b4)
+  460,  // 7  + lead shift (d5)
+  580,  // 8  + lead shift (c#5)
+  720,  // 9  bass change + lead
+  880,  // 10 + lead shift (d5)
+  1040, // 11 + lead shift (c#5)
+  1240, // 12 bass progression
+  1480, // 13 bass double-time
+  1720, // 14 + lead melody
+  2000, // 15 full solo
 ];
 
 // ---------------------------------------------------------------------------
@@ -51,10 +51,10 @@ export const LEVEL_BPM = [110, 124, 140]; // Easy, Medium, Hard
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Map score → music level (0-15). */
-export function getMusicLevel(score: number): number {
+/** Map distance (meters) → music level (0-15). */
+export function getMusicLevel(meters: number): number {
   for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
-    if (score >= LEVEL_THRESHOLDS[i]) return i;
+    if (meters >= LEVEL_THRESHOLDS[i]) return i;
   }
   return 0;
 }

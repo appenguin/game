@@ -150,10 +150,9 @@ Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by leve
 
 Procedural layered music powered by **Strudel** (`@strudel/web`). Samples loaded from `github:tidalcycles/dirt-samples`.
 
-- 16 layers that stack as score increases (full arrangement at 1500 score)
-- Synth oscillators (sawtooth, triangle, square) for pads, bass, arps, melodies
-- Drum samples (bd, hh, sd, oh) introduced gradually, interleaved with synths
-- Key: E minor. Base tempo: 110 BPM (+1 per level)
+- 16-level progressive arrangement driven by distance (meters), not score — instruments enter one at a time
+- Supersaw bass, saw leads, drum samples (bd, hh, sd) build up as distance increases (solo at 2000m)
+- Key: B minor. Tempo per difficulty: Easy 110, Medium 124, Hard 140 BPM (fixed throughout game)
 - Pattern definitions live in `src/core/music.ts` — edit that file to change the music
 - Music system (`src/engine/systems/Music.ts`) is a singleton shared across scenes
 - Music toggle on boot screen, preference persisted in localStorage
@@ -170,9 +169,7 @@ npm run preview            # Preview production build
 
 ## Deployment
 
-Hosted on GitHub Pages at `icedrift.appenguin.com`.
-
-Push to `main` triggers automatic deployment via GitHub Actions.
+Hosted at `game.appenguin.com`.
 
 ## Documentation
 

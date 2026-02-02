@@ -1,4 +1,4 @@
-const KEY = "icedrift:scores";
+const KEY = "penguinski:scores";
 
 export interface BestRun {
   score: number;

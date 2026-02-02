@@ -1,4 +1,4 @@
-# Ice Drift: initial implementation
+# PenguinSki: initial implementation
 
 ## Progress
 
@@ -731,10 +731,12 @@ Added a blizzard that kicks in at 1500m, coinciding with the music solo (level 1
 
 **Why not Phaser particle emitters?** We tried three approaches: (1) emitter with `setScrollFactor(0)` — particles still rendered in world space, invisible as the camera scrolled. (2) World-space emitter repositioned each frame relative to the camera — particles appeared but didn't feel screen-fixed, they drifted with the world. (3) Manual `GameObjects.Arc` circles with `setScrollFactor(0)` — this worked. Each snowflake is a simple circle managed in an array, moved each frame, and wrapped around screen edges. Phaser's `setScrollFactor` works on individual GameObjects but not on particles emitted by an emitter.
 
-**Wind model:** Two sine waves at different frequencies (0.7 and 1.9 rad/s) produce organic gusts without randomness. Wind direction shifts smoothly left↔right. Max lateral push is 80 px/s at full intensity, multiplied by 5× for the snowflake visual speed. Wind affects three things: penguin lateral position, obstacle drift in the spawner, and snowflake movement direction.
+**Wind model:** Two sine waves at different frequencies (0.7 and 1.9 rad/s) produce organic gusts without randomness. Wind direction shifts smoothly left↔right. Max lateral push is 160 px/s at full intensity, multiplied by 5× for the snowflake visual speed. Wind affects three things: penguin lateral position, obstacle drift in the spawner, and snowflake movement direction.
 
 **Snowflake population:** 500 max, spawned in batches of 12. Half are "fast" (1.8-2.2× speed, smaller, fainter) and half are "slow" (normal speed, larger, more opaque). This creates a sense of depth — foreground snow streaks past while background snow drifts. Each flake's horizontal velocity gradually steers toward the current wind direction (`vx += (target - vx) * 2 * dt`), so direction changes feel smooth.
 
 **Visibility overlay:** A full-screen white rectangle at depth 9 with `setScrollFactor(0)`. Alpha ramps from 0 to 0.15 with storm intensity. Subtle but enough to make the world look hazier.
 
 **Storm trigger in RunScene:** Distance in meters is computed once per frame (also reused for UI and music). When it crosses 1500m, `effects.startStorm()` is called. Each frame after that, intensity is `min(1, (meters - 1500) / 100)`. Wind lateral force is read from Effects and applied to both penguin position and the spawner's obstacle scroll loop.
+
+**Cheat codes:** +/= teleports forward 100m, -/_ teleports back 100m. Zeroes score to prevent cheated high scores. White camera flash + purple "CHEAT ±100m" status text. Music and storm advance naturally since they read distance each frame.

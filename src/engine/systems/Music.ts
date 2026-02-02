@@ -22,7 +22,7 @@ import {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const g = () => globalThis as any;
 
-const STORAGE_KEY = "icedrift:music";
+const STORAGE_KEY = "penguinski:music";
 
 class Music {
   private initialized = false;

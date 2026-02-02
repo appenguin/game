@@ -1,10 +1,10 @@
-# Building Ice Drift: a penguin game from scratch
+# Building PenguinSki: a penguin game from scratch
 
 *January 30, 2026*
 
 We're building a game. A penguin slides downhill on ice, dodging rocks and trees, hitting ramps to launch into the air and pull off tricks. Collect fish, chain combos, survive as long as you can. Simple to learn, hard to master, impossible to stop.
 
-The game is called **Ice Drift**, and it will live at [icedrift.appenguin.com](https://icedrift.appenguin.com).
+The game is called **PenguinSki**, and it will live at [game.appenguin.com](https://game.appenguin.com).
 
 ## Why build a game?
 
@@ -14,7 +14,7 @@ Three reasons, in order of honesty:
 
 **2. Cool tech.** Phaser 3, Vite, TypeScript, Capacitor, PWA APIs -- building a game touches all of them in ways that a CRUD app never would. Games demand real-time rendering, tight input loops, asset pipelines, offline support. It's the best excuse to go deep on tools we've been wanting to play with.
 
-**3. Appenguin showcase.** Ice Drift also doubles as a demo for [appenguin](https://appenguin.com), our service that turns websites into Android apps. What better proof that a web app can feel native than a game that runs smoothly on mobile, works offline, and wraps cleanly into an APK? If someone plays it without knowing any of this, they'd just think it's a fun game. That's the point.
+**3. Appenguin showcase.** PenguinSki also doubles as a demo for [appenguin](https://appenguin.com), our service that turns websites into Android apps. What better proof that a web app can feel native than a game that runs smoothly on mobile, works offline, and wraps cleanly into an APK? If someone plays it without knowing any of this, they'd just think it's a fun game. That's the point.
 
 ## The plan
 

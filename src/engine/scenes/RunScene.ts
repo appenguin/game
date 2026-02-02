@@ -375,6 +375,22 @@ export class RunScene extends Phaser.Scene {
     this.spawner = new Spawner(this);
     this.effects = new Effects(this, this.penguin);
     this.inputHandler.setPauseHandler(() => this.togglePause());
+
+    // Cheat: +/- teleport ±100m (advances music + storm)
+    this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
+      if (this.gameOver) return;
+      if (e.key === "+" || e.key === "=") {
+        this.distanceTraveled += 100 * 18;
+        this.score = 0;
+        this.cameras.main.flash(300, 255, 255, 255, false, undefined, this);
+        this.showStatusText("CHEAT +100m", "#a855f7");
+      } else if (e.key === "-" || e.key === "_") {
+        this.distanceTraveled = Math.max(0, this.distanceTraveled - 100 * 18);
+        this.score = 0;
+        this.cameras.main.flash(300, 255, 255, 255, false, undefined, this);
+        this.showStatusText("CHEAT -100m", "#a855f7");
+      }
+    });
   }
 
   update(_time: number, delta: number): void {

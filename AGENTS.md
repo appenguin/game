@@ -1,4 +1,4 @@
-# Ice Drift
+# PenguinSki
 
 Penguin downhill ski game inspired by Ski or Die (EA, 1990). PWA + Capacitor. No backend.
 
@@ -82,6 +82,7 @@ docs/
 - **Air trick:** Space/Enter or TRICK touch button. Single "Flip" trick (300 pts), once per jump. Spin with Left/Right while airborne.
 - **Landing:** Clean = full points with combo; sloppy = no points; crash = no points + combo reset.
 - **Menus:** Arrow keys + Enter/Space navigate all menus (Doom-style). ESC pauses/resumes. R = retry, Q = quit. Touch also works. Tap HUD bar to pause on mobile. Pause menu: Resume / Quit. Game over menu: Retry / Quit.
+- **Cheat:** +/= teleport forward 100m, -/_ teleport back 100m. Zeroes score, camera flash, advances music + storm.
 - **Mobile layout:** `[<] [▼ TUCK] [★ TRICK] [>]` single row at bottom.
 
 ## Camera and rendering

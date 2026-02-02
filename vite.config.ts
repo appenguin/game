@@ -22,8 +22,8 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       manifest: {
-        name: "Ice Drift",
-        short_name: "Ice Drift",
+        name: "PenguinSki",
+        short_name: "PenguinSki",
         description: "Penguin downhill ski game",
         start_url: "./",
         display: "fullscreen",

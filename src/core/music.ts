@@ -1,5 +1,5 @@
 /**
- * Musical pattern definitions for Ice Drift.
+ * Musical pattern definitions for PenguinSki.
  *
  * Edit this file to change the music. Each level defines a full mix
  * of instruments — as score increases, the arrangement progresses

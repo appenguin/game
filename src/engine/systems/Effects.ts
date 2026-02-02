@@ -46,7 +46,7 @@ export class Effects {
   private windTime = 0;
   private windLateral = 0;
   private stormSpawnTimer = 0;
-  private readonly MAX_WIND = 80;
+  private readonly MAX_WIND = 160;
   private readonly MAX_SNOWFLAKES = 500;
 
   // Trail constants

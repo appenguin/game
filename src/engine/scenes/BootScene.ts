@@ -45,7 +45,7 @@ export class BootScene extends Phaser.Scene {
 
     // Title
     this.add
-      .text(width / 2, height * 0.2, "ICE DRIFT", {
+      .text(width / 2, height * 0.2, "PENGUINSKI", {
         fontSize: "42px",
         color: "#1a1a2e",
         fontFamily: "system-ui, sans-serif",

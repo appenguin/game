@@ -1,8 +1,8 @@
-# Ice Drift
+# PenguinSki
 
 A penguin downhill ski game. Dodge obstacles, hit ramps, do tricks mid-air, collect fish. Inspired by Ski or Die (EA, 1990).
 
-Play at [icedrift.appenguin.com](https://icedrift.appenguin.com)
+Play at [game.appenguin.com](https://game.appenguin.com)
 
 ## How to play
 

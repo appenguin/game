@@ -205,10 +205,12 @@ export class RunScene extends Phaser.Scene {
       fontStyle: "bold",
     };
 
-    this.add
+    const hudBar = this.add
       .rectangle(width / 2, barH / 2, width, barH, 0x1a1a2e, 0.45)
       .setDepth(10)
-      .setScrollFactor(0);
+      .setScrollFactor(0)
+      .setInteractive();
+    hudBar.on("pointerdown", () => this.togglePause());
 
     this.scoreText = this.add
       .text(12, barH / 2, "Score: 0", textStyle)

@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { getBest } from "../../core/storage";
 import { music } from "../systems/Music";
 
 const LEVELS = [
@@ -14,6 +15,7 @@ export class BootScene extends Phaser.Scene {
   private cursor = 0;
   private menuTexts: Phaser.GameObjects.Text[] = [];
   private musicText!: Phaser.GameObjects.Text;
+  private bestText!: Phaser.GameObjects.Text;
 
   constructor() {
     super("Boot");
@@ -157,6 +159,15 @@ export class BootScene extends Phaser.Scene {
       this.updateHighlight();
     });
 
+    // High score display
+    this.bestText = this.add
+      .text(width / 2, startY + (LEVELS.length + 1) * gap + 8, "", {
+        fontSize: "16px",
+        color: "#64748b",
+        fontFamily: "system-ui, sans-serif",
+      })
+      .setOrigin(0.5);
+
     this.updateHighlight();
   }
 
@@ -178,6 +189,18 @@ export class BootScene extends Phaser.Scene {
     } else {
       this.musicText.setColor("#9ca3af");
       this.musicText.setText("  " + musicLabel);
+    }
+
+    // Show high score for selected difficulty
+    const level = this.cursor < LEVELS.length ? this.cursor : this.cursor - 1;
+    const best = getBest(level);
+    if (best) {
+      const distStr = best.distance >= 1000
+        ? (best.distance / 1000).toFixed(1) + " km"
+        : best.distance + " m";
+      this.bestText.setText(`BEST: ${best.score} \u00B7 ${distStr}`);
+    } else {
+      this.bestText.setText("");
     }
   }
 

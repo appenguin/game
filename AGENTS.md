@@ -29,11 +29,12 @@ src/
     tricks.ts         Trick types, constants, scoring helpers (pure, no Phaser)
     difficulty.ts     Difficulty zones, spawn weights, speed profiles (pure, no Phaser)
     music.ts          Music pattern definitions, level thresholds (pure, no Phaser)
+    storage.ts        High score persistence (localStorage, per-difficulty)
   engine/
     game.ts           Phaser config
     scenes/
-      BootScene.ts    Difficulty selection menu, music toggle, launches Run
-      RunScene.ts     Gameplay orchestrator, pause/game-over menus
+      BootScene.ts    Difficulty selection menu, music toggle, high score display, launches Run
+      RunScene.ts     Gameplay orchestrator, pause/game-over menus, saves high scores
     systems/
       Input.ts        Keyboard + touch + steer/trick buttons + ESC pause
       Spawner.ts      Obstacle spawning, scrolling, collision, hit tracking

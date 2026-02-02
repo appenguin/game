@@ -157,12 +157,16 @@
   - Silenced death pattern (was a sawtooth buzz, now silence)
   - Fixed boot menu music toggle showing empty string on initial render
 
+- [x] High score persistence (Phase 4 partial)
+  - `core/storage.ts`: saveScore() / getBest() per difficulty, localStorage under `"icedrift:scores"`
+  - RunScene: saves score on game over, shows "NEW BEST!" if it's a new record
+  - BootScene: displays "BEST: {score} · {distance}" for selected difficulty, updates on cursor move
+
 ### Current step
 
-- [ ] Phase 5: More obstacle sprites (rocks, ice, etc.)
+- [ ] Phase 5: More obstacle sprites (moguls, snowdrifts, ice)
 
 ### Next steps
-- [ ] Phase 4: Persistence (high scores, settings)
 - [ ] Phase 5: Art and audio (more sprites, SFX remaining)
 - [ ] Phase 7: Capacitor wrap
 
@@ -221,10 +225,11 @@ src/
     tricks.ts          Trick interface, single TRICKS constant, calcTrickScore(), canQueueTrick()
     difficulty.ts      Difficulty zones, spawn weights, speed profiles, pickObstacleType()
     music.ts           Music pattern definitions, level thresholds, getMusicLevel()
+    storage.ts         High score persistence (saveScore, getBest), localStorage per difficulty
   engine/
     scenes/
       BootScene.ts     Difficulty selection, music toggle, launches RunScene with level
-      RunScene.ts      Orchestrator (~620 lines): penguin state, camera, scoring, HUD, music, effects wiring, delegates to systems
+      RunScene.ts      Orchestrator (~620 lines): penguin state, camera, scoring, HUD, music, effects wiring, high score save, delegates to systems
     systems/
       Spawner.ts       SlopeObject interface (Shape|Sprite, hit/origin tracking), spawn helpers, collision, redrawTree
       Input.ts         Keyboard + touch + steer/tuck/trick buttons, getTuckHeld(), getSpreadHeld()
@@ -555,6 +560,7 @@ Bundle into a native Android app. The appenguin showcase.
 | Icy Jump combo | Ice → ramp = +50% air, 2× trick score | Rewards chaining ice patches with ramps; only ramps (not moguls) trigger it |
 | Ice pond shape | Irregular polygon (8-12 vertices) | Random wobble around elliptical path; unique shape per spawn; same AABB hitbox |
 | Mobile pause | Tap HUD bar to toggle pause | No dedicated button needed; bar is already interactive real estate |
+| High score storage | localStorage, per-difficulty, minimal schema | Just score + distance per level; no total runs, fish count, or settings bloat; easy to extend later |
 
 ---
 
@@ -697,3 +703,13 @@ Fixed the boot screen music toggle label: was showing an empty string on initial
 **Fish sprites:** Replaced yellow circles with procedural fish texture — gold ellipse body, triangle tail, belly highlight, dark eye. Generated at runtime in `preload()`, rendered at 1.4x scale.
 
 **Crevasses removed:** Removed crevasses entirely. Rocks are now the only lethal obstacle. Crevasse spawn weight redistributed to rocks across all difficulty zones. Removed `spawnCrevasse()`, crevasse collision handling, `endGameCrevasse()` fall animation, and `"crevasse"` from `SlopeObjectType`.
+
+### 2026-02-02: High score persistence
+
+Added per-difficulty high score persistence using localStorage. Three files involved:
+
+**`core/storage.ts`** (new): Pure functions with no Phaser dependency. `saveScore(level, score, distance)` writes to localStorage under `"icedrift:scores"` only if the score beats the existing record, returns `true` if it's a new best. `getBest(level)` retrieves the best run for a difficulty, or null. Data is a simple JSON object keyed by difficulty level (0/1/2), each with `score` and `distance` (meters).
+
+**RunScene:** On game over, calls `saveScore()` with the current level, score, and distance. If it returns true, the game over screen shows "NEW BEST!" above the score line. Otherwise the game over screen looks the same as before.
+
+**BootScene:** Displays "BEST: {score} · {distance}" below the music toggle for the currently selected difficulty. The text updates when the cursor moves between Easy/Medium/Hard. Shows nothing if no high score exists for that level yet.

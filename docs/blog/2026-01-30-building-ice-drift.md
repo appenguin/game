@@ -197,9 +197,15 @@ Rocks got the same treatment as trees — four snow-covered variants from a 2x2 
 
 Ramps went procedural instead of image-based. We tried processing a source image but dark-background-removal produced messy edges. A Phaser Graphics-generated texture looks cleaner: a trapezoid snow wedge with a subtle shadow, slope surface lines, and a bright lip highlight. The texture is generated once in `preload()` and reused for every ramp.
 
+## High scores
+
+The game finally remembers how you did. Per-difficulty high scores are saved to localStorage — beat your record and the game over screen flashes "NEW BEST!" The boot screen shows your best score and distance for whichever difficulty the cursor is on. Switch from Easy to Hard and the number changes (or disappears, if you haven't played that level yet).
+
+The implementation is minimal: a pure `storage.ts` module with two functions (`saveScore` and `getBest`), no Phaser dependency. Scores are stored as a JSON object keyed by difficulty level. `saveScore` only writes if you actually beat the existing record. The rest is just wiring — RunScene calls it on game over, BootScene reads it on cursor move.
+
 ## What's next
 
-Fish, moguls, and snowdrifts are still placeholder shapes. Then: persistence (high scores, settings), sound effects, and the Capacitor wrap for Android.
+Moguls and snowdrifts are still placeholder shapes. Then: sound effects and the Capacitor wrap for Android.
 
 We'll document the entire build as we go. Every decision, every dead end, every time we spend an hour tweaking how it feels to almost hit a rock.
 

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { type Trick, TRICKS, canQueueTrick } from "../../core/tricks";
 import { SPEED_PROFILES } from "../../core/difficulty";
+import { saveScore } from "../../core/storage";
 import { Input } from "../systems/Input";
 import { Spawner, type SlopeObject } from "../systems/Spawner";
 import { Effects } from "../systems/Effects";
@@ -782,7 +783,9 @@ export class RunScene extends Phaser.Scene {
 
     const dist = Math.floor(this.distanceTraveled / 18);
     const distStr = dist >= 1000 ? (dist / 1000).toFixed(1) + " km" : dist + " m";
-    const stats = `Score: ${this.score}  |  ${distStr}`;
+    const isNewBest = saveScore(this.level, this.score, dist);
+    const bestLine = isNewBest ? "NEW BEST!\n" : "";
+    const stats = `${bestLine}Score: ${this.score}  |  ${distStr}`;
 
     // Short delay so death animation plays before menu appears
     this.time.delayedCall(600, () => {

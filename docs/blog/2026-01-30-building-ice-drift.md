@@ -191,9 +191,15 @@ Ice patches used to be flat rectangles. Now each one is a unique irregular polyg
 
 Mobile needed a way to pause without a dedicated button. The top HUD bar (score, distance, speed, difficulty) is now interactive -- tap it to toggle pause. On desktop, ESC still works. Simple and doesn't add any new UI.
 
+## Rock sprites and procedural ramp
+
+Rocks got the same treatment as trees — four snow-covered variants from a 2x2 source grid, processed by the build script into `rock-sheet.png`. Each rock spawns with a random variant at 2.8x scale. They render above the penguin (depth 7) and look like proper boulders instead of gray squares.
+
+Ramps went procedural instead of image-based. We tried processing a source image but dark-background-removal produced messy edges. A Phaser Graphics-generated texture looks cleaner: a trapezoid snow wedge with a subtle shadow, slope surface lines, and a bright lip highlight. The texture is generated once in `preload()` and reused for every ramp.
+
 ## What's next
 
-Rocks are still colored rectangles. More sprites coming. Then: persistence (high scores, settings), sound effects, and the Capacitor wrap for Android.
+Fish, crevasses, moguls, and snowdrifts are still placeholder shapes. Then: persistence (high scores, settings), sound effects, and the Capacitor wrap for Android.
 
 We'll document the entire build as we go. Every decision, every dead end, every time we spend an hour tweaking how it feels to almost hit a rock.
 

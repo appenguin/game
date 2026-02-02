@@ -44,8 +44,10 @@ src/
 public/               Static assets (icons, manifest, sprites)
   penguin-sheet.png   Penguin sprite sheet (2 frames @ 46x46: tucked, open wings)
   tree-sheet.png      Tree sprite sheet (4 frames @ 44x48: snow-covered variants)
+  rock-sheet.png      Rock sprite sheet (4 frames @ 38x30: snow-covered variants)
 penguin_images/       Source images (processed by build script)
   trees.png           Source tree image (2x2 grid of 4 snow-covered trees)
+  rocks.png           Source rock image (2x2 grid of 4 snow-covered rocks)
 scripts/
   build-sprites.py    Generates penguin-sheet.png + tree-sheet.png from penguin_images/
 index.html            HTML entry point
@@ -86,8 +88,10 @@ docs/
 - Procedural snow texture background (128×128 TileSprite, scrolls with world at depth -10)
 - Penguin sprite sheet (2 frames: tucked/open wings) at screen center; world scrolls via `camera.scrollX`
 - Trees are sprite-based (4 variants from `tree-sheet.png`, randomly selected, 2.2x scale, depth 7 — above penguin at depth 5)
+- Rocks are sprite-based (4 variants from `rock-sheet.png`, randomly selected, 2.8x scale, depth 7)
+- Ramps are procedural graphics (trapezoid with shadow, slope lines, lip highlight — generated texture at runtime, 1.6x scale, depth 6)
 - Ice ponds are irregular polygons (8-12 random vertices around an elliptical path, unique shape each spawn)
-- Other obstacles use procedural shapes (triangles, ellipses, circles)
+- Other obstacles use procedural shapes (ellipses, circles)
 - Snow spray particles + belly-slide trail behind penguin on ground; trail pauses inside trees
 - Tree collision: continuous snow burst (white particles from tree + under penguin) while overlapping, tree shakes ±3px around origin, speed penalty scaled by hit centeredness
 - Obstacles persist after being hit (marked with `hit` flag to prevent re-triggering); only fish are removed on collection

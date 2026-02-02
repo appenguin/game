@@ -9,7 +9,7 @@ import {
 
 /** An object on the slope (obstacle, collectible, or ramp) */
 export interface SlopeObject {
-  sprite: Phaser.GameObjects.Shape | Phaser.GameObjects.Sprite;
+  sprite: Phaser.GameObjects.Shape | Phaser.GameObjects.Sprite | Phaser.GameObjects.Image;
   type: SlopeObjectType;
   width: number;
   height: number;
@@ -186,9 +186,10 @@ export class Spawner {
     const spawnWidth = screenWidth * 1.2;
     const x = this.penguinX - spawnWidth / 2 + Math.random() * spawnWidth;
     const spawnY = screenHeight + 40;
-    const ramp = this.scene.add.triangle(x, spawnY, 0, 0, 50, 0, 25, 24, 0x60a5fa);
-    ramp.setStrokeStyle(2, 0x3b82f6);
-    this.objects.push({ sprite: ramp, type: "ramp", width: 50, height: 24 });
+    const ramp = this.scene.add.image(x, spawnY, "ramp-tex");
+    ramp.setScale(1.6);
+    ramp.setDepth(6);
+    this.objects.push({ sprite: ramp, type: "ramp", width: 65, height: 20 });
   }
 
   private spawnRock(x: number, y: number): void {

@@ -397,9 +397,9 @@ Replace colored shapes with sprites and add sound. Transforms the look and feel.
 |--------|--------------------|------|
 | Penguin (ground) | Top-down belly-slide penguin with beanie, wings tucked (frame 0 of `penguin-sheet.png`) | 46x46 | Done |
 | Penguin (air) | Wings open pose (frame 1), rotates with L/R spin only | 46x46 | Done |
-| Rock | Gray boulder, irregular shape | 30x30 | Placeholder |
+| Rock | Snow-covered rocks, 4 variants (frames 0-3 of `rock-sheet.png`, 2.8x scale) | 38x30 @ 2.8x | Done |
 | Tree | Snow-covered trees, 4 variants (frames 0-3 of `tree-sheet.png`, 2.2x scale) | 44x48 @ 2.2x | Done |
-| Ramp | Blue/white ski ramp, perspective | 50x24 |
+| Ramp | Procedural snow wedge (trapezoid with shadow, slope lines, lip highlight, generated at runtime, 1.6x scale) | 60x32 @ 1.6x | Done |
 | Fish | Gold fish shape | 16x16 |
 | Ice patch | Irregular polygon (8-12 vertices), translucent cyan | 70-130 x 25-45 | Shaped |
 | Crevasse | Dark crack in ice | 14x50 |
@@ -685,3 +685,11 @@ Fixed the boot screen music toggle label: was showing an empty string on initial
 **Ice pond shapes:** Replaced flat rectangle ice patches with irregular polygons. Each pond generates 8-12 random vertices around an elliptical path with wobble (70-130% of radius per vertex), creating unique natural-looking frozen puddle shapes. Sizes increased and varied (70-130px wide, 25-45px tall). Uses `Phaser.GameObjects.Polygon` (extends `Shape`, fits existing type). Collision hitbox stays AABB-based.
 
 **Icy Jump combo:** Hitting a ramp while slippery (slipperyTimer > 0) triggers an "ICY JUMP!" — 50% bonus air time and a 2× multiplier on trick score at clean landing. Shows "ICY COMBO +{points}" in cyan on landing. Only full ramps trigger it (not mogul bounces). The combo chain: ice → ramp → tricks → clean landing = big bonus. Makes ice patches worth seeking out before ramps. Added `icyLaunch` boolean flag to RunScene, set in `launch()`, applied in `land()`, reset after landing.
+
+### 2026-02-02: Rock sprites and procedural ramp
+
+**Rock sprites:** Replaced gray placeholder rectangles with snow-covered rock sprites. Four variants from `penguin_images/rocks.png` (2x2 grid), processed by the same build pipeline as trees. Added `build_rock_sheet()` to `build-sprites.py`. Rocks spawn at 2.8x scale, depth 7, random variant per spawn, hitbox 50x40.
+
+**Procedural ramp:** Replaced the blue triangle ramp with a procedurally generated snow wedge texture. Drawn at runtime using Phaser Graphics in `preload()`: trapezoid body (wide at top, tapering to launch lip at bottom), subtle shadow, slope surface lines, bright lip highlight, and outline. Generated as `"ramp-tex"` (60x32), rendered at 1.6x scale, depth 6. Tried using a source image (`penguin_images/ramp.png`) first but the dark-background-removal didn't produce clean enough results — procedural looks better and matches the game's visual style.
+
+**SlopeObject type:** Widened sprite field to `Shape | Sprite | Image` to support `add.image()` for ramps.

@@ -154,6 +154,54 @@ export class RunScene extends Phaser.Scene {
       bg.generateTexture("snow-bg", size, size);
       bg.destroy();
     }
+
+    // Ramp texture (procedural snow wedge)
+    if (!this.textures.exists("ramp-tex")) {
+      const rg = this.add.graphics();
+      const rw = 60, rh = 32;
+      // Shadow underneath
+      rg.fillStyle(0x8faabe, 0.3);
+      rg.beginPath();
+      rg.moveTo(-2, 3);
+      rg.lineTo(rw + 2, 3);
+      rg.lineTo(rw - 8, rh + 2);
+      rg.lineTo(8, rh + 2);
+      rg.closePath();
+      rg.fillPath();
+      // Ramp body — trapezoid (wider at top/lip, narrower at base)
+      rg.fillStyle(0xdce8f4);
+      rg.beginPath();
+      rg.moveTo(0, 0);
+      rg.lineTo(rw, 0);
+      rg.lineTo(rw - 10, rh);
+      rg.lineTo(10, rh);
+      rg.closePath();
+      rg.fillPath();
+      // Slope surface lines
+      rg.lineStyle(0.5, 0xb0c8dc, 0.4);
+      for (let i = 6; i < rh - 2; i += 5) {
+        const t = i / rh;
+        const inset = t * 10;
+        rg.beginPath();
+        rg.moveTo(inset + 2, i);
+        rg.lineTo(rw - inset - 2, i);
+        rg.strokePath();
+      }
+      // Lip highlight (bottom edge / launch lip)
+      rg.fillStyle(0xf4f8ff);
+      rg.fillRect(12, rh - 3, rw - 24, 3);
+      // Outline
+      rg.lineStyle(1.5, 0x8faabe);
+      rg.beginPath();
+      rg.moveTo(0, 0);
+      rg.lineTo(rw, 0);
+      rg.lineTo(rw - 10, rh);
+      rg.lineTo(10, rh);
+      rg.closePath();
+      rg.strokePath();
+      rg.generateTexture("ramp-tex", rw + 3, rh + 3);
+      rg.destroy();
+    }
   }
 
   create(): void {

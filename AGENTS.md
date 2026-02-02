@@ -97,6 +97,7 @@ docs/
 - Tree collision: continuous snow burst (white particles from tree + under penguin) while overlapping, tree shakes ±3px around origin, speed penalty scaled by hit centeredness
 - Obstacles persist after being hit (marked with `hit` flag to prevent re-triggering); only fish are removed on collection
 - Event particle bursts on collisions and landings; camera bump on landing
+- Snowstorm at 1500m: 500 screen-fixed snowflake circles (`setScrollFactor(0)`) with organic wind gusts; wind pushes penguin and obstacles laterally; white overlay reduces visibility; ramps up over 100m
 - UI pinned to screen with `setScrollFactor(0)` on each element individually (not via container, which breaks Phaser touch hit testing): HUD bar, buttons, menus
 
 ## Depth layering
@@ -110,6 +111,7 @@ docs/
 | 5 | Penguin (ground), burst emitters at 6 |
 | 7 | Trees |
 | 8 | Penguin (airborne) |
+| 9 | Storm snowflakes, storm overlay |
 | 10–11 | HUD bar, text |
 | 20 | Touch buttons |
 | 50–51 | Menu overlays |

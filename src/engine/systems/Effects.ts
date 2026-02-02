@@ -5,6 +5,13 @@ interface TrailSegment {
   age: number;
 }
 
+interface Snowflake {
+  obj: Phaser.GameObjects.Arc;
+  vx: number;
+  vy: number;
+  size: number;
+}
+
 /**
  * Visual effects: snow spray, ski trail, event particle bursts,
  * ice sparkle, and background snowfall.
@@ -30,6 +37,17 @@ export class Effects {
   // Ice sparkle state
   private iceSparkleActive = false;
   private iceSparkleTimer = 0;
+
+  // Storm state
+  private stormOverlay: Phaser.GameObjects.Rectangle;
+  private snowflakes: Snowflake[] = [];
+  private stormActive = false;
+  private stormIntensity = 0;
+  private windTime = 0;
+  private windLateral = 0;
+  private stormSpawnTimer = 0;
+  private readonly MAX_WIND = 80;
+  private readonly MAX_SNOWFLAKES = 500;
 
   // Trail constants
   private readonly TRAIL_INTERVAL = 0.012;
@@ -128,6 +146,12 @@ export class Effects {
     });
     this.treeSnowEmitter.setDepth(6);
 
+    // --- Storm visibility overlay ---
+    const { width: sw, height: sh } = scene.scale;
+    this.stormOverlay = scene.add.rectangle(sw / 2, sh / 2, sw, sh, 0xffffff, 0);
+    this.stormOverlay.setScrollFactor(0);
+    this.stormOverlay.setDepth(9);
+
   }
 
   update(
@@ -142,6 +166,7 @@ export class Effects {
     this.updateSnowSpray(penguinX, penguinY, heading, scrollSpeed, isAirborne, dt);
     this.updateTrail(dt, penguinX, penguinY, scrollSpeed, isAirborne || inTree);
     this.updateIceSparkle(dt, penguinX, penguinY, isAirborne);
+    this.updateStorm(dt, penguinX);
   }
 
   // --- Public burst methods ---
@@ -287,6 +312,86 @@ export class Effects {
     this.trailSegments.push({ mark, age: 0 });
   }
 
+  // --- Storm methods ---
+
+  startStorm(): void {
+    this.stormActive = true;
+  }
+
+  setStormIntensity(intensity: number): void {
+    this.stormIntensity = Phaser.Math.Clamp(intensity, 0, 1);
+    this.stormOverlay.setAlpha(this.stormIntensity * 0.15);
+  }
+
+  getWindLateral(): number {
+    return this.windLateral;
+  }
+
+  private updateStorm(dt: number, _penguinX: number): void {
+    if (!this.stormActive) return;
+
+    const { width, height } = this.scene.scale;
+
+    // Advance wind time and compute organic gust direction
+    this.windTime += dt;
+    const windAngle =
+      Math.sin(this.windTime * 0.7) * 0.8 +
+      Math.sin(this.windTime * 1.9) * 0.4;
+    this.windLateral = Math.sin(windAngle) * this.stormIntensity * this.MAX_WIND;
+
+    // Wind velocity for snowflakes (screen-space px/s)
+    const windVx = this.windLateral * 5;
+    const windVy = 200 + this.stormIntensity * 200;
+
+    // Spawn new snowflakes
+    const targetCount = Math.floor(this.stormIntensity * this.MAX_SNOWFLAKES);
+    this.stormSpawnTimer += dt;
+    if (this.stormSpawnTimer >= 0.02 && this.snowflakes.length < targetCount) {
+      this.stormSpawnTimer = 0;
+      const batch = Math.min(12, targetCount - this.snowflakes.length);
+      for (let i = 0; i < batch; i++) {
+        const fast = Math.random() < 0.5;
+        const size = fast ? 0.8 + Math.random() * 1.5 : 1 + Math.random() * 2.5;
+        const alpha = fast ? 0.2 + Math.random() * 0.3 : 0.3 + Math.random() * 0.4;
+        const speedMul = fast ? 1.8 + Math.random() * 0.4 : 0.6 + Math.random() * 0.4;
+        const obj = this.scene.add.circle(
+          Math.random() * width,
+          Math.random() * height,
+          size, 0xe2e8f0, alpha,
+        );
+        obj.setScrollFactor(0);
+        obj.setDepth(9);
+        this.snowflakes.push({
+          obj,
+          vx: windVx * speedMul + (Math.random() - 0.5) * 100,
+          vy: windVy * speedMul,
+          size,
+        });
+      }
+    }
+
+    // Move snowflakes and recycle off-screen ones
+    for (const flake of this.snowflakes) {
+      // Gradually steer toward current wind direction
+      flake.vx += (windVx - flake.vx) * 2 * dt;
+      flake.obj.x += flake.vx * dt;
+      flake.obj.y += flake.vy * dt;
+
+      // Wrap around screen edges
+      if (flake.obj.y > height + 10) {
+        flake.obj.y = -10;
+        flake.obj.x = Math.random() * width;
+      }
+      if (flake.obj.x > width + 30) {
+        flake.obj.x = -20;
+        flake.obj.y = Math.random() * height * 0.5;
+      } else if (flake.obj.x < -30) {
+        flake.obj.x = width + 20;
+        flake.obj.y = Math.random() * height * 0.5;
+      }
+    }
+  }
+
   destroy(): void {
     this.snowEmitter.destroy();
     this.goldEmitter.destroy();
@@ -296,6 +401,9 @@ export class Effects {
     this.cyanEmitter.destroy();
     this.whiteEmitter.destroy();
     this.treeSnowEmitter.destroy();
+    for (const flake of this.snowflakes) flake.obj.destroy();
+    this.snowflakes = [];
+    this.stormOverlay.destroy();
     for (const seg of this.trailSegments) {
       seg.mark.destroy();
     }
@@ -303,5 +411,10 @@ export class Effects {
     this.trailTimer = 0;
     this.iceSparkleActive = false;
     this.iceSparkleTimer = 0;
+    this.stormActive = false;
+    this.stormIntensity = 0;
+    this.windTime = 0;
+    this.windLateral = 0;
+    this.stormSpawnTimer = 0;
   }
 }

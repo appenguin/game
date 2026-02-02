@@ -32,6 +32,10 @@ export class RunScene extends Phaser.Scene {
   private snowdriftTimer = 0;
   private icyLaunch = false;
 
+  // Storm
+  private stormStarted = false;
+  private readonly STORM_DISTANCE = 1500;
+
   // Heading (angle-based steering with momentum)
   private heading = 0; // current angle (radians, 0 = straight down)
   private headingVelocity = 0; // angular velocity (rad/s)
@@ -254,6 +258,7 @@ export class RunScene extends Phaser.Scene {
     this.headingVelocity = 0;
     this.slipperyTimer = 0;
     this.snowdriftTimer = 0;
+    this.stormStarted = false;
     this.paused = false;
     this.pauseOverlay = null;
     this.cameras.main.setBackgroundColor("#f8fbff");
@@ -486,6 +491,22 @@ export class RunScene extends Phaser.Scene {
     // --- Effects (snow spray + ski trail) ---
     this.effects.update(dt, this.penguin.x, this.penguin.y, this.heading, this.scrollSpeed, this.isAirborne, inObstacle);
 
+    // --- Storm ---
+    const meters = Math.floor(this.distanceTraveled / 18);
+    if (!this.stormStarted && meters >= this.STORM_DISTANCE) {
+      this.stormStarted = true;
+      this.effects.startStorm();
+    }
+    if (this.stormStarted) {
+      const intensity = Math.min(1, (meters - this.STORM_DISTANCE) / 100);
+      this.effects.setStormIntensity(intensity);
+    }
+    const windX = this.effects.getWindLateral();
+    if (windX !== 0) {
+      this.penguin.x += windX * dt;
+      this.penguinShadow.x = this.penguin.x;
+    }
+
     // --- Camera follows penguin horizontally ---
     this.cameras.main.scrollX = this.penguin.x - width / 2;
 
@@ -494,7 +515,7 @@ export class RunScene extends Phaser.Scene {
     this.snowBg.tilePositionY += this.scrollSpeed * dt;
 
     // --- Spawn & scroll slope objects ---
-    this.spawner.update(dt, this.scrollSpeed, this.distanceTraveled, this.penguin.x);
+    this.spawner.update(dt, this.scrollSpeed, this.distanceTraveled, this.penguin.x, windX);
 
     // --- Airborne flyover bonus ---
     if (this.isAirborne) {
@@ -567,7 +588,6 @@ export class RunScene extends Phaser.Scene {
 
     // --- UI ---
     this.scoreText.setText(`Score: ${this.score}`);
-    const meters = Math.floor(this.distanceTraveled / 18);
     const distStr = meters >= 1000
       ? `${(meters / 1000).toFixed(1)} km`
       : `${meters} m`;
@@ -588,7 +608,7 @@ export class RunScene extends Phaser.Scene {
     }
 
     this.inputHandler.setAirborne(this.isAirborne);
-    this.music.updateDistance(Math.floor(this.distanceTraveled / 18));
+    this.music.updateDistance(meters);
   }
 
   private handleAirTricks(dt: number): void {

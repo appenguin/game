@@ -38,6 +38,7 @@ export class Spawner {
     scrollSpeed: number,
     distanceTraveled: number,
     penguinX: number,
+    windX = 0,
   ): void {
     this.penguinX = penguinX;
     const { width, height } = this.scene.scale;
@@ -65,6 +66,10 @@ export class Spawner {
       const obj = this.objects[i];
       obj.sprite.y -= scrollDy;
       if (obj.originY != null) obj.originY -= scrollDy;
+      if (windX !== 0) {
+        obj.sprite.x += windX * dt;
+        if (obj.originX != null) obj.originX += windX * dt;
+      }
       if (obj.sprite.y < -50 || Math.abs(obj.sprite.x - penguinX) > width * 2) {
         obj.sprite.destroy();
         this.objects.splice(i, 1);

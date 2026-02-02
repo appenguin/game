@@ -203,6 +203,22 @@ The game finally remembers how you did. Per-difficulty high scores are saved to 
 
 The implementation is minimal: a pure `storage.ts` module with two functions (`saveScore` and `getBest`), no Phaser dependency. Scores are stored as a JSON object keyed by difficulty level. `saveScore` only writes if you actually beat the existing record. The rest is just wiring — RunScene calls it on game over, BootScene reads it on cursor move.
 
+## The snowstorm
+
+At 1500 meters — right when the music hits its full solo — a blizzard rolls in. Snow streaks across the screen, wind shoves the penguin sideways, obstacles drift, and the world goes hazy. It's the "oh no" moment that tells you you've been playing for a while and the game is done being polite.
+
+Getting the snow to render in front of the camera was harder than it should have been. Phaser's particle emitters have a `setScrollFactor(0)` method, which *should* pin them to the screen. It doesn't work — the emitter position is screen-fixed but the particles themselves still render in world space, so they drift off into oblivion as the camera scrolls. We tried repositioning the emitter in world coordinates each frame, tracking the camera. That produced particles, but they moved with the world instead of feeling like snow blowing past your face.
+
+The solution was dumb and effective: don't use particles at all. Each snowflake is a `Phaser.GameObjects.Arc` — a tiny white circle — with `setScrollFactor(0)` set individually. We manage them in a plain array, move them each frame, and wrap them around screen edges when they exit. Five hundred of them, spawned in batches of twelve.
+
+Half the snowflakes are fast — 1.8 to 2.2 times normal speed, smaller, fainter. The other half are slow, bigger, more opaque. This creates a crude depth effect: foreground snow streaks past while background snow drifts. The brain fills in the rest.
+
+Wind direction comes from two sine waves at different frequencies (0.7 and 1.9 rad/s), which produces smooth organic gusts without randomness or noise functions. The wind pushes three things: the snowflakes visually, the penguin's lateral position, and all obstacles in the spawner. Everything shifts together, so it feels like one consistent wind. Each snowflake's velocity gradually steers toward the current wind direction rather than snapping to it, so gusts build and fade naturally.
+
+A full-screen white rectangle at 15% opacity handles the visibility drop. Barely noticeable on its own, but combined with 500 white dots flying past your face, it sells the whiteout.
+
+The storm ramps up over 100 meters — starts subtle, builds to full intensity. By the time it's at full strength, steering into the wind is a real fight and reading the slope through the snow is genuinely harder. It's the endgame difficulty spike we wanted, and it arrives at exactly the right musical moment.
+
 ## What's next
 
 Moguls and snowdrifts are still placeholder shapes. Then: sound effects and the Capacitor wrap for Android.

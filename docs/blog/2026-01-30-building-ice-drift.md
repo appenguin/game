@@ -217,7 +217,7 @@ Wind direction comes from two sine waves at different frequencies (0.7 and 1.9 r
 
 A full-screen white rectangle at 15% opacity handles the visibility drop. Barely noticeable on its own, but combined with 500 white dots flying past your face, it sells the whiteout.
 
-The storm ramps up over 100 meters — starts subtle, builds to full intensity. By the time it's at full strength, steering into the wind is a real fight and reading the slope through the snow is genuinely harder. It's the endgame difficulty spike we wanted, and it arrives at exactly the right musical moment.
+The storm ramps up over 100 meters — starts subtle, builds to full intensity. By the time it's at full strength, steering into the wind is a real fight and reading the slope through the snow is genuinely harder. Airborne penguin gets thrown sideways at 5× the ground wind force — hit a ramp during a gust and you land somewhere completely unexpected. Jumps also last 30% longer during the storm, which stacks with the icy launch bonus. More air time sounds good until the wind is shoving you into a tree. It's the endgame difficulty spike we wanted, and it arrives at exactly the right musical moment.
 
 ## What's next
 

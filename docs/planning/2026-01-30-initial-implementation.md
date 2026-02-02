@@ -164,9 +164,10 @@
 
 - [x] Snowstorm at 1500m (Phase 3 continued)
   - 500 screen-fixed snowflake circles managed manually in Effects.ts (Phaser particle emitters don't support `setScrollFactor(0)`)
-  - Wind model: two layered sine waves for organic gusts, max 80 px/s lateral push
+  - Wind model: two layered sine waves for organic gusts, max 160 px/s lateral push
   - Half the snowflakes are fast (1.8-2.2× speed, smaller, fainter), half are slow — creates depth
-  - Wind pushes penguin laterally and drifts obstacles sideways via Spawner
+  - Wind pushes penguin laterally (5× when airborne) and drifts obstacles sideways via Spawner
+  - +30% air time on all jumps during storm (stacks with icy launch's +50%)
   - White overlay fades in to 15% alpha for reduced visibility
   - Storm intensity ramps 0→1 over 100m after the 1500m threshold
   - Coincides with the music reaching full solo (level 15)
@@ -731,7 +732,7 @@ Added a blizzard that kicks in at 1500m, coinciding with the music solo (level 1
 
 **Why not Phaser particle emitters?** We tried three approaches: (1) emitter with `setScrollFactor(0)` — particles still rendered in world space, invisible as the camera scrolled. (2) World-space emitter repositioned each frame relative to the camera — particles appeared but didn't feel screen-fixed, they drifted with the world. (3) Manual `GameObjects.Arc` circles with `setScrollFactor(0)` — this worked. Each snowflake is a simple circle managed in an array, moved each frame, and wrapped around screen edges. Phaser's `setScrollFactor` works on individual GameObjects but not on particles emitted by an emitter.
 
-**Wind model:** Two sine waves at different frequencies (0.7 and 1.9 rad/s) produce organic gusts without randomness. Wind direction shifts smoothly left↔right. Max lateral push is 160 px/s at full intensity, multiplied by 5× for the snowflake visual speed. Wind affects three things: penguin lateral position, obstacle drift in the spawner, and snowflake movement direction.
+**Wind model:** Two sine waves at different frequencies (0.7 and 1.9 rad/s) produce organic gusts without randomness. Wind direction shifts smoothly left↔right. Max lateral push is 160 px/s at full intensity (5× when airborne — the penguin gets thrown sideways mid-jump), multiplied by 5× for the snowflake visual speed. Wind affects three things: penguin lateral position, obstacle drift in the spawner, and snowflake movement direction. Jumps during the storm last 30% longer (stacks with icy launch).
 
 **Snowflake population:** 500 max, spawned in batches of 12. Half are "fast" (1.8-2.2× speed, smaller, fainter) and half are "slow" (normal speed, larger, more opaque). This creates a sense of depth — foreground snow streaks past while background snow drifts. Each flake's horizontal velocity gradually steers toward the current wind direction (`vx += (target - vx) * 2 * dt`), so direction changes feel smooth.
 

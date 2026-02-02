@@ -519,7 +519,8 @@ export class RunScene extends Phaser.Scene {
     }
     const windX = this.effects.getWindLateral();
     if (windX !== 0) {
-      this.penguin.x += windX * dt;
+      const windMul = this.isAirborne ? 5 : 1;
+      this.penguin.x += windX * windMul * dt;
       this.penguinShadow.x = this.penguin.x;
     }
 
@@ -724,7 +725,9 @@ export class RunScene extends Phaser.Scene {
     this.airTime = 0;
     this.icyLaunch = !duration && this.slipperyTimer > 0;
     const baseDuration = duration ?? 1.2 + (this.scrollSpeed - 200) * 0.002;
-    this.airDuration = this.icyLaunch ? baseDuration * 1.5 : baseDuration;
+    let dur = this.icyLaunch ? baseDuration * 1.5 : baseDuration;
+    if (this.stormStarted) dur *= 1.3;
+    this.airDuration = dur;
     this.trickQueue = [];
     this.trickScore = 0;
     this.currentTrickRotation = 0;

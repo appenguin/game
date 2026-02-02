@@ -29,6 +29,7 @@ export class RunScene extends Phaser.Scene {
   // Status effects
   private slipperyTimer = 0;
   private snowdriftTimer = 0;
+  private icyLaunch = false;
 
   // Heading (angle-based steering with momentum)
   private heading = 0; // current angle (radians, 0 = straight down)
@@ -560,13 +561,18 @@ export class RunScene extends Phaser.Scene {
 
     if (this.trickQueue.length > 0 || spinPoints > 0) {
       if (rotDiff < 0.5) {
-        // Clean landing
+        // Clean landing — icy jump doubles trick score
         const comboMultiplier = Math.max(1, this.combo);
-        const points = this.trickScore * comboMultiplier;
+        const icyMultiplier = this.icyLaunch ? 2 : 1;
+        const points = this.trickScore * comboMultiplier * icyMultiplier;
         this.score += points;
         this.combo++;
         this.effects.burstTrickLanding(this.penguin.x, this.penguin.y);
-        this.showStatusText(`+${points}`, "#10b981");
+        if (this.icyLaunch) {
+          this.showStatusText(`ICY COMBO +${points}`, "#06b6d4");
+        } else {
+          this.showStatusText(`+${points}`, "#10b981");
+        }
       } else if (rotDiff < 1.2) {
         // Sloppy landing — no points, but don't reset combo
         this.showStatusText("SLOPPY!", "#f59e0b");
@@ -594,19 +600,24 @@ export class RunScene extends Phaser.Scene {
     this.currentTrickRotation = 0;
     this.targetTrickRotation = 0;
     this.spinRotation = 0;
+    this.icyLaunch = false;
   }
 
   private launch(duration?: number): void {
     this.isAirborne = true;
     this.penguin.setDepth(8);
     this.airTime = 0;
-    this.airDuration = duration ?? 1.2 + (this.scrollSpeed - 200) * 0.002;
+    this.icyLaunch = !duration && this.slipperyTimer > 0;
+    const baseDuration = duration ?? 1.2 + (this.scrollSpeed - 200) * 0.002;
+    this.airDuration = this.icyLaunch ? baseDuration * 1.5 : baseDuration;
     this.trickQueue = [];
     this.trickScore = 0;
     this.currentTrickRotation = 0;
     this.targetTrickRotation = 0;
     this.spinRotation = 0;
-    if (!duration) {
+    if (this.icyLaunch) {
+      this.showStatusText("ICY JUMP!", "#06b6d4");
+    } else if (!duration) {
       this.showStatusText("AIR!", "#3b82f6");
     }
   }

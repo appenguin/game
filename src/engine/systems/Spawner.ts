@@ -226,10 +226,18 @@ export class Spawner {
   }
 
   private spawnIcePatch(x: number, y: number): void {
-    const w = 60 + Math.random() * 40;
-    const ice = this.scene.add.rectangle(x, y, w, 20, 0xa5f3fc, 0.6);
-    ice.setStrokeStyle(1, 0x67e8f9);
-    this.objects.push({ sprite: ice, type: "ice", width: w, height: 20 });
+    const w = 70 + Math.random() * 60;
+    const h = 25 + Math.random() * 20;
+    const n = 8 + Math.floor(Math.random() * 5);
+    const pts: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const wobble = 0.7 + Math.random() * 0.6;
+      pts.push(Math.cos(a) * (w / 2) * wobble, Math.sin(a) * (h / 2) * wobble);
+    }
+    const ice = this.scene.add.polygon(x, y, pts, 0xa5f3fc, 0.5);
+    ice.setStrokeStyle(1.5, 0x67e8f9);
+    this.objects.push({ sprite: ice, type: "ice", width: w, height: h });
   }
 
   private spawnCrevasse(x: number, y: number): void {

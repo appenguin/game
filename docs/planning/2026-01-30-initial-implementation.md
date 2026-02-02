@@ -189,7 +189,8 @@ Our version: a penguin slides downhill on ice. Steer left/right to avoid obstacl
 | Landing | Clean = keep trick points. Crash = lose trick points + penalty |
 | Fish | Collectibles on the slope, worth base points. Sometimes in clusters. |
 | Combo | Consecutive clean trick landings increase multiplier |
-| Scoring | Slow distance trickle + fish + (tricks + spin) * combo multiplier |
+| Icy Jump | Hit ramp while slippery → +50% air time, 2× trick score on clean landing |
+| Scoring | Slow distance trickle + fish + (tricks + spin) * combo multiplier * icy multiplier |
 
 ### Trick system
 
@@ -400,7 +401,7 @@ Replace colored shapes with sprites and add sound. Transforms the look and feel.
 | Tree | Snow-covered trees, 4 variants (frames 0-3 of `tree-sheet.png`, 2.2x scale) | 44x48 @ 2.2x | Done |
 | Ramp | Blue/white ski ramp, perspective | 50x24 |
 | Fish | Gold fish shape | 16x16 |
-| Ice patch | Translucent blue texture | 60-100 x 20 |
+| Ice patch | Irregular polygon (8-12 vertices), translucent cyan | 70-130 x 25-45 | Shaped |
 | Crevasse | Dark crack in ice | 14x50 |
 | Mogul | Snow bump with shadow | 28x16 |
 | Snowdrift | Snow pile | 44x18 |
@@ -551,6 +552,9 @@ Bundle into a native Android app. The appenguin showcase.
 | Music engine | Strudel (@strudel/web) | Procedural layered music, no static audio files needed, patterns easy to edit |
 | Music progression | 16 distance-based levels | Progressive arrangement, instruments enter one at a time; full solo at 1500m |
 | Music architecture | core/music.ts + engine/systems/Music.ts | Pattern definitions separated from playback engine; edit music.ts to change the music |
+| Icy Jump combo | Ice → ramp = +50% air, 2× trick score | Rewards chaining ice patches with ramps; only ramps (not moguls) trigger it |
+| Ice pond shape | Irregular polygon (8-12 vertices) | Random wobble around elliptical path; unique shape per spawn; same AABB hitbox |
+| Mobile pause | Tap HUD bar to toggle pause | No dedicated button needed; bar is already interactive real estate |
 
 ---
 
@@ -673,3 +677,11 @@ First real obstacle art. Four snow-covered tree variants generated from `penguin
 Silenced the intro music layer (level 0) and the death pattern. The intro pad sounded harsh and the death buzzer was grating. Both now return `silence` from Strudel. First audible layer kicks in when score triggers level 1.
 
 Fixed the boot screen music toggle label: was showing an empty string on initial render because the text was set to `""` and only updated on toggle. Now initializes with `"MUSIC: ON"` or `"MUSIC: OFF"` based on the muted state.
+
+### 2026-02-02: HUD bar pause, ice pond shapes, icy jump combo
+
+**HUD bar as pause button:** The top HUD bar is now interactive on mobile — tapping it toggles pause. Removed the need for a dedicated pause button. The rectangle gets `.setInteractive()` and a `pointerdown` handler calling `togglePause()`.
+
+**Ice pond shapes:** Replaced flat rectangle ice patches with irregular polygons. Each pond generates 8-12 random vertices around an elliptical path with wobble (70-130% of radius per vertex), creating unique natural-looking frozen puddle shapes. Sizes increased and varied (70-130px wide, 25-45px tall). Uses `Phaser.GameObjects.Polygon` (extends `Shape`, fits existing type). Collision hitbox stays AABB-based.
+
+**Icy Jump combo:** Hitting a ramp while slippery (slipperyTimer > 0) triggers an "ICY JUMP!" — 50% bonus air time and a 2× multiplier on trick score at clean landing. Shows "ICY COMBO +{points}" in cyan on landing. Only full ramps trigger it (not mogul bounces). The combo chain: ice → ramp → tricks → clean landing = big bonus. Makes ice patches worth seeking out before ramps. Added `icyLaunch` boolean flag to RunScene, set in `launch()`, applied in `land()`, reset after landing.

@@ -78,7 +78,7 @@ docs/
 - **Wing control (speed):** Up/W = spread wings (brake, +60 drag). Down/S = tuck wings (speed up, 0 drag). Neutral = 10 drag. Works on ground; tuck also works in air (changes sprite).
 - **Air trick:** Space/Enter or TRICK touch button. Single "Flip" trick (300 pts), once per jump. Spin with Left/Right while airborne.
 - **Landing:** Clean = full points with combo; sloppy = no points; crash = no points + combo reset.
-- **Menus:** Arrow keys + Enter/Space navigate all menus (Doom-style). ESC pauses/resumes. R = retry, Q = quit. Touch also works. Pause menu: Resume / Quit. Game over menu: Retry / Quit.
+- **Menus:** Arrow keys + Enter/Space navigate all menus (Doom-style). ESC pauses/resumes. R = retry, Q = quit. Touch also works. Tap HUD bar to pause on mobile. Pause menu: Resume / Quit. Game over menu: Retry / Quit.
 - **Mobile layout:** `[<] [▼ TUCK] [★ TRICK] [>]` single row at bottom.
 
 ## Camera and rendering
@@ -86,7 +86,8 @@ docs/
 - Procedural snow texture background (128×128 TileSprite, scrolls with world at depth -10)
 - Penguin sprite sheet (2 frames: tucked/open wings) at screen center; world scrolls via `camera.scrollX`
 - Trees are sprite-based (4 variants from `tree-sheet.png`, randomly selected, 2.2x scale, depth 7 — above penguin at depth 5)
-- Other obstacles use procedural shapes (rectangles, triangles, ellipses, circles)
+- Ice ponds are irregular polygons (8-12 random vertices around an elliptical path, unique shape each spawn)
+- Other obstacles use procedural shapes (triangles, ellipses, circles)
 - Snow spray particles + belly-slide trail behind penguin on ground; trail pauses inside trees
 - Tree collision: continuous snow burst (white particles from tree + under penguin) while overlapping, tree shakes ±3px around origin, speed penalty scaled by hit centeredness
 - Obstacles persist after being hit (marked with `hit` flag to prevent re-triggering); only fish are removed on collection
@@ -145,6 +146,7 @@ Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by leve
 - **Trick (Flip):** 300 pts × combo on clean landing
 - **Spin:** 100 pts per half rotation on clean landing
 - **Ice:** 25 pts × combo, increments combo (chains with tricks)
+- **Icy Jump:** hit ramp while slippery → +50% air time, 2× trick score on clean landing ("ICY COMBO")
 - **Flyover:** 50 pts × combo for flying over rocks, trees, or crevasses while airborne
 - **Combo:** increments on clean trick landings and ice patches; resets on crash or tree hit
 

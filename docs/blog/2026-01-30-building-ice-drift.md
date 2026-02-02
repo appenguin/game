@@ -173,9 +173,27 @@ The collision system got a major rework for trees:
 
 **Tree shake.** On each frame of overlap, the tree sprite is destroyed and recreated with a ±3px random offset from its stored origin. This serves two purposes: it places the sprite fresh at the top of the display list (fixing the depth issue for non-trail elements), and it gives the tree a satisfying shudder as the penguin plows through it. The origin point scrolls with the world so the shake stays centered.
 
+## Icy jump combo
+
+Ice patches were already useful -- speed boost, low friction, combo increment -- but they were isolated events. Now there's a reason to chain them with ramps.
+
+Hit a ramp while still slippery and you get an **Icy Jump**: 50% more air time (higher speed + ice = massive hangtime) and a **2× multiplier** on your trick score when you land cleanly. The status text shows "ICY JUMP!" on launch and "ICY COMBO +{points}" on landing.
+
+The combo chain: ice → ramp → tricks → clean landing. Ice gives you the slippery state (2.5 seconds), the ramp launches you with bonus air, you fill that air with flips and spins, and the landing doubles everything. It makes ice patches worth seeking out before ramps instead of just something that happens to you.
+
+Only full ramps trigger it, not mogul bounces. The icy launch flag resets on landing.
+
+## Ice pond shapes
+
+Ice patches used to be flat rectangles. Now each one is a unique irregular polygon -- 8 to 12 vertices wobbling around an elliptical path, so every pond looks like a natural frozen puddle. The shapes are larger and more varied too (70-130px wide, 25-45px tall). Same collision hitbox, same gameplay, better look.
+
+## HUD bar as pause button
+
+Mobile needed a way to pause without a dedicated button. The top HUD bar (score, distance, speed, difficulty) is now interactive -- tap it to toggle pause. On desktop, ESC still works. Simple and doesn't add any new UI.
+
 ## What's next
 
-Rocks and ice are still colored rectangles. More sprites coming. Then: persistence (high scores, settings), sound effects, and the Capacitor wrap for Android.
+Rocks are still colored rectangles. More sprites coming. Then: persistence (high scores, settings), sound effects, and the Capacitor wrap for Android.
 
 We'll document the entire build as we go. Every decision, every dead end, every time we spend an hour tweaking how it feels to almost hit a rock.
 

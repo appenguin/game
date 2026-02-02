@@ -159,6 +159,59 @@ def build_tree_sheet():
           f"{len(scaled)} frames @ {fw}x{fh})")
 
 
+ROCK_SRC = SRC_DIR / "rocks.png"
+ROCK_OUT = Path(__file__).resolve().parent.parent / "public" / "rock-sheet.png"
+ROCK_TARGET_HEIGHT = 36
+
+
+def build_rock_sheet():
+    """Build rock sprite sheet from a 2x2 grid image → horizontal 4-frame strip."""
+    if not ROCK_SRC.exists():
+        print(f"Skipping rock sheet: {ROCK_SRC} not found")
+        return
+
+    img = Image.open(ROCK_SRC).convert("RGBA")
+    w, h = img.size
+    half_w, half_h = w // 2, h // 2
+
+    quadrants = [
+        img.crop((0, 0, half_w, half_h)),
+        img.crop((half_w, 0, w, half_h)),
+        img.crop((0, half_h, half_w, h)),
+        img.crop((half_w, half_h, w, h)),
+    ]
+
+    scale = ROCK_TARGET_HEIGHT / half_h
+    scaled = []
+    for quad in quadrants:
+        quad = remove_light_bg(quad)
+        sw = int(half_w * scale)
+        sh = int(half_h * scale)
+        small = quad.resize((sw, sh), Image.LANCZOS)
+        bbox = small.getbbox()
+        if bbox:
+            scaled.append(small.crop(bbox))
+        else:
+            scaled.append(small)
+
+    fw = max(s.size[0] for s in scaled) + 2
+    fh = max(s.size[1] for s in scaled) + 2
+    fw = (fw + 1) // 2 * 2
+    fh = (fh + 1) // 2 * 2
+
+    strip = Image.new("RGBA", (fw * len(scaled), fh), (0, 0, 0, 0))
+    for i, frame in enumerate(scaled):
+        ox = (fw - frame.size[0]) // 2
+        oy = (fh - frame.size[1]) // 2
+        strip.paste(frame, (i * fw + ox, oy), frame)
+
+    ROCK_OUT.parent.mkdir(parents=True, exist_ok=True)
+    strip.save(ROCK_OUT)
+    print(f"Saved {ROCK_OUT} ({strip.size[0]}x{strip.size[1]}, "
+          f"{len(scaled)} frames @ {fw}x{fh})")
+
+
 if __name__ == "__main__":
     build_sheet()
     build_tree_sheet()
+    build_rock_sheet()

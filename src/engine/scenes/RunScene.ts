@@ -86,6 +86,10 @@ export class RunScene extends Phaser.Scene {
       frameWidth: 44,
       frameHeight: 48,
     });
+    this.load.spritesheet("rock", "rock-sheet.png", {
+      frameWidth: 38,
+      frameHeight: 30,
+    });
 
     // Generate particle textures
     const particles: [string, number, number, number][] = [

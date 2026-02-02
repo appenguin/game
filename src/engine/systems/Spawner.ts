@@ -192,9 +192,11 @@ export class Spawner {
   }
 
   private spawnRock(x: number, y: number): void {
-    const rock = this.scene.add.rectangle(x, y, 30, 30, 0x6b7280);
-    rock.setStrokeStyle(2, 0x4b5563);
-    this.objects.push({ sprite: rock, type: "rock", width: 30, height: 30 });
+    const frame = Phaser.Math.Between(0, 3);
+    const rock = this.scene.add.sprite(x, y, "rock", frame);
+    rock.setScale(2.8);
+    rock.setDepth(7);
+    this.objects.push({ sprite: rock, type: "rock", width: 50, height: 40 });
   }
 
   private spawnTree(x: number, y: number): void {

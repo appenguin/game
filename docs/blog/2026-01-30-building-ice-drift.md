@@ -113,7 +113,7 @@ Phase 3 is done. Every collision and landing now has visual feedback through par
 - **Snow burst** when you land from a jump (same blue-tinted particles as the spray)
 - **Penguin bounce** when you crash a landing
 - **Yellow sparkle** when collecting fish
-- **Gray burst** on death (rock or crevasse)
+- **Gray burst** on death (rock)
 - **White puff** when hitting a snowdrift
 - **Cyan sparkle trail** while sliding on ice
 
@@ -199,7 +199,7 @@ Ramps went procedural instead of image-based. We tried processing a source image
 
 ## What's next
 
-Fish, crevasses, moguls, and snowdrifts are still placeholder shapes. Then: persistence (high scores, settings), sound effects, and the Capacitor wrap for Android.
+Fish, moguls, and snowdrifts are still placeholder shapes. Then: persistence (high scores, settings), sound effects, and the Capacitor wrap for Android.
 
 We'll document the entire build as we go. Every decision, every dead end, every time we spend an hour tweaking how it feels to almost hit a rock.
 

@@ -13,7 +13,7 @@ Play at [icedrift.appenguin.com](https://icedrift.appenguin.com)
 - **Perform tricks mid-air** with keyboard directions or the **FLIP** and **TUCK** buttons
 - **Land cleanly** to keep your score, crash and lose your combo
 - Collect **fish** for points
-- Avoid **rocks**, **trees**, and **crevasses**
+- Avoid **rocks** and **trees**
 - Speed increases over time -- survive as long as you can
 - The **top bar** shows your score, distance, speed, and difficulty level
 

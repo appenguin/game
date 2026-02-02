@@ -202,6 +202,32 @@ export class RunScene extends Phaser.Scene {
       rg.generateTexture("ramp-tex", rw + 3, rh + 3);
       rg.destroy();
     }
+
+    // Fish texture (procedural gold fish)
+    if (!this.textures.exists("fish-tex")) {
+      const fg = this.add.graphics();
+      const fw = 18, fh = 12;
+      const cx = fw / 2, cy = fh / 2;
+      // Tail
+      fg.fillStyle(0xe8920b);
+      fg.beginPath();
+      fg.moveTo(1, cy - 4);
+      fg.lineTo(5, cy);
+      fg.lineTo(1, cy + 4);
+      fg.closePath();
+      fg.fillPath();
+      // Body (ellipse)
+      fg.fillStyle(0xf59e0b);
+      fg.fillEllipse(cx + 1, cy, 12, 9);
+      // Belly highlight
+      fg.fillStyle(0xfde68a, 0.5);
+      fg.fillEllipse(cx + 2, cy - 1, 7, 4);
+      // Eye
+      fg.fillStyle(0x1a1a2e);
+      fg.fillCircle(cx + 4, cy - 1, 1.2);
+      fg.generateTexture("fish-tex", fw, fh);
+      fg.destroy();
+    }
   }
 
   create(): void {
@@ -477,7 +503,7 @@ export class RunScene extends Phaser.Scene {
       const ph = this.penguin.displayHeight * 0.7;
       for (const obj of this.spawner.getObjects()) {
         if (obj.hit) continue;
-        if (obj.type !== "rock" && obj.type !== "tree" && obj.type !== "crevasse") continue;
+        if (obj.type !== "rock" && obj.type !== "tree") continue;
         if (!this.spawner.checkCollision(px, py, pw, ph, obj)) continue;
         const pts = 50 * Math.max(1, this.combo);
         this.score += pts;
@@ -677,7 +703,6 @@ export class RunScene extends Phaser.Scene {
   private handleCollision(obj: SlopeObject): void {
     switch (obj.type) {
       case "rock":
-      case "crevasse":
         this.effects.burstDeath(this.penguin.x, this.penguin.y);
         this.endGame();
         break;

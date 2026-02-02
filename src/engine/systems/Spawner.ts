@@ -170,9 +170,6 @@ export class Spawner {
       case "ice":
         this.spawnIcePatch(x, spawnY);
         break;
-      case "crevasse":
-        this.spawnCrevasse(x, spawnY);
-        break;
       case "mogul":
         this.spawnMogul(x, spawnY);
         break;
@@ -213,8 +210,9 @@ export class Spawner {
       this.spawnFishCluster(x, y);
       return;
     }
-    const fish = this.scene.add.circle(x, y, 8, 0xf59e0b);
-    this.objects.push({ sprite: fish, type: "fish", width: 16, height: 16 });
+    const fish = this.scene.add.image(x, y, "fish-tex");
+    fish.setScale(1.4);
+    this.objects.push({ sprite: fish, type: "fish", width: 18, height: 12 });
   }
 
   private spawnFishCluster(x: number, y: number): void {
@@ -223,8 +221,9 @@ export class Spawner {
     const startX = x - ((count - 1) * spacing) / 2;
     for (let i = 0; i < count; i++) {
       const fx = startX + i * spacing;
-      const fish = this.scene.add.circle(fx, y + i * 12, 8, 0xf59e0b);
-      this.objects.push({ sprite: fish, type: "fish", width: 16, height: 16 });
+      const fish = this.scene.add.image(fx, y + i * 12, "fish-tex");
+      fish.setScale(1.4);
+      this.objects.push({ sprite: fish, type: "fish", width: 18, height: 12 });
     }
   }
 
@@ -243,11 +242,6 @@ export class Spawner {
     this.objects.push({ sprite: ice, type: "ice", width: w, height: h });
   }
 
-  private spawnCrevasse(x: number, y: number): void {
-    const crevasse = this.scene.add.rectangle(x, y, 14, 50, 0x1e293b);
-    crevasse.setStrokeStyle(1, 0x0f172a);
-    this.objects.push({ sprite: crevasse, type: "crevasse", width: 14, height: 50 });
-  }
 
   private spawnMogul(x: number, y: number): void {
     const mogul = this.scene.add.ellipse(x, y, 28, 16, 0xf1f5f9);

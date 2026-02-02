@@ -5,7 +5,6 @@ export type SlopeObjectType =
   | "ramp"
   | "fish"
   | "ice"
-  | "crevasse"
   | "mogul"
   | "snowdrift";
 
@@ -55,33 +54,30 @@ const SPAWN_TABLES: SpawnEntry[][] = [
     [0.58, "snowdrift"],
     [1.0, "fish"],
   ],
-  // Difficulty 1 — Medium: trees dominant, ice patches, some rocks
+  // Difficulty 1 — Medium: trees dominant, ice patches, more rocks
   [
-    [0.15, "rock"],
+    [0.20, "rock"],
     [0.50, "tree"],
     [0.58, "ice"],
     [0.64, "snowdrift"],
-    [0.70, "crevasse"],
     [1.0, "fish"],
   ],
-  // Difficulty 2 — Hard: dense trees, moguls, crevasses
+  // Difficulty 2 — Hard: dense trees, moguls, rocks
   [
-    [0.18, "rock"],
+    [0.25, "rock"],
     [0.48, "tree"],
     [0.56, "ice"],
-    [0.63, "crevasse"],
-    [0.72, "mogul"],
-    [0.78, "snowdrift"],
+    [0.65, "mogul"],
+    [0.72, "snowdrift"],
     [1.0, "fish"],
   ],
-  // Difficulty 3 — Expert: everything, trees still common
+  // Difficulty 3 — Expert: everything, rocks and trees dominant
   [
-    [0.20, "rock"],
+    [0.28, "rock"],
     [0.45, "tree"],
-    [0.53, "crevasse"],
-    [0.61, "ice"],
-    [0.70, "mogul"],
-    [0.76, "snowdrift"],
+    [0.53, "ice"],
+    [0.62, "mogul"],
+    [0.70, "snowdrift"],
     [1.0, "fish"],
   ],
 ];

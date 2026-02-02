@@ -183,7 +183,7 @@ Our version: a penguin slides downhill on ice. Steer left/right to avoid obstacl
 | Steering | Left/right rotates penguin heading with momentum; lateral movement follows angle; downhill speed reduced by `cos(heading)` — slalom costs forward momentum |
 | Speed control | Up/W spreads wings (brake), Down/S tucks wings (speed up). Force model: gravity - friction - wingDrag each frame |
 | Auto-scroll | Obstacles scroll upward (penguin at top = downhill perspective), speed driven by force-based physics |
-| Obstacles | Rocks (game over), trees (speed loss scaled by hit center, persist on screen), ice patches (reduced steering + low friction), crevasses (game over), moguls (small bump/air), snowdrifts (extra friction drag) |
+| Obstacles | Rocks (game over), trees (speed loss scaled by hit center, persist on screen), ice patches (reduced steering + low friction), moguls (small bump/air), snowdrifts (extra friction drag) |
 | Ramps | Hit a ramp to launch into the air. Airtime depends on speed |
 | Tricks | While airborne, tap directions to perform tricks (flip, spin). Each trick has a point value |
 | Landing | Clean = keep trick points. Crash = lose trick points + penalty |
@@ -402,7 +402,7 @@ Replace colored shapes with sprites and add sound. Transforms the look and feel.
 | Ramp | Procedural snow wedge (trapezoid with shadow, slope lines, lip highlight, generated at runtime, 1.6x scale) | 60x32 @ 1.6x | Done |
 | Fish | Gold fish shape | 16x16 |
 | Ice patch | Irregular polygon (8-12 vertices), translucent cyan | 70-130 x 25-45 | Shaped |
-| Crevasse | Dark crack in ice | 14x50 |
+| ~~Crevasse~~ | ~~Removed~~ | — |
 | Mogul | Snow bump with shadow | 28x16 |
 | Snowdrift | Snow pile | 44x18 |
 
@@ -693,3 +693,7 @@ Fixed the boot screen music toggle label: was showing an empty string on initial
 **Procedural ramp:** Replaced the blue triangle ramp with a procedurally generated snow wedge texture. Drawn at runtime using Phaser Graphics in `preload()`: trapezoid body (wide at top, tapering to launch lip at bottom), subtle shadow, slope surface lines, bright lip highlight, and outline. Generated as `"ramp-tex"` (60x32), rendered at 1.6x scale, depth 6. Tried using a source image (`penguin_images/ramp.png`) first but the dark-background-removal didn't produce clean enough results — procedural looks better and matches the game's visual style.
 
 **SlopeObject type:** Widened sprite field to `Shape | Sprite | Image` to support `add.image()` for ramps.
+
+**Fish sprites:** Replaced yellow circles with procedural fish texture — gold ellipse body, triangle tail, belly highlight, dark eye. Generated at runtime in `preload()`, rendered at 1.4x scale.
+
+**Crevasses removed:** Removed crevasses entirely. Rocks are now the only lethal obstacle. Crevasse spawn weight redistributed to rocks across all difficulty zones. Removed `spawnCrevasse()`, crevasse collision handling, `endGameCrevasse()` fall animation, and `"crevasse"` from `SlopeObjectType`.

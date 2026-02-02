@@ -6,7 +6,7 @@ Penguin downhill ski game inspired by Ski or Die (EA, 1990). PWA + Capacitor. No
 
 ## What this is
 
-A penguin slides downhill on ice. Steer left/right to dodge obstacles (rocks, trees, crevasses). Hit ramps to launch into the air. Perform tricks mid-air (flips, spins) for bonus points. Land cleanly or crash. Collect fish. Survive as long as possible.
+A penguin slides downhill on ice. Steer left/right to dodge obstacles (rocks, trees). Hit ramps to launch into the air. Perform tricks mid-air (flips, spins) for bonus points. Land cleanly or crash. Collect fish. Survive as long as possible.
 
 Inspired by **Ski or Die** (EA, 1990) -- especially the Downhill Blitz and Acro Aerials events. Top-down scrolling, arcade feel, trick scoring.
 
@@ -151,7 +151,7 @@ Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by leve
 - **Spin:** 100 pts per half rotation on clean landing
 - **Ice:** 25 pts × combo, increments combo (chains with tricks)
 - **Icy Jump:** hit ramp while slippery → +50% air time, 2× trick score on clean landing ("ICY COMBO")
-- **Flyover:** 50 pts × combo for flying over rocks, trees, or crevasses while airborne
+- **Flyover:** 50 pts × combo for flying over rocks or trees while airborne
 - **Combo:** increments on clean trick landings and ice patches; resets on crash or tree hit
 
 ## Music

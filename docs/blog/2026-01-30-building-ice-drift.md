@@ -235,7 +235,7 @@ On the last life, the old instant-death fires — same camera shake, death music
 
 The music system got a significant rework. Previously it had 16 levels where drums entered one at a time (kick, then hats, then snare) into a sawtooth bass. It worked but the intro was sparse — just bass into kick felt abrupt.
 
-The new arrangement starts with a Bmin9 chord pad — a triangle wave playing `b2,d3,f#3,a3,b3` at half speed with reverb. It's the first thing you hear when the game starts. Then the sawtooth bass fades in underneath, the chord drops away, and the bass carries you into the drum build.
+The new arrangement starts with a Bmin9 chord pad — a triangle wave playing `b2,d3,f#3,a3,b3` with reverb. It's the first thing you hear when the game starts. The chord plays alone for the first 50 meters, then the sawtooth bass joins underneath, the chord drops away, and the bass carries you into the drum build. Getting the chord to trigger immediately was its own mini-saga — `.slow(2)` meant Strudel would wait for the next 2-cycle boundary before playing the first note, so the bass often beat it to the punch. Removing the slow fixed it.
 
 The lead section changed too. Instead of three separate music levels cycling through lead1a/lead1b/lead1c based on distance, Strudel's `arrange()` function handles it automatically: 4 cycles of lead1a (b4), 2 cycles of lead1b (d5), 2 cycles of lead1c (c#5), looping. One music level, three variations, zero game logic needed.
 

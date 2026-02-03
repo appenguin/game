@@ -24,18 +24,18 @@ const g = () => globalThis as any;
 export const LEVEL_THRESHOLDS = [
   0,    // 0  Silence
   5,    // 1  Chord pad
-  30,   // 2  + bass
-  80,   // 3  Bass solo
-  150,  // 4  + kick
-  230,  // 5  + hi-hats
-  320,  // 6  + snare
-  420,  // 7  deep bass (bass2)
-  520,  // 8  + ghost snares
-  640,  // 9  + lead arrangement (cycles a/b/c)
-  780,  // 10 bass change + lead
-  920,  // 11 bass3 progression
-  1060, // 12 bass4 double-time
-  1250, // 13 + lead2 melody
+  50,   // 2  + bass
+  120,  // 3  Bass solo
+  200,  // 4  + kick
+  280,  // 5  + hi-hats
+  370,  // 6  + snare
+  460,  // 7  deep bass (bass2)
+  560,  // 8  + ghost snares
+  680,  // 9  + lead arrangement (cycles a/b/c)
+  810,  // 10 bass change + lead
+  950,  // 11 bass3 progression
+  1080, // 12 bass4 double-time
+  1260, // 13 + lead2 melody
   1500, // 14 full solo
 ];
 
@@ -100,7 +100,7 @@ export function getPatternForLevel(level: number): any {
 
   // -- Instruments ----------------------------------------------------------
 
-  const chord = note("b2,d3,f#3,a3,b3").slow(2)
+  const chord = note("b2,d3,f#3,a3,b3")
     .sound("triangle").gain(0.2).lpf(2000).room(0.5);
 
   const bass = note("b2 f#2 d2 <a1 a2>").fast(4)

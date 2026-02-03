@@ -29,6 +29,8 @@ class Music {
   private musicLevel = -1; // -1 = not yet started
   private _muted: boolean;
   private wantsPlay = false; // true if play() was called before init finished
+  private wantsPlayLevel = 0;
+  private minLevel = 0; // floor for updateDistance — never go below this
   private deathTimer: ReturnType<typeof setTimeout> | null = null;
   private difficultyLevel = 1; // 0=easy, 1=medium, 2=hard
   private pendingLevel = -1;   // queued level, applied on next 4-bar boundary
@@ -66,26 +68,30 @@ class Music {
       // Fulfil any play() that arrived before init finished
       if (this.wantsPlay) {
         this.wantsPlay = false;
-        this.musicLevel = 0;
+        const lvl = this.wantsPlayLevel;
+        this.musicLevel = lvl;
+        this.minLevel = lvl;
         this.pendingLevel = -1;
-        this.lastChangeTime = 0; // allow first level change immediately
-        if (!this._muted) this.applyLevel(0);
+        this.lastChangeTime = 0;
+        if (!this._muted) this.applyLevel(lvl);
       }
     } catch (e) {
       console.warn("[Music] Strudel init failed:", e);
     }
   }
 
-  /** Start playing from level 0 (intro / ambient). */
-  play(): void {
+  /** Start playing from a given level (default 0 = intro / ambient). */
+  play(startLevel = 0): void {
     if (!this.initialized) {
       this.wantsPlay = true;
+      this.wantsPlayLevel = startLevel;
       return;
     }
-    this.musicLevel = 0;
+    this.musicLevel = startLevel;
+    this.minLevel = startLevel;
     this.pendingLevel = -1;
     this.lastChangeTime = 0; // allow first level change immediately
-    if (!this._muted) this.applyLevel(0);
+    if (!this._muted) this.applyLevel(startLevel);
   }
 
   /** Toggle mute state. Returns new muted value. */
@@ -111,7 +117,7 @@ class Music {
   /** Call every frame to update music layers based on distance (meters). */
   updateDistance(meters: number): void {
     if (!this.initialized) return;
-    const next = getMusicLevel(meters);
+    const next = Math.max(this.minLevel, getMusicLevel(meters));
     if (next !== this.musicLevel) {
       this.pendingLevel = next;
     }

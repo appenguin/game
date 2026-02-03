@@ -99,6 +99,11 @@ export function getPatternForLevel(level: number): any {
 
   // -- Instruments ----------------------------------------------------------
 
+  const bass = note("b2 f#2 d2 <a1 a2>").fast(4)
+    .sound("sawtooth")
+    .lpf(sine.range(1000, 5000).slow(4))
+    .orbit(2);
+
   const kick = sound("bd*4")
     .sustain(0.6).decay(0.05).gain(0.5)
     .duck(2).duckattack(0.17).duckdepth(0.4);
@@ -111,11 +116,6 @@ export function getPatternForLevel(level: number): any {
 
   const ghost = sound("sd sd ~ sd sd sd ~ sd")
     .degradeBy(0.8).sustain(0.4).gain(0.3);
-
-  const bass = note("b2 f#2 d2 <a1 a2>").fast(4)
-    .sound("sawtooth")
-    .lpf(sine.range(1000, 5000).slow(4))
-    .orbit(2);
 
   const lead1a = note("- b4").fast(4).sound("sawtooth")
     .lpf(sine.range(800, 4000).lpq(4).slow(8))
@@ -141,20 +141,20 @@ b4 c#5 d5 c#5 e5 d5 c#5 d5 f#5 e5 d5 e5 f#5 e5 d5 bb4
   switch (level) {
     case 0:  return silence;
     case 1:  return bass;
-    case 2:  return stack(kick, bass);
-    case 3:  return stack(kick, hh, bass);
-    case 4:  return stack(kick, hh, snare, bass);
-    case 5:  return stack(kick, hh, snare, ghost, bass2);
-    case 6:  return stack(kick, hh, snare, ghost, bass2, lead1a);
-    case 7:  return stack(kick, hh, snare, ghost, bass2, lead1b);
-    case 8:  return stack(kick, hh, snare, ghost, bass2, lead1c);
-    case 9:  return stack(kick, hh, snare, ghost, bass, lead1a);
-    case 10: return stack(kick, hh, snare, ghost, bass, lead1b);
-    case 11: return stack(kick, hh, snare, ghost, bass, lead1c);
-    case 12: return stack(kick, hh, snare, ghost, bass3);
-    case 13: return stack(kick, hh, snare, ghost, bass4);
-    case 14: return stack(kick, hh, snare, ghost, bass4, lead2);
-    case 15: return stack(kick, hh, snare, ghost, bass3, lead3);
+    case 2:  return stack(bass, kick);
+    case 3:  return stack(bass, kick, hh);
+    case 4:  return stack(bass, kick, hh, snare);
+    case 5:  return stack(bass2, kick, hh, snare, ghost);
+    case 6:  return stack(bass2, kick, hh, snare, ghost, lead1a);
+    case 7:  return stack(bass2, kick, hh, snare, ghost, lead1b);
+    case 8:  return stack(bass2, kick, hh, snare, ghost, lead1c);
+    case 9:  return stack(bass, kick, hh, snare, ghost, lead1a);
+    case 10: return stack(bass, kick, hh, snare, ghost, lead1b);
+    case 11: return stack(bass, kick, hh, snare, ghost, lead1c);
+    case 12: return stack(bass3, kick, hh, snare, ghost);
+    case 13: return stack(bass4, kick, hh, snare, ghost);
+    case 14: return stack(bass4, kick, hh, snare, ghost, lead2);
+    case 15: return stack(bass3, kick, hh, snare, ghost, lead3);
     default: return silence;
   }
 }

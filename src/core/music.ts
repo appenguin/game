@@ -2,7 +2,7 @@
  * Musical pattern definitions for PenguinSki.
  *
  * Edit this file to change the music. Each level defines a full mix
- * of instruments — as score increases, the arrangement progresses
+ * of instruments — as distance increases, the arrangement progresses
  * through increasingly complex layers.
  *
  * Pattern functions (sound, note, stack, …) are Strudel globals
@@ -10,48 +10,47 @@
  * Docs: https://strudel.cc/reference/
  *
  * Key: B minor — dark, driving atmosphere.
- * Uses TR-909 drum samples + synth oscillators (saw, supersaw).
+ * Uses TR-909 drum samples + synth oscillators (sawtooth).
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const g = () => globalThis as any;
 
 // ---------------------------------------------------------------------------
-// Distance thresholds (meters) — distance required to unlock each level (0-15)
+// Distance thresholds (meters) — distance required to unlock each level (0-14)
 // Instruments enter one at a time for a progressive build.
 // ---------------------------------------------------------------------------
 
 export const LEVEL_THRESHOLDS = [
   0,    // 0  Silence
-  5,    // 1  Bass intro
-  15,   // 2  + kick
-  30,   // 3  + hi-hats
-  50,   // 4  + snare
-  75,   // 5  + ghost snares, deep bass
-  110,  // 6  + lead (b4)
-  200,  // 7  + lead shift (d5)
-  300,  // 8  + lead shift (c#5)
-  420,  // 9  bass change + lead
-  550,  // 10 + lead shift (d5)
-  700,  // 11 + lead shift (c#5)
-  870,  // 12 bass progression
-  1050, // 13 bass double-time
-  1250, // 14 + lead melody
-  1500, // 15 full solo
+  5,    // 1  Chord pad
+  30,   // 2  + bass
+  80,   // 3  Bass solo
+  150,  // 4  + kick
+  230,  // 5  + hi-hats
+  320,  // 6  + snare
+  420,  // 7  deep bass (bass2)
+  520,  // 8  + ghost snares
+  640,  // 9  + lead arrangement (cycles a/b/c)
+  780,  // 10 bass change + lead
+  920,  // 11 bass3 progression
+  1060, // 12 bass4 double-time
+  1250, // 13 + lead2 melody
+  1500, // 14 full solo
 ];
 
 // ---------------------------------------------------------------------------
 // Tempo
 // ---------------------------------------------------------------------------
 
-export const BASE_BPM = 130;
+export const BASE_BPM = 140;
 export const LEVEL_BPM = [110, 124, 140]; // Easy, Medium, Hard
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Map distance (meters) → music level (0-15). */
+/** Map distance (meters) → music level (0-14). */
 export function getMusicLevel(meters: number): number {
   for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
     if (meters >= LEVEL_THRESHOLDS[i]) return i;
@@ -72,14 +71,15 @@ export function getDeathPattern(): any {
 // Pattern definitions — full arrangement per level
 //
 // Each level returns a complete stack of instruments.
-// Instruments enter one at a time for a progressive build:
-//   0: silence → 1: bass → 2: +kick → 3: +hh → 4: +snare →
-//   5: +ghost → 6-8: leads → 9-11: bass change + leads →
-//   12-13: bass progressions → 14: +melody → 15: full solo
+// Instruments enter one at a time:
+//   0: silence → 1: chord → 2: +bass → 3: bass solo →
+//   4: +kick → 5: +hh → 6: +snare → 7: bass2 → 8: +ghost →
+//   9: +lead (arrange a/b/c) → 10: bass change+lead →
+//   11: bass3 → 12: bass4 → 13: +lead2 → 14: full solo
 //
 // Strudel cheat-sheet:
 //   note("b2*4")           4 B2 notes per cycle
-//   sound("supersaw")      oscillator type
+//   sound("sawtooth")      oscillator type
 //   .bank("tr909")         sample bank
 //   .gain(0.3)             volume
 //   .lpf(800)              low-pass filter cutoff
@@ -92,16 +92,20 @@ export function getDeathPattern(): any {
 //   .orbit(n)              audio bus routing
 //   .duck(n)               sidechain ducking
 //   sine.range(a,b)        sine LFO mapped to range
+//   arrange([n, pat], …)   play sections sequentially
 // ---------------------------------------------------------------------------
 
 export function getPatternForLevel(level: number): any {
-  const { sound, note, stack, silence, sine } = g();
+  const { sound, note, stack, silence, sine, arrange } = g();
 
   // -- Instruments ----------------------------------------------------------
 
+  const chord = note("b2,d3,f#3,a3,b3").slow(2)
+    .sound("triangle").gain(0.2).lpf(2000).room(0.5);
+
   const bass = note("b2 f#2 d2 <a1 a2>").fast(4)
     .sound("sawtooth")
-    .lpf(sine.range(1000, 5000).slow(4))
+    .lpf(sine.range(1000, 3000).slow(4))
     .orbit(2);
 
   const kick = sound("bd*4")
@@ -115,13 +119,18 @@ export function getPatternForLevel(level: number): any {
     .sustain(0.4);
 
   const ghost = sound("sd sd ~ sd sd sd ~ sd")
-    .degradeBy(0.8).sustain(0.4).gain(0.3);
+    .degradeBy(0.8).sustain(0.4).gain(0.3).bank("tr909");
 
   const lead1a = note("- b4").fast(4).sound("sawtooth")
     .lpf(sine.range(800, 4000).lpq(4).slow(8))
-    .gain(0.5).delay(0.2);
+    .gain(0.5).delay(0.3);
   const lead1b = lead1a.note("d5").delay(0.4);
   const lead1c = lead1a.note("c#5").delay(0.5);
+  const lead = arrange(
+    [4, lead1a],
+    [2, lead1b],
+    [2, lead1c],
+  );
 
   const bass2 = bass.note("b1").orbit(2);
   const bass3 = bass2.note("[b1 d2 e2 [eb2 d2]]/4");
@@ -132,29 +141,28 @@ export function getPatternForLevel(level: number): any {
   const lead3 = note(`<
 b4 d5 f#5 d5 f#5 e5 f#5 g5 a5 b5 f#5 d5 f#5 e5 d5 c#5
 b4 c#5 d5 c#5 e5 d5 c#5 d5 f#5 e5 d5 e5 f#5 e5 d5 bb4
-b4 _ _ _ b4 d5 f#5 b5 a5 b5 f#5 d5 f#5 e5 d5 c#5
-b4 c#5 d5 c#5 e5 d5 c#5 d5 f#5 e5 d5 e5 f#5 e5 d5 bb4
->`).fast(16).sound("sawtooth").lpf(3000).lpq(2).gain(0.2);
+b4 _ _ _ b4 d5 f#5 b5 a5 b5 f#5 d5 f#5 g5 a5 b5
+b4 c#5 d5 c#5 e5 d5 c#5 d5 f#5 e5 d5 e5 f#5 e5 d5 c#5
+>`).fast(16).sound("sawtooth").lpf(3000).lpq(2).gain(0.25).delay(0.1);
 
   // -- Arrangement ----------------------------------------------------------
 
   switch (level) {
     case 0:  return silence;
-    case 1:  return bass;
-    case 2:  return stack(bass, kick);
-    case 3:  return stack(bass, kick, hh);
-    case 4:  return stack(bass, kick, hh, snare);
-    case 5:  return stack(bass2, kick, hh, snare, ghost);
-    case 6:  return stack(bass2, kick, hh, snare, ghost, lead1a);
-    case 7:  return stack(bass2, kick, hh, snare, ghost, lead1b);
-    case 8:  return stack(bass2, kick, hh, snare, ghost, lead1c);
-    case 9:  return stack(bass, kick, hh, snare, ghost, lead1a);
-    case 10: return stack(bass, kick, hh, snare, ghost, lead1b);
-    case 11: return stack(bass, kick, hh, snare, ghost, lead1c);
-    case 12: return stack(bass3, kick, hh, snare, ghost);
-    case 13: return stack(bass4, kick, hh, snare, ghost);
-    case 14: return stack(bass4, kick, hh, snare, ghost, lead2);
-    case 15: return stack(bass3, kick, hh, snare, ghost, lead3);
+    case 1:  return chord;
+    case 2:  return stack(chord, bass);
+    case 3:  return bass;
+    case 4:  return stack(bass, kick);
+    case 5:  return stack(bass, kick, hh);
+    case 6:  return stack(bass, kick, hh, snare);
+    case 7:  return stack(bass2, kick, hh, snare);
+    case 8:  return stack(bass2, kick, hh, snare, ghost);
+    case 9:  return stack(bass2, kick, hh, snare, ghost, lead);
+    case 10: return stack(bass, kick, hh, snare, ghost, lead);
+    case 11: return stack(bass3, kick, hh, snare, ghost);
+    case 12: return stack(bass4, kick, hh, snare, ghost);
+    case 13: return stack(bass4, kick, hh, snare, ghost, lead2);
+    case 14: return stack(bass3, kick, hh, snare, ghost, lead3);
     default: return silence;
   }
 }

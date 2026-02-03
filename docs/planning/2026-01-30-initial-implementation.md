@@ -453,7 +453,7 @@ Options for creating sprites:
 
 ### Music (done)
 
-Implemented with Strudel (`@strudel/web`) — procedural layered music that evolves with score. 16 levels of stacking patterns in E minor using synth oscillators and dirt-samples drums. See `src/core/music.ts` for pattern definitions.
+Implemented with Strudel (`@strudel/web`) — procedural layered music that evolves with distance. 15 levels (0-14) of progressive arrangement in B minor. Starts with a Bmin9 triangle chord pad, builds through sawtooth bass, drums (bd, hh, sd), TR-909 ghost snares, saw leads with `arrange()` cycling (lead1a→1b→1c), bass progressions, to full solo at 1500m. BASE_BPM 140, per-difficulty: Easy 110, Medium 124, Hard 140. See `src/core/music.ts` for pattern definitions.
 
 ### Asset pipeline
 
@@ -572,7 +572,7 @@ Bundle into a native Android app. The appenguin showcase.
 | HUD | Semi-transparent top bar | Labeled score, distance (m/km), speed (km/h), level -- always visible, non-intrusive |
 | Orientation | Portrait locked | Screen Orientation API + PWA manifest |
 | Music engine | Strudel (@strudel/web) | Procedural layered music, no static audio files needed, patterns easy to edit |
-| Music progression | 16 distance-based levels | Progressive arrangement, instruments enter one at a time; full solo at 1500m |
+| Music progression | 15 distance-based levels (0-14) | Chord pad → bass → drums one-by-one → ghost → leads via arrange() → bass progressions → solo at 1500m |
 | Music architecture | core/music.ts + engine/systems/Music.ts | Pattern definitions separated from playback engine; edit music.ts to change the music |
 | Icy Jump combo | Ice → ramp = +50% air, 2× trick score | Rewards chaining ice patches with ramps; only ramps (not moguls) trigger it |
 | Ice pond shape | Irregular polygon (8-12 vertices) | Random wobble around elliptical path; unique shape per spawn; same AABB hitbox |
@@ -764,3 +764,19 @@ Rocks no longer instant-kill. The penguin now has 3 lives, displayed as 🐧 emo
 **Bigger rocks:** Rock scale bumped from 2.8× to 3.5×, hitbox from 50×40 to 60×48. Rocks are now more visible and imposing.
 
 **Final death:** When the last life is lost, the existing `endGame()` fires — same death spin, camera shake, game over menu, and score save as before.
+
+### 2026-02-03: Music rework — chord intro, arrange(), preload fix
+
+Reworked the music arrangement from 16 levels to 15 (0-14). Major changes:
+
+**Chord pad intro:** New `chord` instrument — Bmin9 triangle wave (`b2,d3,f#3,a3,b3`, half speed, reverbed). Plays alone at level 1, then with bass at level 2, then bass takes over solo at level 3. Gives the opening a warmer, more atmospheric feel.
+
+**Lead cycling with `arrange()`:** Instead of 3 separate music levels for lead1a/b/c, Strudel's `arrange()` function cycles them automatically: 4 cycles of lead1a (b4), 2 of lead1b (d5), 2 of lead1c (c#5). One level, three variations.
+
+**Instrument tweaks:** Bass LPF narrowed (1000-3000 from 1000-5000), ghost snares now explicitly use `.bank("tr909")`, lead1a delay 0.2→0.3, lead3 melody reworked with ascending endings and delay effect, gain adjustments.
+
+**Thresholds spread out:** Each instrument gets 70-140m of breathing room. Full progression: silence → chord → chord+bass → bass → +kick → +hh → +snare → bass2 → +ghost → +lead → bass change → bass3 → bass4 → +lead2 → solo at 1500m.
+
+**BASE_BPM:** Changed from 130 to 140.
+
+**Preload timing fix in Music.ts:** The sample preload plays the full arrangement silently for 500ms then calls `hush()`, but that was killing the real music that started via a deferred `play()` call. Fixed by storing the preload timer ID and clearing it when a deferred play is waiting, then hushing the silent preload immediately before starting the real pattern.

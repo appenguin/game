@@ -231,6 +231,20 @@ The steering system fought us on the spin. The update loop sets `penguin.setRota
 
 On the last life, the old instant-death fires — same camera shake, death music, game over menu. The three-life system turns a frustrating run-ender into a "that was close" moment that keeps you playing.
 
+## Music rework: chord intro and arrange()
+
+The music system got a significant rework. Previously it had 16 levels where drums entered one at a time (kick, then hats, then snare) into a sawtooth bass. It worked but the intro was sparse — just bass into kick felt abrupt.
+
+The new arrangement starts with a Bmin9 chord pad — a triangle wave playing `b2,d3,f#3,a3,b3` at half speed with reverb. It's the first thing you hear when the game starts. Then the sawtooth bass fades in underneath, the chord drops away, and the bass carries you into the drum build.
+
+The lead section changed too. Instead of three separate music levels cycling through lead1a/lead1b/lead1c based on distance, Strudel's `arrange()` function handles it automatically: 4 cycles of lead1a (b4), 2 cycles of lead1b (d5), 2 cycles of lead1c (c#5), looping. One music level, three variations, zero game logic needed.
+
+The full progression is now 15 levels (0-14): silence → chord → chord+bass → bass solo → +kick → +hh → +snare → bass2 → +ghost → +lead → bass change → bass3 → bass4 → +lead2 → full solo at 1500m.
+
+Other tweaks: bass LPF range narrowed (1000-3000 instead of 1000-5000) for a tighter sound, ghost snares use TR-909 bank explicitly, lead delays adjusted, lead3 solo got melody tweaks and a delay effect. BASE_BPM moved from 130 to 140.
+
+We also fixed a timing bug in the Music system: the sample preload plays the full arrangement silently for 500ms then calls `hush()`, but that `hush()` was killing the *real* music that started playing via a deferred `play()` call. The fix cancels the preload timer when a deferred play is waiting.
+
 ## What's next
 
 Moguls and snowdrifts are still placeholder shapes. Then: sound effects and the Capacitor wrap for Android.

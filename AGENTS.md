@@ -163,9 +163,9 @@ Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by leve
 
 Procedural layered music powered by **Strudel** (`@strudel/web`). Samples loaded from `github:tidalcycles/dirt-samples`.
 
-- 16-level progressive arrangement driven by distance (meters), not score — instruments enter one at a time
-- Sawtooth bass, saw leads, drum samples (bd, hh, sd) build up as distance increases (solo at 1500m)
-- Key: B minor. Tempo per difficulty: Easy 110, Medium 124, Hard 140 BPM (fixed throughout game)
+- 15-level progressive arrangement (0-14) driven by distance (meters), not score — instruments enter one at a time
+- Starts with Bmin9 triangle chord pad, builds through sawtooth bass, drums (bd, hh, sd), ghost snares (TR-909), saw leads with `arrange()` cycling, bass progressions, to full solo at 1500m
+- Key: B minor. Tempo: BASE_BPM 140, per-difficulty: Easy 110, Medium 124, Hard 140 BPM (fixed throughout game)
 - Level changes quantised to 4-bar boundaries for musical coherence
 - On init, the full arrangement plays silently (`gain(0)`) for 500ms to preload all samples
 - Pattern definitions live in `src/core/music.ts` — edit that file to change the music

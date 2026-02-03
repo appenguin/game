@@ -64,10 +64,12 @@ class Music {
       const full = getPatternForLevel(LEVEL_THRESHOLDS.length - 1);
       if (full) full.gain(0).cps(cps).play();
       // Brief pause then hush, so Strudel fetches everything
-      setTimeout(() => this.hush(), 500);
+      const preloadTimer = setTimeout(() => this.hush(), 500);
       // Fulfil any play() that arrived before init finished
       if (this.wantsPlay) {
         this.wantsPlay = false;
+        clearTimeout(preloadTimer);
+        this.hush(); // kill silent preload immediately
         const lvl = this.wantsPlayLevel;
         this.musicLevel = lvl;
         this.minLevel = lvl;

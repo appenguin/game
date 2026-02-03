@@ -90,12 +90,13 @@ docs/
 - Procedural snow texture background (128×128 TileSprite, scrolls with world at depth -10)
 - Penguin sprite sheet (2 frames: tucked/open wings) at screen center; world scrolls via `camera.scrollX`
 - Trees are sprite-based (4 variants from `tree-sheet.png`, randomly selected, 2.2x scale, depth 7 — above penguin at depth 5)
-- Rocks are sprite-based (4 variants from `rock-sheet.png`, randomly selected, 2.8x scale, depth 7)
+- Rocks are sprite-based (4 variants from `rock-sheet.png`, randomly selected, 3.5x scale, depth 7)
 - Ramps are procedural graphics (trapezoid with shadow, slope lines, lip highlight — generated texture at runtime, 1.6x scale, depth 6)
 - Ice ponds are irregular polygons (8-12 random vertices around an elliptical path, unique shape each spawn)
 - Other obstacles use procedural shapes (ellipses, circles)
 - Snow spray particles + belly-slide trail behind penguin on ground; trail pauses inside trees
 - Tree collision: continuous snow burst (white particles from tree + under penguin) while overlapping, tree shakes ±3px around origin, speed penalty scaled by hit centeredness
+- **3 lives** (🐧🐧🐧 in HUD): rock hit flings penguin off-screen (tween: spin, shrink, fade), respawn at center with 2s invincibility flash. Camera freezes during fling. Final death on last life
 - Obstacles persist after being hit (marked with `hit` flag to prevent re-triggering); only fish are removed on collection
 - Event particle bursts on collisions and landings; camera bump on landing
 - Snowstorm at 1500m: 500 screen-fixed snowflake circles (`setScrollFactor(0)`) with organic wind gusts (160 px/s max); wind pushes penguin and obstacles laterally (5× push when airborne); white overlay reduces visibility; +30% air time during storm; ramps up over 100m

@@ -219,6 +219,18 @@ A full-screen white rectangle at 15% opacity handles the visibility drop. Barely
 
 The storm ramps up over 100 meters — starts subtle, builds to full intensity. By the time it's at full strength, steering into the wind is a real fight and reading the slope through the snow is genuinely harder. Airborne penguin gets thrown sideways at 5× the ground wind force — hit a ramp during a gust and you land somewhere completely unexpected. Jumps also last 30% longer during the storm, which stacks with the icy launch bonus. More air time sounds good until the wind is shoving you into a tree. It's the endgame difficulty spike we wanted, and it arrives at exactly the right musical moment.
 
+## Lives and the fling
+
+The game used to be one-hit-death on rocks. That was punishing — especially at high speed where rocks appear fast and the storm is shoving you sideways. Now you get three lives, shown as 🐧🐧🐧 in the HUD bar.
+
+Hit a rock and the penguin gets flung. Not a gentle nudge — it flies away from the rock, spinning wildly (8 full rotations), shrinking and fading out over a second. The camera freezes during the fling so you watch the penguin spiral away against the static slope. We tried keeping the camera tracking, but it followed the penguin sideways and the whole screen slid, which made the fling invisible. Freezing the camera was the fix.
+
+After the fling, a beat of nothing. Then the penguin respawns at screen center, flashing with invincibility for two seconds. Speed drops back to starting pace. You're safe from rocks but trees still hit you — invincibility isn't a free pass, just a breather.
+
+The steering system fought us on the spin. The update loop sets `penguin.setRotation()` every frame based on the heading angle, which silently overrode the tween's rotation property. The penguin would fling sideways but not spin at all. The fix: skip the entire steering block during the fling phase (`invincible && isDead`).
+
+On the last life, the old instant-death fires — same camera shake, death music, game over menu. The three-life system turns a frustrating run-ender into a "that was close" moment that keeps you playing.
+
 ## What's next
 
 Moguls and snowdrifts are still placeholder shapes. Then: sound effects and the Capacitor wrap for Android.

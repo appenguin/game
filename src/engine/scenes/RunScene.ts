@@ -56,6 +56,8 @@ export class RunScene extends Phaser.Scene {
   private scoreFrac = 0;
   private trickScore = 0;
   private combo = 0;
+  private lives = 3;
+  private invincible = false;
   private gameOver = false;
   private paused = false;
   private pauseOverlay: Phaser.GameObjects.Container | null = null;
@@ -68,6 +70,7 @@ export class RunScene extends Phaser.Scene {
   private comboText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
   private effectText!: Phaser.GameObjects.Text;
+  private livesText!: Phaser.GameObjects.Text;
 
   // Background
   private snowBg!: Phaser.GameObjects.TileSprite;
@@ -259,6 +262,8 @@ export class RunScene extends Phaser.Scene {
     this.slipperyTimer = 0;
     this.snowdriftTimer = 0;
     this.stormStarted = false;
+    this.lives = 3;
+    this.invincible = false;
     this.paused = false;
     this.pauseOverlay = null;
     this.cameras.main.setBackgroundColor("#f8fbff");
@@ -312,6 +317,12 @@ export class RunScene extends Phaser.Scene {
     this.speedText = this.add
       .text(width * 0.62, barH / 2, "0 km/h", textStyle)
       .setOrigin(0, 0.5)
+      .setDepth(11)
+      .setScrollFactor(0);
+
+    this.livesText = this.add
+      .text(width - 60, barH / 2, "\uD83D\uDC27".repeat(this.lives), textStyle)
+      .setOrigin(1, 0.5)
       .setDepth(11)
       .setScrollFactor(0);
 
@@ -437,7 +448,10 @@ export class RunScene extends Phaser.Scene {
     }
     if (this.snowdriftTimer > 0) this.snowdriftTimer -= dt;
     // --- Steering (angle-based with momentum) ---
-    if (!this.isAirborne) {
+    // Skip steering/rotation during fling (let tween control penguin)
+    if (this.invincible && this.isDead) {
+      // Do nothing — tween is animating the penguin
+    } else if (!this.isAirborne) {
       const steerDir = this.inputHandler.getSteerDir();
 
       if (steerDir !== 0) {
@@ -524,8 +538,10 @@ export class RunScene extends Phaser.Scene {
       this.penguinShadow.x = this.penguin.x;
     }
 
-    // --- Camera follows penguin horizontally ---
-    this.cameras.main.scrollX = this.penguin.x - width / 2;
+    // --- Camera follows penguin horizontally (freeze during fling) ---
+    if (!this.invincible || this.lives <= 0) {
+      this.cameras.main.scrollX = this.penguin.x - width / 2;
+    }
 
     // --- Scroll snow background with world ---
     this.snowBg.tilePositionX = this.cameras.main.scrollX;
@@ -743,8 +759,15 @@ export class RunScene extends Phaser.Scene {
   private handleCollision(obj: SlopeObject): void {
     switch (obj.type) {
       case "rock":
+        if (this.invincible) break;
+        this.lives--;
+        this.livesText.setText("\uD83D\uDC27".repeat(Math.max(0, this.lives)));
         this.effects.burstDeath(this.penguin.x, this.penguin.y);
-        this.endGame();
+        if (this.lives <= 0) {
+          this.endGame();
+        } else {
+          this.flingPenguin(obj);
+        }
         break;
 
       case "tree": {
@@ -803,6 +826,85 @@ export class RunScene extends Phaser.Scene {
     }
   }
 
+  private flingPenguin(obj: SlopeObject): void {
+    this.invincible = true;
+    this.isDead = true;
+    this.combo = 0;
+    this.penguin.setFrame(1);
+    this.cameras.main.shake(300, 0.015);
+
+    // Fling direction: away from rock
+    const dx = this.penguin.x - obj.sprite.x;
+    const dy = this.penguin.y - obj.sprite.y;
+    const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+    const flingX = this.penguin.x + (dx / dist) * 500;
+    const flingY = this.penguin.y + (dy / dist) * 350;
+    const spinDir = dx >= 0 ? 1 : -1;
+
+    this.tweens.add({
+      targets: this.penguin,
+      x: flingX,
+      y: flingY,
+      rotation: this.penguin.rotation + spinDir * Math.PI * 16,
+      scaleX: 0.3,
+      scaleY: 0.3,
+      alpha: 0,
+      duration: 1000,
+      ease: "Cubic.easeOut",
+      onComplete: () => this.respawnPenguin(),
+    });
+
+    // Hide shadow during fling
+    this.penguinShadow.setAlpha(0);
+  }
+
+  private respawnPenguin(): void {
+    const { width, height } = this.scale;
+    const profile = SPEED_PROFILES[this.level] ?? SPEED_PROFILES[1];
+
+    // Reset penguin to screen center
+    this.penguin.x = this.cameras.main.scrollX + width / 2;
+    this.penguin.y = height * 0.25;
+    this.penguin.setScale(1);
+    this.penguin.setAlpha(1);
+    this.penguin.setRotation(0);
+    this.penguin.setDepth(5);
+    this.penguin.setFrame(0);
+    this.penguinShadow.x = this.penguin.x;
+    this.penguinShadow.setAlpha(0.2);
+    this.isDead = false;
+
+    // Reset steering
+    this.heading = 0;
+    this.headingVelocity = 0;
+
+    // Slow down to start speed
+    this.scrollSpeed = Math.min(this.scrollSpeed, profile.start);
+
+    // Reset airborne state if flung while airborne
+    if (this.isAirborne) {
+      this.isAirborne = false;
+      this.airTime = 0;
+      this.airDuration = 0;
+    }
+
+    // Invincibility flash for 2 seconds
+    let flashCount = 0;
+    const flashTimer = this.time.addEvent({
+      delay: 100,
+      repeat: 19,
+      callback: () => {
+        flashCount++;
+        this.penguin.setAlpha(flashCount % 2 === 0 ? 1 : 0.3);
+      },
+    });
+    this.time.delayedCall(2000, () => {
+      flashTimer.destroy();
+      this.penguin.setAlpha(1);
+      this.invincible = false;
+    });
+  }
+
   private endGame(): void {
     this.gameOver = true;
     this.isDead = true;
@@ -815,7 +917,7 @@ export class RunScene extends Phaser.Scene {
     this.tweens.add({
       targets: this.penguin,
       x: this.penguin.x + spinDir * 40,
-      rotation: this.penguin.rotation + spinDir * Math.PI * 4,
+      rotation: this.penguin.rotation + spinDir * Math.PI * 16,
       duration: 800,
       ease: "Cubic.easeOut",
     });

@@ -131,6 +131,16 @@ class Music {
   // Game-event hooks
   // -----------------------------------------------------------------------
 
+  pause(): void {
+    this.hush();
+  }
+
+  resume(): void {
+    if (!this._muted && this.initialized) {
+      this.applyLevel(this.musicLevel);
+    }
+  }
+
   onGameOver(): void {
     if (!this.initialized || this._muted) return;
     this.clearDeathTimer();

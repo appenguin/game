@@ -172,6 +172,13 @@
   - Storm intensity ramps 0→1 over 100m after the 1500m threshold
   - Coincides with the music reaching full solo (level 15)
 
+- [x] Lives system and rock fling (Phase 3 continued)
+  - 3 lives displayed as 🐧 emojis in HUD bar
+  - Rock hit: fling penguin off-screen (tween: 16π spin, shrink, fade over 1s), respawn at center
+  - 2s invincibility flash after respawn; camera freezes during fling
+  - Last life → normal game over with death spin
+  - Rocks scaled up from 2.8x to 3.5x, hitbox 60×48
+
 ### Current step
 
 - [ ] Phase 5: More obstacle sprites (moguls, snowdrifts, ice)
@@ -573,6 +580,8 @@ Bundle into a native Android app. The appenguin showcase.
 | High score storage | localStorage, per-difficulty, minimal schema | Just score + distance per level; no total runs, fish count, or settings bloat; easy to extend later |
 | Storm particles | Manual circle GameObjects, not Phaser emitters | Phaser particle emitters don't respect `setScrollFactor(0)` — particles still render in world space; manual objects with `setScrollFactor(0)` work correctly |
 | Storm wind | Two layered sine waves (0.7 + 1.9 freq) | Organic gusts without randomness or noise; smooth, predictable, tuneable |
+| Rock collision | Fling + respawn, 3 lives | Rocks no longer instant-kill; penguin flung off-screen, respawns with invincibility; final death only on last life |
+| Fling camera | Freeze during fling | Camera stops tracking penguin during tween so fling reads visually; resumes on respawn |
 
 ---
 
@@ -741,3 +750,17 @@ Added a blizzard that kicks in at 1500m, coinciding with the music solo (level 1
 **Storm trigger in RunScene:** Distance in meters is computed once per frame (also reused for UI and music). When it crosses 1500m, `effects.startStorm()` is called. Each frame after that, intensity is `min(1, (meters - 1500) / 100)`. Wind lateral force is read from Effects and applied to both penguin position and the spawner's obstacle scroll loop.
 
 **Cheat codes:** +/= teleports forward 100m, -/_ teleports back 100m. Zeroes score to prevent cheated high scores. White camera flash + purple "CHEAT ±100m" status text. Music and storm advance naturally since they read distance each frame.
+
+### 2026-02-03: Lives system and rock fling
+
+Rocks no longer instant-kill. The penguin now has 3 lives, displayed as 🐧 emojis in the HUD bar.
+
+**Fling animation:** On rock hit, the penguin is flung away from the rock — direction computed from the vector between penguin and rock centers. The tween flies the penguin 500px in that direction, spins 16π (8 full rotations), shrinks to 0.3× scale, and fades to zero alpha over 1 second. The camera freezes during the fling so the animation reads properly against the static background. Without the freeze, the camera tracked the penguin as it flew sideways, which looked wrong.
+
+**Respawn:** After the fling tween completes, the penguin reappears at screen center with heading and rotation reset. Speed drops to the difficulty's start speed. A 2-second invincibility period starts with the penguin flashing (alternating 0.3/1.0 alpha every 100ms). Rock collisions are ignored during invincibility; tree collisions still apply.
+
+**Steering lockout during fling:** The update loop's steering code sets `penguin.setRotation()` every frame, which was overriding the fling tween's rotation. Fixed by skipping the entire steering block when `invincible && isDead` (the fling phase). Once respawned, `isDead` is cleared and steering resumes.
+
+**Bigger rocks:** Rock scale bumped from 2.8× to 3.5×, hitbox from 50×40 to 60×48. Rocks are now more visible and imposing.
+
+**Final death:** When the last life is lost, the existing `endGame()` fires — same death spin, camera shake, game over menu, and score save as before.

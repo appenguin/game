@@ -197,9 +197,9 @@ export class Spawner {
   private spawnRock(x: number, y: number): void {
     const frame = Phaser.Math.Between(0, 3);
     const rock = this.scene.add.sprite(x, y, "rock", frame);
-    rock.setScale(2.8);
+    rock.setScale(3.5);
     rock.setDepth(7);
-    this.objects.push({ sprite: rock, type: "rock", width: 50, height: 40 });
+    this.objects.push({ sprite: rock, type: "rock", width: 60, height: 48 });
   }
 
   private spawnTree(x: number, y: number): void {

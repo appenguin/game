@@ -53,6 +53,12 @@ scripts/
   build-sprites.py    Generates penguin-sheet.png + tree-sheet.png from penguin_images/
 index.html            HTML entry point
 vite.config.ts        Vite + PWA config
+android/              Android APK wrapper (Capacitor)
+  www/                Bundled game assets (copied from dist/)
+  android/            Android project (Gradle, Java)
+  capacitor.config.json   App config (ID, name, bundled mode)
+  generate-icons.py   Icon generation script
+  build, install      Build scripts
 docs/
   planning/           Implementation plans and progress
   blog/               Dev blog posts
@@ -185,7 +191,22 @@ npm run preview            # Preview production build
 
 ## Deployment
 
-Hosted at `game.appenguin.com`.
+**Web:** Hosted at `game.appenguin.com`
+
+**Android APK:** Built from `android/` directory using Capacitor + Gradle
+- Bundled mode (offline, all assets included in APK)
+- Build: `cd android && npx cap sync android && cd android && ./gradlew assembleDebug`
+- Output: `android/android/app/build/outputs/apk/debug/app-debug.apk`
+- Size: ~4.6MB (includes all game assets)
+
+To update APK after game changes:
+```bash
+npm run build                    # Build game to dist/
+rm -rf android/www && mkdir android/www
+cp -r dist/* android/www/        # Copy to Android wrapper
+cd android && npx cap sync android  # Sync to Android assets
+cd android && ./gradlew assembleDebug  # Build APK
+```
 
 ## Documentation
 

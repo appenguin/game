@@ -40,9 +40,50 @@
     @media (orientation: landscape) and (max-height: 600px) {
       #rotate-overlay { display: flex; }
     }
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      background: #0a1628;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      transition: opacity 0.4s ease-out;
+    }
+    #splash-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #splash-screen .icon {
+      font-size: 64px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    #splash-screen .title {
+      font-family: system-ui, sans-serif;
+      font-size: 36px;
+      font-weight: bold;
+      color: #e2e8f0;
+      letter-spacing: 4px;
+    }
+    #splash-screen .loading {
+      font-family: system-ui, sans-serif;
+      font-size: 14px;
+      color: #64748b;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
   </style>
 </head>
 <body>
+  <div id="splash-screen">
+    <div class="icon">🐧</div>
+    <div class="title">PENGUINSKI</div>
+    <div class="loading">Loading...</div>
+  </div>
   <div id="game-container"></div>
   <div id="rotate-overlay">
     <span>&#x1F4F1;</span>

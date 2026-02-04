@@ -60,7 +60,7 @@ public class MainActivity extends BridgeActivity {
                     // Inject ESC key press to pause/unpause the game
                     // The game handles ESC for pause menu
                     webView.evaluateJavascript(
-                        "document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', code: 'Escape', keyCode: 27}));",
+                        "window.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', code: 'Escape', keyCode: 27}));",
                         null
                     );
                 } else {

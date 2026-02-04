@@ -38,7 +38,7 @@ function triggerPause() {
     bubbles: true,
     cancelable: true,
   });
-  document.dispatchEvent(event);
+  window.dispatchEvent(event);
 }
 
 window.androidPause = triggerPause;

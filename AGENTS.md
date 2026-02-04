@@ -16,7 +16,7 @@ Inspired by **Ski or Die** (EA, 1990) -- especially the Downhill Blitz and Acro 
 - **TypeScript**
 - **Vite** for bundling
 - **Strudel** (`@strudel/web`) for procedural music
-- **Capacitor** for mobile wrapping (later)
+- **Capacitor** for Android APK wrapping
 
 No backend. All data stored locally (localStorage / Capacitor Storage).
 
@@ -24,7 +24,7 @@ No backend. All data stored locally (localStorage / Capacitor Storage).
 
 ```
 src/
-  main.ts             Entry point + orientation lock
+  main.ts             Entry point, orientation lock, auto-pause, Android back button
   core/
     tricks.ts         Trick types, constants, scoring helpers (pure, no Phaser)
     difficulty.ts     Difficulty zones, spawn weights, speed profiles (pure, no Phaser)
@@ -33,7 +33,7 @@ src/
   engine/
     game.ts           Phaser config
     scenes/
-      BootScene.ts    Difficulty selection menu, music toggle, high score display, launches Run
+      BootScene.ts    Difficulty selection menu, music toggle, high score display, hides splash screen, launches Run
       RunScene.ts     Gameplay orchestrator, pause/game-over menus, saves high scores
     systems/
       Input.ts        Keyboard + touch + steer/trick buttons + ESC pause
@@ -51,14 +51,15 @@ penguin_images/       Source images (processed by build script)
   rocks.png           Source rock image (2x2 grid of 4 snow-covered rocks)
 scripts/
   build-sprites.py    Generates penguin-sheet.png + tree-sheet.png from penguin_images/
-index.html            HTML entry point
+index.html            HTML entry point + splash screen
 vite.config.ts        Vite + PWA config
 android/              Android APK wrapper (Capacitor)
   www/                Bundled game assets (copied from dist/)
   android/            Android project (Gradle, Java)
   capacitor.config.json   App config (ID, name, bundled mode)
   generate-icons.py   Icon generation script
-  build, install      Build scripts
+  build               Full build pipeline (web build → copy → cap sync → gradle)
+  install              Install APK to connected device via adb
 docs/
   planning/           Implementation plans and progress
   blog/               Dev blog posts
@@ -186,6 +187,7 @@ Procedural layered music powered by **Strudel** (`@strudel/web`). Samples loaded
 npm install                # Install dependencies
 npm run dev                # Dev server (Vite, port 8080)
 npm run build              # Production build (tsc + vite)
+npm run build:android      # Full Android APK build (web + copy + cap sync + gradle)
 npm run preview            # Preview production build
 ```
 
@@ -195,18 +197,12 @@ npm run preview            # Preview production build
 
 **Android APK:** Built from `android/` directory using Capacitor + Gradle
 - Bundled mode (offline, all assets included in APK)
-- Build: `cd android && npx cap sync android && cd android && ./gradlew assembleDebug`
+- Build: `npm run build:android` (or `./android/build`)
 - Output: `android/android/app/build/outputs/apk/debug/app-debug.apk`
-- Size: ~4.6MB (includes all game assets)
-
-To update APK after game changes:
-```bash
-npm run build                    # Build game to dist/
-rm -rf android/www && mkdir android/www
-cp -r dist/* android/www/        # Copy to Android wrapper
-cd android && npx cap sync android  # Sync to Android assets
-cd android && ./gradlew assembleDebug  # Build APK
-```
+- Size: ~5.1MB (includes all game assets)
+- Install: `./android/install` (requires adb)
+- Requires Node >=22 for Capacitor CLI
+- Android back button dispatches ESC to toggle pause (handled in `MainActivity.java`)
 
 ## Documentation
 

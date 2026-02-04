@@ -1,3 +1,27 @@
 #!/bin/bash
-# Build debug APK
-cd android && ./gradlew assembleDebug
+# Build debug APK (full pipeline: web build → copy → cap sync → gradle)
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# 1. Build web assets
+echo "==> Building web assets..."
+npm --prefix "$PROJECT_DIR" run build
+
+# 2. Copy dist to android/www
+echo "==> Copying to android/www..."
+rm -rf "$SCRIPT_DIR/www"
+mkdir "$SCRIPT_DIR/www"
+cp -r "$PROJECT_DIR/dist/"* "$SCRIPT_DIR/www/"
+
+# 3. Capacitor sync
+echo "==> Syncing Capacitor..."
+cd "$SCRIPT_DIR" && npx cap sync android
+
+# 4. Gradle build
+echo "==> Building APK..."
+cd "$SCRIPT_DIR/android" && ./gradlew assembleDebug
+
+APK="$SCRIPT_DIR/android/app/build/outputs/apk/debug/app-debug.apk"
+echo "==> Done: $APK ($(du -h "$APK" | cut -f1))"

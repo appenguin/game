@@ -169,6 +169,13 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.updateHighlight();
+
+    // Hide the HTML splash screen now that the menu is ready
+    const splash = document.getElementById("splash-screen");
+    if (splash) {
+      splash.classList.add("fade-out");
+      splash.addEventListener("transitionend", () => splash.remove());
+    }
   }
 
   private updateHighlight(): void {

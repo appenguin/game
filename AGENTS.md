@@ -202,7 +202,8 @@ npm run preview            # Preview production build
 - Size: ~5.1MB (includes all game assets)
 - Install: `./android/install` (requires adb)
 - Requires Node >=22 for Capacitor CLI
-- Android back button dispatches ESC to toggle pause (handled in `MainActivity.java`)
+- Android back button calls `window.__gameTogglePause()` directly (no synthetic keyboard events)
+- Auto-pause on background via `window.__gamePause()` (pause-only, never unpauses)
 
 ## Documentation
 

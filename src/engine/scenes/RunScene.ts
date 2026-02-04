@@ -391,6 +391,16 @@ export class RunScene extends Phaser.Scene {
     this.effects = new Effects(this, this.penguin);
     this.inputHandler.setPauseHandler(() => this.togglePause());
 
+    // Expose functions for Android back button and background/visibility change
+    window.__gameTogglePause = () => this.togglePause();
+    window.__gamePause = () => {
+      if (!this.paused && !this.gameOver) {
+        this.paused = true;
+        this.music.pause();
+        this.showPauseMenu();
+      }
+    };
+
     // Cheat: +/- teleport ±100m (advances music + storm)
     this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
       if (this.gameOver) return;

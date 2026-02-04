@@ -13,32 +13,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Auto-pause when app goes to background (Android home/multitask, iOS switch, browser tab hide)
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
-      // App went to background - trigger pause
-      triggerPause();
+    if (document.hidden && window.__gamePause) {
+      window.__gamePause();
     }
     // Don't auto-resume when returning to foreground - let user resume manually
   });
 });
 
-// Expose pause function for Android back button
+// Global pause hooks (set by RunScene when active)
 declare global {
   interface Window {
-    androidPause?: () => void;
+    __gameTogglePause?: () => void;
+    __gamePause?: () => void;
   }
 }
-
-function triggerPause() {
-  // Dispatch ESC key event to trigger pause in the active scene
-  const event = new KeyboardEvent("keydown", {
-    key: "Escape",
-    code: "Escape",
-    keyCode: 27,
-    which: 27,
-    bubbles: true,
-    cancelable: true,
-  });
-  window.dispatchEvent(event);
-}
-
-window.androidPause = triggerPause;

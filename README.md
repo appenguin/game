@@ -1,41 +1,104 @@
 # PenguinSki
 
-A penguin downhill ski game. Dodge obstacles, hit ramps, do tricks mid-air, collect fish. Inspired by Ski or Die (EA, 1990).
+A penguin downhill ski game. Dodge obstacles, hit ramps, perform tricks mid-air, collect fish, survive as long as you can.
 
-Play at [game.appenguin.com](https://game.appenguin.com)
+[Play now at game.appenguin.com](https://game.appenguin.com)
 
-## How to play
+## Features
 
-- **Choose your difficulty** -- Easy, Medium, or Hard -- each with different speed and acceleration
-- **Steer** with arrow keys, A/D, or the on-screen LEFT/RIGHT buttons -- the penguin rotates and carves in that direction
-- Hold a direction to build momentum; release to drift back straight
-- Hit **ramps** to launch into the air
-- **Perform tricks mid-air** with keyboard directions or the **FLIP** and **TUCK** buttons
-- **Land cleanly** to keep your score, crash and lose your combo
-- Collect **fish** for points
-- Avoid **rocks** and **trees**
-- Speed increases over time -- survive as long as you can
-- The **top bar** shows your score, distance, speed, and difficulty level
+- **Trick system** -- hit ramps to go airborne, flip and spin for points, land cleanly to keep your combo
+- **Combo scoring** -- chain tricks, ice patches, and flyovers to multiply your score
+- **3 difficulty levels** -- Easy, Medium, Hard with different speed caps and acceleration
+- **3 lives** -- rocks fling you off-screen; respawn with brief invincibility
+- **Procedural music** -- 15-layer progressive arrangement powered by Strudel, builds as you travel further
+- **Snowstorm** -- at 1500m, wind gusts push you and reduce visibility
+- **PWA** -- install to home screen for offline play
+- **Android APK** -- bundled Capacitor build, all assets included
 
-**Mobile:** Install to your home screen for fullscreen portrait play. Four buttons at the bottom: **< TUCK TRICK >** -- steer with the arrows, tuck to speed up, trick while airborne. Tap **| |** in the top bar to pause.
+## Controls
 
-## Development
+| Action | Keyboard | Touch |
+|--------|----------|-------|
+| Steer | Arrow keys / A, D | LEFT / RIGHT buttons or tap screen halves |
+| Brake (spread wings) | Up / W | -- |
+| Speed up (tuck wings) | Down / S | TUCK button (hold) |
+| Trick (airborne) | Space / Enter | TRICK button |
+| Spin (airborne) | Left / Right | LEFT / RIGHT buttons |
+| Pause | ESC | Tap HUD bar |
+| Resume / navigate menus | Arrow keys + Enter | Touch menu items |
+| Retry (game over) | R | Touch |
+| Quit to menu | Q | Touch |
+
+**Mobile layout:** `[<] [TUCK] [TRICK] [>]` -- single row at bottom of screen.
+
+## Getting started
+
+Requires Node.js 18+.
 
 ```bash
 npm install
-npm run dev
+npm run dev       # dev server on port 8080
 ```
 
-## Build
+## Building
+
+**Web:**
 
 ```bash
-npm run build
+npm run build     # production build to dist/
+npm run preview   # preview the build locally
+```
+
+**Android APK** (requires Node 22+ for Capacitor CLI, Android SDK):
+
+```bash
+npm run build:android   # full pipeline: web build + cap sync + gradle
+./android/install       # install to connected device via adb
+```
+
+Output: `android/android/app/build/outputs/apk/debug/app-debug.apk`
+
+## Tech stack
+
+- [Phaser 3](https://phaser.io/) -- game framework
+- [TypeScript](https://www.typescriptlang.org/)
+- [Vite](https://vitejs.dev/) -- bundler + dev server
+- [Strudel](https://strudel.cc/) -- procedural music (`@strudel/web`)
+- [Capacitor](https://capacitorjs.com/) -- Android APK wrapper
+
+No backend. All data stored in localStorage.
+
+## Project structure
+
+```
+src/
+  main.ts                 Entry point, orientation lock, pause hooks
+  core/                   Pure game logic (no Phaser dependency)
+    tricks.ts             Trick types, scoring helpers
+    difficulty.ts         Difficulty zones, spawn weights, speed profiles
+    music.ts              Music pattern definitions, level thresholds
+    storage.ts            High score persistence
+  engine/
+    game.ts               Phaser config
+    scenes/
+      BootScene.ts        Difficulty select, music toggle, high scores
+      RunScene.ts         Gameplay, pause/game-over menus
+    systems/
+      Input.ts            Keyboard + touch input
+      Spawner.ts          Obstacle spawning, collision
+      Music.ts            Strudel lifecycle, layer progression
+      Effects.ts          Particles, trails, visual effects
+public/                   Static assets (sprites, icons, manifest)
+android/                  Capacitor Android wrapper
+  build                   Full build script
+  install                 ADB install script
+index.html                Entry point + splash screen
 ```
 
 ## License
 
 This project is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0).
 
-This means you can view, modify, and redistribute the source code, but any modified version you distribute or serve over a network must also be AGPL-3.0 and source-available. This project uses [Strudel](https://strudel.cc/) for procedural music, which is AGPL-licensed.
+You can view, modify, and redistribute the source code, but any modified version you distribute or serve over a network must also be AGPL-3.0 and source-available. This project uses [Strudel](https://strudel.cc/) for procedural music, which is AGPL-licensed.
 
 Game art assets in `penguin_images/` and `public/` are copyright Appenguin and not covered by the AGPL.

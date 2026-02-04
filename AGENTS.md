@@ -1,6 +1,6 @@
 # PenguinSki
 
-Penguin downhill ski game inspired by Ski or Die (EA, 1990). PWA + Capacitor. No backend.
+Penguin downhill ski game. PWA + Capacitor. No backend.
 
 > **Note:** `CLAUDE.md` is a symlink to this file (`AGENTS.md`). Edit `AGENTS.md` directly.
 
@@ -8,7 +8,7 @@ Penguin downhill ski game inspired by Ski or Die (EA, 1990). PWA + Capacitor. No
 
 A penguin slides downhill on ice. Steer left/right to dodge obstacles (rocks, trees). Hit ramps to launch into the air. Perform tricks mid-air (flips, spins) for bonus points. Land cleanly or crash. Collect fish. Survive as long as possible.
 
-Inspired by **Ski or Die** (EA, 1990) -- especially the Downhill Blitz and Acro Aerials events. Top-down scrolling, arcade feel, trick scoring.
+Top-down scrolling, arcade feel, trick scoring.
 
 ## Tech stack
 

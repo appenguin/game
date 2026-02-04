@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { type Trick, TRICKS, canQueueTrick } from "../../core/tricks";
 import { SPEED_PROFILES } from "../../core/difficulty";
 import { saveScore } from "../../core/storage";
+import { LEVEL_THRESHOLDS } from "../../core/music";
 import { Input } from "../systems/Input";
 import { Spawner, type SlopeObject } from "../systems/Spawner";
 import { Effects } from "../systems/Effects";
@@ -34,7 +35,7 @@ export class RunScene extends Phaser.Scene {
 
   // Storm
   private stormStarted = false;
-  private readonly STORM_DISTANCE = 1500;
+  private stormStartMeters = 0;
 
   // Heading (angle-based steering with momentum)
   private heading = 0; // current angle (radians, 0 = straight down)
@@ -526,12 +527,14 @@ export class RunScene extends Phaser.Scene {
 
     // --- Storm ---
     const meters = Math.floor(this.distanceTraveled / 18);
-    if (!this.stormStarted && meters >= this.STORM_DISTANCE) {
+    const soloLevel = LEVEL_THRESHOLDS.length - 1;
+    if (!this.stormStarted && this.music.level >= soloLevel) {
       this.stormStarted = true;
+      this.stormStartMeters = meters;
       this.effects.startStorm();
     }
     if (this.stormStarted) {
-      const intensity = Math.min(1, (meters - this.STORM_DISTANCE) / 100);
+      const intensity = Math.min(1, (meters - this.stormStartMeters) / 100);
       this.effects.setStormIntensity(intensity);
     }
     const windX = this.effects.getWindLateral();
@@ -966,8 +969,10 @@ export class RunScene extends Phaser.Scene {
     if (this.paused) {
       this.hidePauseMenu();
       this.paused = false;
+      this.music.resume();
     } else {
       this.paused = true;
+      this.music.pause();
       this.showPauseMenu();
     }
   }

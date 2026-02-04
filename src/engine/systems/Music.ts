@@ -112,6 +112,11 @@ class Music {
     return this._muted;
   }
 
+  /** Current music level (0-based). */
+  get level(): number {
+    return this.musicLevel;
+  }
+
   // -----------------------------------------------------------------------
   // Distance-driven layer progression (quantised to 4-bar boundaries)
   // -----------------------------------------------------------------------

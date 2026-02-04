@@ -17,7 +17,7 @@ const config: Phaser.Types.Core.GameConfig = {
     activePointers: 2,
   },
   audio: {
-    noAudio: true, // Strudel handles music; re-enable when adding Phaser sound effects
+    // AudioContext injected at runtime in BootScene (shared with Strudel)
   },
   physics: {
     default: "arcade",

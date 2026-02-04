@@ -8,21 +8,36 @@ const LEVELS = [
   { label: "HARD", color: "#ef4444" },
 ];
 
-const MENU_COUNT = LEVELS.length + 1; // difficulties + music toggle
-const MUSIC_INDEX = LEVELS.length;
+const SOUND_INDEX = LEVELS.length;
+const MUSIC_INDEX = LEVELS.length + 1;
+const MENU_COUNT = LEVELS.length + 2; // difficulties + sound toggle + music toggle
+
+const SFX_STORAGE_KEY = "penguinski:sfx";
+
+function getSfxMuted(): boolean {
+  return localStorage.getItem(SFX_STORAGE_KEY) === "off";
+}
+
+function setSfxMuted(muted: boolean): void {
+  localStorage.setItem(SFX_STORAGE_KEY, muted ? "off" : "on");
+}
 
 export class BootScene extends Phaser.Scene {
   private cursor = 0;
   private menuTexts: Phaser.GameObjects.Text[] = [];
+  private soundText!: Phaser.GameObjects.Text;
   private musicText!: Phaser.GameObjects.Text;
   private bestText!: Phaser.GameObjects.Text;
+  private sfxMuted: boolean;
 
   constructor() {
     super("Boot");
+    this.sfxMuted = getSfxMuted();
   }
 
   create(): void {
     const { width, height } = this.scale;
+    this.sfxMuted = getSfxMuted();
 
     // Defer Strudel init to first user gesture (browser AudioContext requirement).
     // Create AudioContext synchronously inside the gesture callback so the browser
@@ -36,6 +51,8 @@ export class BootScene extends Phaser.Scene {
       document.removeEventListener("pointerdown", startMusic);
       document.removeEventListener("keydown", startMusic);
       const ctx = new AudioContext();
+      // Share one AudioContext between Phaser SFX and Strudel music
+      (this.sound as Phaser.Sound.WebAudioSoundManager).setAudioContext(ctx);
       music.init(ctx).then(() => music.play());
     };
     document.addEventListener("pointerdown", startMusic);
@@ -64,6 +81,7 @@ export class BootScene extends Phaser.Scene {
     // Difficulty menu items
     const startY = height * 0.42;
     const gap = 52;
+    const toggleGap = 20; // extra space between difficulty items and toggles
     const hitPad = 16;
     this.menuTexts = [];
     this.cursor = 1; // default to Medium
@@ -116,14 +134,18 @@ export class BootScene extends Phaser.Scene {
         this.updateHighlight();
       });
       this.input.keyboard.on("keydown-SPACE", () => {
-        if (this.cursor === MUSIC_INDEX) {
+        if (this.cursor === SOUND_INDEX) {
+          this.toggleSound();
+        } else if (this.cursor === MUSIC_INDEX) {
           this.toggleMusic();
         } else {
           this.selectLevel();
         }
       });
       this.input.keyboard.on("keydown-ENTER", () => {
-        if (this.cursor === MUSIC_INDEX) {
+        if (this.cursor === SOUND_INDEX) {
+          this.toggleSound();
+        } else if (this.cursor === MUSIC_INDEX) {
           this.toggleMusic();
         } else {
           this.selectLevel();
@@ -131,10 +153,37 @@ export class BootScene extends Phaser.Scene {
       });
     }
 
-    // Music toggle (part of the menu)
+    // Sound toggle (SFX)
+    const soundLabel = this.sfxMuted ? "SOUND: OFF" : "SOUND: ON";
+    this.soundText = this.add
+      .text(width / 2, startY + SOUND_INDEX * gap + toggleGap, "\u25B6 " + soundLabel, {
+        fontSize: "24px",
+        color: "#9ca3af",
+        fontFamily: "system-ui, sans-serif",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    this.soundText.setInteractive({
+      useHandCursor: true,
+      hitArea: new Phaser.Geom.Rectangle(
+        -hitPad, -hitPad,
+        this.soundText.width + hitPad * 2,
+        this.soundText.height + hitPad * 2,
+      ),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+    });
+    this.soundText.on("pointerdown", () => {
+      this.toggleSound();
+    });
+    this.soundText.on("pointerover", () => {
+      this.cursor = SOUND_INDEX;
+      this.updateHighlight();
+    });
+
+    // Music toggle
     const musicLabel = music.muted ? "MUSIC: OFF" : "MUSIC: ON";
     this.musicText = this.add
-      .text(width / 2, startY + LEVELS.length * gap, "\u25B6 " + musicLabel, {
+      .text(width / 2, startY + MUSIC_INDEX * gap + toggleGap, "\u25B6 " + musicLabel, {
         fontSize: "24px",
         color: "#9ca3af",
         fontFamily: "system-ui, sans-serif",
@@ -161,7 +210,7 @@ export class BootScene extends Phaser.Scene {
 
     // High score display
     this.bestText = this.add
-      .text(width / 2, startY + (LEVELS.length + 1) * gap + 8, "", {
+      .text(width / 2, startY + (MUSIC_INDEX + 1) * gap + toggleGap + 8, "", {
         fontSize: "16px",
         color: "#64748b",
         fontFamily: "system-ui, sans-serif",
@@ -189,6 +238,15 @@ export class BootScene extends Phaser.Scene {
       }
     }
 
+    const soundLabel = this.sfxMuted ? "SOUND: OFF" : "SOUND: ON";
+    if (this.cursor === SOUND_INDEX) {
+      this.soundText.setColor("#f97316");
+      this.soundText.setText("\u25B6 " + soundLabel);
+    } else {
+      this.soundText.setColor("#9ca3af");
+      this.soundText.setText("  " + soundLabel);
+    }
+
     const musicLabel = music.muted ? "MUSIC: OFF" : "MUSIC: ON";
     if (this.cursor === MUSIC_INDEX) {
       this.musicText.setColor("#a855f7");
@@ -211,12 +269,18 @@ export class BootScene extends Phaser.Scene {
     }
   }
 
+  private toggleSound(): void {
+    this.sfxMuted = !this.sfxMuted;
+    setSfxMuted(this.sfxMuted);
+    this.updateHighlight();
+  }
+
   private toggleMusic(): void {
     music.toggleMute();
     this.updateHighlight();
   }
 
   private selectLevel(): void {
-    this.scene.start("Run", { level: this.cursor });
+    this.scene.start("Run", { level: this.cursor, sfxMuted: this.sfxMuted });
   }
 }

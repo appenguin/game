@@ -33,12 +33,13 @@ src/
   engine/
     game.ts           Phaser config
     scenes/
-      BootScene.ts    Difficulty selection menu, music toggle, high score display, hides splash screen, launches Run
+      BootScene.ts    Difficulty selection menu, sound/music toggles, high score display, hides splash screen, launches Run
       RunScene.ts     Gameplay orchestrator, pause/game-over menus, saves high scores
     systems/
       Input.ts        Keyboard + touch + steer/trick buttons + ESC pause
       Spawner.ts      Obstacle spawning, scrolling, collision, hit tracking
       Music.ts        Strudel lifecycle, score-driven layer progression
+      SFX.ts          Procedural sound effects (Web Audio API synthesis, no audio files)
       Effects.ts      Snow spray, ski trail, event particle bursts, ice sparkle, tree snow
   strudel.d.ts        TypeScript declarations for @strudel/web
   platform/           (planned) Platform adapters (web vs Capacitor)
@@ -166,7 +167,9 @@ Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by leve
 - **Flyover:** 50 pts × combo for flying over rocks or trees while airborne
 - **Combo:** increments on clean trick landings and ice patches; resets on crash or tree hit
 
-## Music
+## Audio
+
+### Music
 
 Procedural layered music powered by **Strudel** (`@strudel/web`). Samples loaded from `github:tidalcycles/dirt-samples`.
 
@@ -177,9 +180,23 @@ Procedural layered music powered by **Strudel** (`@strudel/web`). Samples loaded
 - On init, the full arrangement plays silently (`gain(0)`) for 500ms to preload all samples
 - Pattern definitions live in `src/core/music.ts` — edit that file to change the music
 - Music system (`src/engine/systems/Music.ts`) is a singleton shared across scenes
-- Music toggle on boot screen, preference persisted in localStorage
+- Sound toggle and music toggle on boot screen, preferences persisted independently in localStorage (`penguinski:sfx`, `penguinski:music`)
+
+### Sound effects
+
+Procedural SFX synthesised at runtime using the Web Audio API — no audio files. All synthesis lives in `src/engine/systems/SFX.ts`.
+
+- Each sound is a short-lived chain of Web Audio nodes (oscillators, noise buffers, filters, gain envelopes) that auto-cleanup after playback
+- Shared white noise AudioBuffer (2s) created once in constructor, reused by all noise-based sounds
+- Master gain node for global SFX volume; muted independently via Sound toggle on boot screen
+- Sound events: fish collect (ding), clean/sloppy/crash landing, rock hit, tree hit (intensity scales with centeredness), ramp launch (whoosh), mogul launch (boing), ice entry (shimmer), snowdrift hit (poof), trick performed, fling, game over
+
+### AudioContext architecture
+
+- Single AudioContext shared between Phaser, Strudel, and SFX — created in BootScene gesture handler
 - AudioContext created synchronously inside native DOM gesture handler (`pointerdown`/`keydown`), then injected into superdough via `setAudioContext()` before `initStrudel()` runs. This bypasses Strudel's built-in `initAudioOnFirstClick()` which only listens for `mousedown`
-- Phaser audio disabled (`noAudio: true` in game config) — all audio goes through Strudel. Re-enable when adding Phaser sound effects
+- Injected into Phaser's `WebAudioSoundManager.setAudioContext()` and into the SFX system constructor
+- Avoids mobile browser issues with multiple contexts
 
 ## Development
 

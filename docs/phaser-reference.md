@@ -22,12 +22,13 @@ Compiled from [docs.phaser.io](https://docs.phaser.io). Covers the APIs and conc
 14. [Tweens](#tweens)
 15. [Camera](#camera)
 16. [Input](#input)
-17. [Asset Loader](#asset-loader)
-18. [Scale Manager](#scale-manager)
-19. [Time & Timers](#time--timers)
-20. [Events](#events)
-21. [Arcade Physics](#arcade-physics)
-22. [Type Hierarchy](#type-hierarchy)
+17. [Audio](#audio)
+18. [Asset Loader](#asset-loader)
+19. [Scale Manager](#scale-manager)
+20. [Time & Timers](#time--timers)
+21. [Events](#events)
+22. [Arcade Physics](#arcade-physics)
+23. [Type Hierarchy](#type-hierarchy)
 
 ---
 
@@ -1157,6 +1158,119 @@ this.input.enabled = false;          // disable all input
 this.input.setPollOnMove();          // default
 this.input.setPollAlways();          // poll every frame
 this.input.enableDebug(gameObject);  // visualize hit areas
+```
+
+---
+
+## Audio
+
+### WebAudioSoundManager
+
+Phaser's Web Audio backend. Accessed via `this.sound` in a scene.
+
+```typescript
+// Add a sound (persistent instance)
+const sfx = this.sound.add('key', { volume: 0.5, loop: false });
+sfx.play();
+
+// Quick play (fire-and-forget)
+this.sound.play('key', { volume: 0.8 });
+
+// Global controls
+this.sound.setMute(true);
+this.sound.setVolume(0.5);
+this.sound.mute;    // boolean property
+this.sound.volume;  // number property
+```
+
+### AudioContext access
+
+```typescript
+// Access the raw Web Audio API context
+const ctx = (this.sound as Phaser.Sound.WebAudioSoundManager).context;
+
+// Inject a custom AudioContext (e.g. shared with other audio systems)
+(this.sound as Phaser.Sound.WebAudioSoundManager).setAudioContext(ctx);
+
+// Master gain nodes
+const mgr = this.sound as Phaser.Sound.WebAudioSoundManager;
+mgr.masterMuteNode;    // GainNode
+mgr.masterVolumeNode;  // GainNode
+mgr.destination;       // AudioNode
+```
+
+### WebAudioSound
+
+Individual sound instance returned by `this.sound.add()`.
+
+```typescript
+const snd = this.sound.add('key');
+snd.play();
+snd.play('marker');           // play a named marker
+snd.pause();
+snd.resume();
+snd.stop();
+
+// Properties
+snd.setVolume(0.5);           // 0–1
+snd.setRate(1.5);             // playback speed (1.0 = normal)
+snd.setDetune(100);           // cents (-1200 to +1200)
+snd.setPan(-0.5);             // stereo pan (-1 left to +1 right)
+snd.setSeek(2.0);             // position in seconds
+snd.setLoop(true);
+snd.setMute(true);
+
+// Raw Web Audio nodes
+snd.audioBuffer;              // AudioBuffer
+snd.source;                   // AudioBufferSourceNode
+snd.muteNode;                 // GainNode
+snd.volumeNode;               // GainNode
+snd.pannerNode;               // StereoPannerNode
+```
+
+### SoundConfig
+
+```typescript
+type SoundConfig = {
+  mute?: boolean;
+  volume?: number;     // 0–1
+  rate?: number;       // playback speed
+  detune?: number;     // cents (-1200 to +1200)
+  seek?: number;       // start position in seconds
+  loop?: boolean;
+  delay?: number;      // delay before start in seconds
+  pan?: number;        // stereo pan (-1 to +1)
+};
+```
+
+### Procedural audio (decodeAudio)
+
+Register synthesised audio with Phaser's sound system:
+
+```typescript
+const mgr = this.sound as Phaser.Sound.WebAudioSoundManager;
+
+// From ArrayBuffer (e.g. rendered via OfflineAudioContext)
+mgr.decodeAudio('tone', arrayBuffer);
+
+// From base64 data URI
+mgr.decodeAudio('tone', 'data:audio/wav;base64,...');
+
+// Array of configs
+mgr.decodeAudio([{ key: 'a', data: buf1 }, { key: 'b', data: buf2 }]);
+
+// Listen for completion
+this.sound.on('decodedaudio', (key: string) => {
+  this.sound.play(key);
+});
+```
+
+### Loading audio files
+
+```typescript
+// In preload()
+this.load.audio('key', ['url.ogg', 'url.mp3']);  // fallback formats
+this.load.audio('key', 'url.mp3');
 ```
 
 ---

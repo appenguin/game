@@ -247,7 +247,7 @@ We also fixed a timing bug in the Music system: the sample preload plays the ful
 
 ## What's next
 
-Moguls and snowdrifts are still placeholder shapes. Then: sound effects and the Capacitor wrap for Android.
+Sound effects are in — 13 procedural SFX synthesised at runtime via Web Audio API, sharing the same AudioContext as Strudel. No audio files. Capacitor enhancements (haptics, sharing) are up next.
 
 We'll document the entire build as we go. Every decision, every dead end, every time we spend an hour tweaking how it feels to almost hit a rock.
 

@@ -181,11 +181,11 @@
 
 ### Current step
 
-- [ ] Phase 5: More obstacle sprites (moguls, snowdrifts, ice)
+- [ ] Phase 7: Capacitor enhancements (haptics, share, status bar)
 
-### Next steps
-- [ ] Phase 5: Art and audio (more sprites, SFX remaining)
-- [ ] Phase 7: Capacitor wrap
+### Completed
+
+- [x] Phase 5: Art and audio (sprites + SFX done)
 
 ---
 
@@ -422,52 +422,52 @@ Replace colored shapes with sprites and add sound. Transforms the look and feel.
 | Rock | Snow-covered rocks, 4 variants (frames 0-3 of `rock-sheet.png`, 2.8x scale) | 38x30 @ 2.8x | Done |
 | Tree | Snow-covered trees, 4 variants (frames 0-3 of `tree-sheet.png`, 2.2x scale) | 44x48 @ 2.2x | Done |
 | Ramp | Procedural snow wedge (trapezoid with shadow, slope lines, lip highlight, generated at runtime, 1.6x scale) | 60x32 @ 1.6x | Done |
-| Fish | Gold fish shape | 16x16 |
-| Ice patch | Irregular polygon (8-12 vertices), translucent cyan | 70-130 x 25-45 | Shaped |
+| Fish | Procedural gold fish (ellipse body, triangle tail, eye) | 16x16 @ 1.4x | Done |
+| Ice patch | Irregular polygon (8-12 vertices), translucent cyan | 70-130 x 25-45 | Done (procedural) |
 | ~~Crevasse~~ | ~~Removed~~ | — |
-| Mogul | Snow bump with shadow | 28x16 |
-| Snowdrift | Snow pile | 44x18 |
+| Mogul | Procedural shape (kept as-is) | 28x16 | Done (procedural) |
+| Snowdrift | Procedural shape (kept as-is) | 44x18 | Done (procedural) |
 
-Options for creating sprites:
-1. **Pixel art** -- simple, retro aesthetic, fast to create
-2. **SVG** -- scalable, crisp at all sizes, can inline in code
-3. **AI-generated** -- quick but may need cleanup
+Moguls, snowdrifts, ice patches, and fish use procedural shapes — good enough for now.
 
-### Sound effects
+### Sound effects (done)
 
-| Event | Sound |
-|-------|-------|
-| Penguin ground slide | Continuous low swoosh (looping, pitch increases with speed) |
-| Steer | Subtle carve sound |
-| Ramp launch | Whoosh up |
-| Air tricks | Quick spin/flip sound per trick |
-| Clean landing | Satisfying crunch/thud |
-| Crash landing | Thump + comedy fail |
-| Fish collect | Bright ding/pop |
-| Rock/crevasse death | Crash + sad trombone or honk |
-| Tree hit | Wooden thunk |
-| Ice patch | Glassy slide sound |
-| Snowdrift | Soft poof |
-| Near-miss | Brief whoosh/gasp |
-| Combo milestone | Ascending chime |
+All SFX synthesised at runtime via Web Audio API — no audio files. System lives in `src/engine/systems/SFX.ts`.
+
+| Event | Synthesis | Status |
+|-------|-----------|--------|
+| Fish collect | Sine E6 + B6 twinkle (ding) | Done |
+| Clean landing | Ascending B5→E6 chime | Done |
+| Crash landing | Sine A2 thud + lowpass noise | Done |
+| Sloppy landing | Sine D4, gentle | Done |
+| Rock hit | Deep sine E2 + noise 600 Hz | Done |
+| Tree hit | Sine A3 + bandpass noise, intensity scales with centeredness | Done |
+| Ramp launch | Bandpass noise sweep 400→2000 Hz (whoosh) | Done |
+| Mogul launch | Sine 600→200 Hz pitch bend (boing) | Done |
+| Ice patch entry | 3 detuned sines B5/D#6/F#6 (shimmer) | Done |
+| Snowdrift hit | Lowpass noise 300 Hz (poof) | Done |
+| Trick performed | Bandpass noise 1000 Hz (whoosh) | Done |
+| Fling/knockback | Deep sine E2 + noise 800 Hz | Done |
+| Game over | Deep sine B1 + sub F#1 + noise | Done |
+| Penguin ground slide | — | Not yet (looping) |
+| Steer carve | — | Not yet (looping) |
+| Near-miss | — | Not yet |
+| Combo milestone | — | Not yet |
 
 ### Music (done)
 
 Implemented with Strudel (`@strudel/web`) — procedural layered music that evolves with distance. 15 levels (0-14) of progressive arrangement in B minor. Starts with a Bmin9 triangle chord pad, builds through sawtooth bass, drums (bd, hh, sd), TR-909 ghost snares, saw leads with `arrange()` cycling (lead1a→1b→1c), bass progressions, to full solo at 1500m. BASE_BPM 140, per-difficulty: Easy 110, Medium 124, Hard 140. See `src/core/music.ts` for pattern definitions.
 
-### Asset pipeline
+### AudioContext architecture
 
-- Sprites in `public/assets/sprites/`
-- Audio in `public/assets/audio/`
-- Load in BootScene with progress bar
-- Use Phaser's asset loader
+Single AudioContext shared between Phaser, Strudel, and SFX. Created in BootScene on first user gesture, injected into all three systems. SFX routes through its own master gain node connected to ctx.destination.
 
 ### Verification
 
-- All placeholder shapes replaced with sprites
-- All sound events fire
-- Audio respects SFX/music settings toggles
-- Assets load correctly, progress bar shows in BootScene
+- Penguin, trees, rocks have sprite sheets; remaining obstacles use procedural shapes (good enough for now)
+- All 13 one-shot sound events fire at correct trigger points
+- Music toggle on boot screen controls both music and SFX
+- No audio files — all SFX procedurally synthesised
 - Sprite rendering doesn't impact FPS
 
 ---

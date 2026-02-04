@@ -6,6 +6,7 @@ import { LEVEL_THRESHOLDS } from "../../core/music";
 import { Input } from "../systems/Input";
 import { Spawner, type SlopeObject } from "../systems/Spawner";
 import { Effects } from "../systems/Effects";
+import { SFX } from "../systems/SFX";
 import { music } from "../systems/Music";
 
 /**
@@ -81,6 +82,7 @@ export class RunScene extends Phaser.Scene {
   private inputHandler!: Input;
   private spawner!: Spawner;
   private effects!: Effects;
+  private sfx!: SFX;
   private music = music;
 
   constructor() {
@@ -243,8 +245,8 @@ export class RunScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
-    // Read difficulty level from scene data
-    const data = this.scene.settings.data as { level?: number } | undefined;
+    // Read difficulty level and SFX preference from scene data
+    const data = this.scene.settings.data as { level?: number; sfxMuted?: boolean } | undefined;
     this.level = data?.level ?? 1;
     this.music.setDifficulty(this.level);
     this.music.play(1);
@@ -389,6 +391,9 @@ export class RunScene extends Phaser.Scene {
     this.inputHandler = new Input(this);
     this.spawner = new Spawner(this);
     this.effects = new Effects(this, this.penguin);
+    const audioCtx = (this.sound as Phaser.Sound.WebAudioSoundManager).context;
+    this.sfx = new SFX(audioCtx);
+    this.sfx.setMuted(data?.sfxMuted ?? false);
     this.inputHandler.setPauseHandler(() => this.togglePause());
 
     // Expose functions for Android back button and background/visibility change
@@ -676,6 +681,7 @@ export class RunScene extends Phaser.Scene {
         }
 
         this.showTrickText(trick.name);
+        this.sfx.trickPerformed();
       }
     }
 
@@ -716,6 +722,7 @@ export class RunScene extends Phaser.Scene {
         this.score += points;
         this.combo++;
         this.effects.burstTrickLanding(this.penguin.x, this.penguin.y);
+        this.sfx.cleanLanding();
         if (this.icyLaunch) {
           this.showStatusText(`ICY COMBO +${points}`, "#06b6d4");
         } else {
@@ -723,11 +730,13 @@ export class RunScene extends Phaser.Scene {
         }
       } else if (rotDiff < 1.2) {
         // Sloppy landing — no points, but don't reset combo
+        this.sfx.sloppyLanding();
         this.showStatusText("SLOPPY!", "#f59e0b");
       } else {
         // Crash — too far off
         this.combo = 0;
         this.effects.burstCrashLanding(this.penguin.x, this.penguin.y);
+        this.sfx.crashLanding();
         this.penguinBounce();
         this.showStatusText("CRASH!", "#ef4444");
         // Lock tucked frame briefly during crash
@@ -779,6 +788,7 @@ export class RunScene extends Phaser.Scene {
         this.lives--;
         this.livesText.setText("\uD83D\uDC27".repeat(Math.max(0, this.lives)));
         this.effects.burstDeath(this.penguin.x, this.penguin.y);
+        this.sfx.rockHit();
         if (this.lives <= 0) {
           this.endGame();
         } else {
@@ -797,6 +807,7 @@ export class RunScene extends Phaser.Scene {
         this.combo = 0;
         this.effects.burstTreeHit(obj.sprite.x, obj.sprite.y, this.penguin.x, this.penguin.y);
         this.cameras.main.shake(150, 0.005);
+        this.sfx.treeHit(centeredness);
         this.showStatusText("HIT!", "#ef4444");
         // Redraw tree so it renders above trail marks, with a shake
         this.spawner.redrawTree(obj);
@@ -807,6 +818,7 @@ export class RunScene extends Phaser.Scene {
       case "snowdrift":
         this.snowdriftTimer = 1.2;
         this.effects.burstSnowdrift(obj.sprite.x, obj.sprite.y);
+        this.sfx.snowdriftHit();
         this.showStatusText("SNOW!", "#94a3b8");
         this.spawner.markHit(obj);
         break;
@@ -819,6 +831,7 @@ export class RunScene extends Phaser.Scene {
         this.score += icePoints;
         this.combo++;
         this.effects.startIceSparkle();
+        this.sfx.iceEntry();
         this.showStatusText(`ICE +${icePoints}`, "#0ea5e9");
         this.spawner.markHit(obj);
         break;
@@ -826,17 +839,20 @@ export class RunScene extends Phaser.Scene {
 
       case "mogul":
         this.launch(0.5);
+        this.sfx.mogulLaunch();
         this.spawner.markHit(obj);
         break;
 
       case "ramp":
         this.launch();
+        this.sfx.rampLaunch();
         this.spawner.markHit(obj);
         break;
 
       case "fish":
         this.score += 10;
         this.effects.burstFishCollected(obj.sprite.x, obj.sprite.y);
+        this.sfx.fishCollect();
         this.spawner.removeObject(obj);
         break;
     }
@@ -849,6 +865,7 @@ export class RunScene extends Phaser.Scene {
     this.combo = 0;
     this.penguin.setFrame(1);
     this.cameras.main.shake(300, 0.015);
+    this.sfx.fling();
 
     // Fling direction: away from rock
     const dx = this.penguin.x - obj.sprite.x;
@@ -929,6 +946,7 @@ export class RunScene extends Phaser.Scene {
     this.penguin.setFrame(1);
     this.music.onGameOver();
     this.cameras.main.shake(400, 0.02);
+    this.sfx.gameOver();
 
     // Spin and tumble slightly in the opposite direction
     const spinDir = this.heading >= 0 ? -1 : 1;
@@ -954,6 +972,7 @@ export class RunScene extends Phaser.Scene {
           this.hidePauseMenu();
           this.music.onRestart();
           this.effects.destroy();
+          this.sfx.destroy();
           this.spawner.destroyAll();
           this.inputHandler.reset();
           this.scene.start("Boot");
@@ -966,6 +985,7 @@ export class RunScene extends Phaser.Scene {
     this.hidePauseMenu();
     this.music.onRestart();
     this.effects.destroy();
+    this.sfx.destroy();
     this.spawner.destroyAll();
     this.inputHandler.reset();
     this.scene.restart({ level: this.level });
@@ -995,6 +1015,7 @@ export class RunScene extends Phaser.Scene {
           this.hidePauseMenu();
           this.music.onRestart();
           this.effects.destroy();
+          this.sfx.destroy();
           this.spawner.destroyAll();
           this.inputHandler.reset();
           this.scene.start("Boot");

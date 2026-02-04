@@ -1,0 +1,17 @@
+#!/bin/bash
+# Install debug APK to connected device
+
+# Use adb from PATH or fallback to common locations
+ADB="${ANDROID_HOME:-$HOME/android-sdk}/platform-tools/adb"
+if ! command -v adb &> /dev/null && [ ! -f "$ADB" ]; then
+    echo "Error: adb not found. Ensure Android SDK platform-tools is installed."
+    echo "Expected at: $ADB"
+    exit 1
+fi
+
+# Prefer PATH version, fallback to SDK location
+if command -v adb &> /dev/null; then
+    ADB="adb"
+fi
+
+$ADB install -r android/app/build/outputs/apk/debug/app-debug.apk

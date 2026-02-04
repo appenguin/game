@@ -1,0 +1,141 @@
+#!/bin/bash
+# Generate Android launcher icons from a source image
+# Requires ImageMagick (convert command)
+#
+# Usage: ./generate-icons <source-image> [--foreground-only]
+#
+# Android icon sizes (dp to px at each density):
+#   mdpi:    48px (1x)
+#   hdpi:    72px (1.5x)
+#   xhdpi:   96px (2x)
+#   xxhdpi:  144px (3x)
+#   xxxhdpi: 192px (4x)
+#
+# For adaptive icons (Android 8+), foreground needs extra padding:
+#   The visible area is 72dp (66% of 108dp), so we generate at 1.5x launcher size
+#   mdpi:    72px, hdpi: 108px, xhdpi: 144px, xxhdpi: 216px, xxxhdpi: 288px
+
+set -e
+
+SOURCE="$1"
+FOREGROUND_ONLY="$2"
+
+if [ -z "$SOURCE" ]; then
+    echo "Usage: $0 <source-image> [--foreground-only]"
+    echo ""
+    echo "Generates Android launcher icons in all required sizes."
+    echo "Source should be at least 512x512 PNG with transparency."
+    echo ""
+    echo "Options:"
+    echo "  --foreground-only  Only generate foreground icons (for adaptive icons)"
+    exit 1
+fi
+
+if [ ! -f "$SOURCE" ]; then
+    echo "Error: Source file not found: $SOURCE"
+    exit 1
+fi
+
+if ! command -v convert &> /dev/null; then
+    echo "Error: ImageMagick not installed. Install with:"
+    echo "  sudo apt install imagemagick"
+    exit 1
+fi
+
+RES_DIR="android/app/src/main/res"
+
+# Check source dimensions
+DIMENSIONS=$(identify -format "%wx%h" "$SOURCE" 2>/dev/null || file "$SOURCE" | grep -oP '\d+ x \d+' | tr -d ' ')
+echo "Source image: $SOURCE ($DIMENSIONS)"
+
+# Launcher icon sizes
+declare -A SIZES=(
+    ["mdpi"]=48
+    ["hdpi"]=72
+    ["xhdpi"]=96
+    ["xxhdpi"]=144
+    ["xxxhdpi"]=192
+)
+
+# Foreground icon sizes (1.5x for adaptive icon padding)
+declare -A FG_SIZES=(
+    ["mdpi"]=72
+    ["hdpi"]=108
+    ["xhdpi"]=144
+    ["xxhdpi"]=216
+    ["xxxhdpi"]=288
+)
+
+generate_icon() {
+    local density=$1
+    local size=$2
+    local output=$3
+
+    echo "  Generating $output (${size}x${size})"
+    convert "$SOURCE" \
+        -resize "${size}x${size}" \
+        -gravity center \
+        -extent "${size}x${size}" \
+        -background transparent \
+        "$output"
+}
+
+generate_round_icon() {
+    local density=$1
+    local size=$2
+    local output=$3
+
+    echo "  Generating $output (${size}x${size} round)"
+    convert "$SOURCE" \
+        -resize "${size}x${size}" \
+        -gravity center \
+        -extent "${size}x${size}" \
+        -background transparent \
+        \( +clone -threshold -1 -negate -fill white -draw "circle $((size/2)),$((size/2)) $((size/2)),0" \) \
+        -alpha off -compose copy_opacity -composite \
+        "$output"
+}
+
+generate_foreground() {
+    local density=$1
+    local size=$2
+    local output=$3
+
+    # For foreground, the icon should be centered with padding
+    # The safe zone is 66% of total size, so scale icon to fit in that
+    local icon_size=$((size * 66 / 100))
+
+    echo "  Generating $output (${size}x${size}, icon ${icon_size}x${icon_size})"
+    convert "$SOURCE" \
+        -resize "${icon_size}x${icon_size}" \
+        -gravity center \
+        -background transparent \
+        -extent "${size}x${size}" \
+        "$output"
+}
+
+echo ""
+echo "Generating icons..."
+
+for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+    dir="$RES_DIR/mipmap-$density"
+    mkdir -p "$dir"
+
+    if [ "$FOREGROUND_ONLY" != "--foreground-only" ]; then
+        # Standard launcher icons
+        generate_icon "$density" "${SIZES[$density]}" "$dir/ic_launcher.png"
+        generate_round_icon "$density" "${SIZES[$density]}" "$dir/ic_launcher_round.png"
+    fi
+
+    # Foreground for adaptive icons
+    generate_foreground "$density" "${FG_SIZES[$density]}" "$dir/ic_launcher_foreground.png"
+done
+
+echo ""
+echo "Done! Icons generated in $RES_DIR/mipmap-*/"
+echo ""
+echo "Note: For adaptive icons, you may also want to update:"
+echo "  $RES_DIR/mipmap-anydpi-v26/ic_launcher.xml"
+echo "  $RES_DIR/mipmap-anydpi-v26/ic_launcher_round.xml"
+echo ""
+echo "To set a solid background color, edit ic_launcher_background in values/ic_launcher_background.xml"

@@ -210,7 +210,6 @@ cd android && ./gradlew assembleDebug  # Build APK
 
 ## Documentation
 
-- `ice_drift_pwa_capacitor_game_spec_appenguin_2.md` - Original game spec (drift runner concept)
 - `docs/planning/2026-01-30-initial-implementation.md` - MVP planning and progress
 - `docs/blog/2026-01-30-building-ice-drift.md` - Dev blog: project kickoff + PWA/touch controls
 - `docs/phaser-reference.md` - Local Phaser 3 API reference (game objects, scenes, input, particles, etc.)

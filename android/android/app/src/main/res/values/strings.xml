@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PenguinSki</string>
+    <string name="title_activity_main">PenguinSki</string>
+    <string name="package_name">com.appenguin.penguinski</string>
+    <string name="custom_url_scheme">com.appenguin.penguinski</string>
+</resources>

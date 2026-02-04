@@ -1,0 +1,3 @@
+#!/bin/bash
+# Build and install debug APK
+./build && ./install

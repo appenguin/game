@@ -1,0 +1,12 @@
+{
+  "appId": "com.appenguin.penguinski",
+  "appName": "PenguinSki",
+  "webDir": "www",
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": false,
+      "backgroundColor": "#0a1628",
+      "style": "DARK"
+    }
+  }
+}

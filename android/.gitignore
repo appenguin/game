@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+android/app/build/
+android/.gradle/
+android/.idea/
+android/local.properties
+android/captures/
+android/*.iml
+
+# iOS (if added later)
+ios/App/Pods/
+ios/App/build/
+
+# Web placeholder
+www/
+
+# Editor
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Keystore (keep secure, don't commit)
+*.jks
+*.keystore

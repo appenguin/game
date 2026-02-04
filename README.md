@@ -17,7 +17,7 @@ Play at [game.appenguin.com](https://game.appenguin.com)
 - Speed increases over time -- survive as long as you can
 - The **top bar** shows your score, distance, speed, and difficulty level
 
-**Mobile:** Install to your home screen for fullscreen portrait play. Four buttons at the bottom: **< FLIP TUCK >** -- steer with the arrows, trick with FLIP and TUCK while airborne.
+**Mobile:** Install to your home screen for fullscreen portrait play. Four buttons at the bottom: **< TUCK TRICK >** -- steer with the arrows, tuck to speed up, trick while airborne. Tap **| |** in the top bar to pause.
 
 ## Development
 
@@ -34,4 +34,8 @@ npm run build
 
 ## License
 
-All rights reserved.
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0).
+
+This means you can view, modify, and redistribute the source code, but any modified version you distribute or serve over a network must also be AGPL-3.0 and source-available. This project uses [Strudel](https://strudel.cc/) for procedural music, which is AGPL-licensed.
+
+Game art assets in `penguin_images/` and `public/` are copyright Appenguin and not covered by the AGPL.

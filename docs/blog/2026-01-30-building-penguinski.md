@@ -32,7 +32,7 @@ We're keeping it loose. Five phases:
 
 6. **Sprite art** -- animated penguin sprite sheet, snow-covered tree sprites (4 variants), collision particle effects. In progress. Rocks, ice, and other obstacles still placeholder shapes.
 
-7. **Procedural music** -- Strudel-powered 16-layer progressive soundtrack. Done.
+7. **Procedural music** -- Strudel-powered multi-layer progressive soundtrack. Done.
 
 8. **Capacitor wrap** -- bundle into an Android app with haptic feedback. The appenguin pipeline in action.
 
@@ -96,7 +96,7 @@ The background is now a procedurally generated snow texture -- a 128×128 TileSp
 
 Games need music. We didn't want a static loop -- we wanted the music to grow with the player. Enter [Strudel](https://strudel.cc/), a live coding music system that runs entirely in the browser.
 
-The music has 16 levels of arrangement that build as you travel further. At the start you hear silence. A few meters in, a driving sawtooth bass line kicks in. Then the kick drum. Hi-hats. Snare. Ghost snares. Leads shift between notes, the bass line evolves through progressions, and by 1500 meters the full solo melody is playing. Key: B minor, dark and driving.
+The music has multiple levels of arrangement that build as you travel further. At the start you hear silence. A few meters in, a driving sawtooth bass line kicks in. Then the kick drum. Hi-hats. Snare. Ghost snares. Leads shift between notes, the bass line evolves through progressions, and by 1500 meters the full solo melody is playing. Key: B minor, dark and driving.
 
 The key design choice: **instruments enter one at a time.** Each level is a complete mix, not an additive layer -- so transitions sound clean. Level changes are quantised to 4-bar boundaries so the music never stutters mid-phrase. The early game builds quickly (full drum kit by 75m), then the leads and bass variations spread out over the longer run.
 
@@ -233,7 +233,7 @@ On the last life, the old instant-death fires — same camera shake, death music
 
 ## Music rework: chord intro and arrange()
 
-The music system got a significant rework. Previously it had 16 levels where drums entered one at a time (kick, then hats, then snare) into a sawtooth bass. It worked but the intro was sparse — just bass into kick felt abrupt.
+The music system got a significant rework. Previously drums entered one at a time (kick, then hats, then snare) into a sawtooth bass. It worked but the intro was sparse — just bass into kick felt abrupt.
 
 The new arrangement starts with a Bmin9 chord pad — a triangle wave playing `b2,d3,f#3,a3,b3` with reverb. It's the first thing you hear when the game starts. The chord plays alone for the first 50 meters, then the sawtooth bass joins underneath, the chord drops away, and the bass carries you into the drum build. Getting the chord to trigger immediately was its own mini-saga — `.slow(2)` meant Strudel would wait for the next 2-cycle boundary before playing the first note, so the bass often beat it to the punch. Removing the slow fixed it.
 

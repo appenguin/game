@@ -71,7 +71,7 @@
 
 - [x] Music system (Strudel)
   - `@strudel/web` integrated via npm, bundled by Vite
-  - 16-level progressive arrangement driven by distance (meters), instruments enter one at a time
+  - Multi-level progressive arrangement driven by distance (meters), instruments enter one at a time
   - Sawtooth bass, saw leads, drum samples (bd, hh, sd) from dirt-samples
   - Each level is a full mix (not additive layers); level changes quantised to 4-bar boundaries
   - Pattern definitions in `src/core/music.ts` (pure, no Phaser), easy to edit
@@ -80,7 +80,7 @@
   - Music toggle on boot screen, preference persisted in localStorage
   - Music stops on game over, resets on restart
   - AudioContext created in gesture handler, injected via superdough `setAudioContext()`
-  - Phaser audio disabled (`noAudio: true`); all audio via Strudel
+  - Phaser audio enabled; shared AudioContext between Phaser, Strudel, and SFX
   - Key: B minor. Tempo per difficulty: Easy 110, Medium 124, Hard 140 BPM (fixed)
 
 - [x] Snow spray and belly-slide trail (Phase 3 partial)
@@ -341,7 +341,7 @@ A complete game loop: start screen, gameplay, results, back to start. High score
 ### New scenes
 
 **MenuScene** (`src/engine/scenes/MenuScene.ts`)
-- Game title "ICE DRIFT" in large text
+- Game title "PENGUINSKI" in large text
 - "TAP TO START" / "PRESS ENTER" prompt, pulsing animation
 - High score display below title
 - Snowfall particles (reuse from RunScene)
@@ -629,11 +629,11 @@ Added a top bar HUD: a semi-transparent dark bar (36px tall, 0.45 alpha) at the 
 
 ### 2026-01-30: Procedural music with Strudel
 
-Added progressive procedural music using Strudel (`@strudel/web`). 16 levels of arrangement driven by distance (meters), reaching full solo at 1500m. Each level is a complete mix — instruments enter one at a time (bass → kick → hh → snare → ghost → leads → bass progressions → solo melody). Sawtooth oscillators for bass and leads, drum samples (bd, hh, sd) from dirt-samples. Level changes quantised to 4-bar boundaries for musical coherence.
+Added progressive procedural music using Strudel (`@strudel/web`). Multi-level arrangement driven by distance (meters), reaching full solo at 1500m. Each level is a complete mix — instruments enter one at a time (bass → kick → hh → snare → ghost → leads → bass progressions → solo melody). Sawtooth oscillators for bass and leads, drum samples (bd, hh, sd) from dirt-samples. Level changes quantised to 4-bar boundaries for musical coherence.
 
 Architecture follows the existing core/engine split: `core/music.ts` holds all pattern definitions, level thresholds, and the `getPatternForLevel()` switch statement — edit this one file to change the music. `engine/systems/Music.ts` is a singleton that manages Strudel initialization, distance-to-level mapping, and game event hooks (game over, restart). The singleton persists across scenes so the intro music on the boot screen flows seamlessly into gameplay.
 
-AudioContext is created synchronously inside a native DOM gesture handler (`pointerdown`/`keydown`) and injected into superdough via `setAudioContext()` before `initStrudel()` runs — this bypasses Strudel's built-in `initAudioOnFirstClick()` which only listens for `mousedown`. Phaser audio is disabled (`noAudio: true`). On init, the full arrangement plays silently to preload all samples. Key: B minor. Tempo per difficulty: Easy 110, Medium 124, Hard 140 BPM (fixed throughout game).
+AudioContext is created synchronously inside a native DOM gesture handler (`pointerdown`/`keydown`) and injected into superdough via `setAudioContext()` before `initStrudel()` runs — this bypasses Strudel's built-in `initAudioOnFirstClick()` which only listens for `mousedown`. Phaser audio shares the same AudioContext (injected via `setAudioContext()`). On init, the full arrangement plays silently to preload all samples. Key: B minor. Tempo per difficulty: Easy 110, Medium 124, Hard 140 BPM (fixed throughout game).
 
 ### 2026-01-31: Event particles and screen effects (Phase 3)
 

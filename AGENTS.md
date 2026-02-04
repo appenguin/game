@@ -225,7 +225,7 @@ npm run preview            # Preview production build
 ## Documentation
 
 - `docs/planning/2026-01-30-initial-implementation.md` - MVP planning and progress
-- `docs/blog/2026-01-30-building-ice-drift.md` - Dev blog: project kickoff + PWA/touch controls
+- `docs/blog/2026-01-30-building-penguinski.md` - Dev blog: project kickoff + PWA/touch controls
 - `docs/phaser-reference.md` - Local Phaser 3 API reference (game objects, scenes, input, particles, etc.)
 
 ## Git standards

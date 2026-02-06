@@ -60,10 +60,7 @@ android/              Android APK wrapper (Capacitor)
   capacitor.config.json   App config (ID, name, bundled mode)
   generate-icons.py   Icon generation script
   build               Full build pipeline (web build → copy → cap sync → gradle)
-  install              Install APK to connected device via adb
-docs/
-  planning/           Implementation plans and progress
-  blog/               Dev blog posts
+  install             Install APK to connected device via adb
 ```
 
 ## General guidelines
@@ -221,12 +218,6 @@ npm run preview            # Preview production build
 - Requires Node >=22 for Capacitor CLI
 - Android back button calls `window.__gameTogglePause()` directly (no synthetic keyboard events)
 - Auto-pause on background via `window.__gamePause()` (pause-only, never unpauses)
-
-## Documentation
-
-- `docs/planning/2026-01-30-initial-implementation.md` - MVP planning and progress
-- `docs/blog/2026-01-30-building-penguinski.md` - Dev blog: project kickoff + PWA/touch controls
-- `docs/phaser-reference.md` - Local Phaser 3 API reference (game objects, scenes, input, particles, etc.)
 
 ## Git standards
 

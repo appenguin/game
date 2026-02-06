@@ -964,6 +964,16 @@ export class RunScene extends Phaser.Scene {
     const bestLine = isNewBest ? "NEW BEST!\n" : "";
     const stats = `${bestLine}Score: ${this.score}  |  ${distStr}`;
 
+    // Track game over event
+    if (typeof umami !== "undefined") {
+      umami.track("game-over", {
+        level: this.level,
+        score: this.score,
+        distance: dist,
+        newBest: isNewBest,
+      });
+    }
+
     // Short delay so death animation plays before menu appears
     this.time.delayedCall(600, () => {
       this.showMenu(`GAME OVER\n\n${stats}`, [

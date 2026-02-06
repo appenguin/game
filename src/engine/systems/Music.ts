@@ -55,8 +55,42 @@ class Music {
     try {
       // Pre-set the AudioContext so Strudel reuses it (avoids browser autoplay block)
       if (ctx) setAudioContext(ctx);
+      // Use locally bundled TR-909 samples (offline-ready)
+      // Source: geikha/tidal-drum-machines (CC0 license)
+      const localSamples = {
+        _base: "/samples/",
+        RolandTR909_bd: [
+          "RolandTR909_bd/Bassdrum-01.wav",
+          "RolandTR909_bd/Bassdrum-02.wav",
+          "RolandTR909_bd/Bassdrum-03.wav",
+          "RolandTR909_bd/Bassdrum-04.wav",
+        ],
+        RolandTR909_hh: [
+          "RolandTR909_hh/hh01.wav",
+          "RolandTR909_hh/hh02.wav",
+          "RolandTR909_hh/hh03.wav",
+          "RolandTR909_hh/hh04.wav",
+        ],
+        RolandTR909_sd: [
+          "RolandTR909_sd/sd01.wav",
+          "RolandTR909_sd/sd02.wav",
+          "RolandTR909_sd/sd03.wav",
+          "RolandTR909_sd/sd04.wav",
+          "RolandTR909_sd/sd05.wav",
+          "RolandTR909_sd/sd06.wav",
+          "RolandTR909_sd/sd07.wav",
+          "RolandTR909_sd/sd08.wav",
+          "RolandTR909_sd/sd09.wav",
+          "RolandTR909_sd/sd10.wav",
+          "RolandTR909_sd/sd11.wav",
+          "RolandTR909_sd/sd12.wav",
+          "RolandTR909_sd/sd13.wav",
+          "RolandTR909_sd/sd14.wav",
+          "RolandTR909_sd/sd15.wav",
+        ],
+      };
       await initStrudel({
-        prebake: () => g().samples("github:tidalcycles/dirt-samples"),
+        prebake: () => g().samples(localSamples),
       });
       this.initialized = true;
       // Play the full arrangement silently to preload all samples + warm up oscillators

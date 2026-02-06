@@ -108,18 +108,18 @@ export function getPatternForLevel(level: number): any {
     .lpf(sine.range(1000, 3000).slow(4))
     .orbit(2);
 
-  const kick = sound("bd*4")
+  const kick = sound("bd*4").bank("RolandTR909")
     .sustain(0.6).decay(0.05).gain(0.5)
     .duck(2).duckattack(0.17).duckdepth(0.4);
 
-  const hh = sound("~ hh").fast(4)
+  const hh = sound("~ hh").fast(4).bank("RolandTR909")
     .sustain(0.25).release(0.05).room(0.2);
 
-  const snare = sound("~ ~ sd ~ ~ ~ sd ~")
+  const snare = sound("~ ~ sd ~ ~ ~ sd ~").bank("RolandTR909")
     .sustain(0.4);
 
-  const ghost = sound("sd sd ~ sd sd sd ~ sd")
-    .degradeBy(0.8).sustain(0.4).gain(0.3).bank("tr909");
+  const ghost = sound("sd sd ~ sd sd sd ~ sd").bank("RolandTR909")
+    .degradeBy(0.8).sustain(0.4).gain(0.3);
 
   const lead1a = note("- b4").fast(4).sound("sawtooth")
     .lpf(sine.range(800, 4000).lpq(4).slow(8))

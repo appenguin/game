@@ -207,7 +207,8 @@ npm run preview            # Preview production build
 
 ## Deployment
 
-**Web:** Hosted at `game.appenguin.com`
+**Web:** GitHub Pages at `game.appenguin.com`
+- Deploy: `npm run build` then push, or GitHub Actions auto-deploys on push to `main`
 
 **Android APK:** Built from `android/` directory using Capacitor + Gradle
 - Bundled mode (offline, all assets included in APK)

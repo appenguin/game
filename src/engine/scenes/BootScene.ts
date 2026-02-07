@@ -384,6 +384,15 @@ export class BootScene extends Phaser.Scene {
     });
     ghUrl.on("pointerdown", () => window.open("https://github.com/appenguin/game", "_blank"));
 
+    const version = `v1.${__BUILD_DATE__}.${__COMMIT_HASH__}`;
+    const versionText = this.add
+      .text(width / 2, height * 0.64, version, {
+        fontSize: "14px",
+        color: "#64748b",
+        fontFamily: "system-ui, sans-serif",
+      })
+      .setOrigin(0.5);
+
     const back = this.add
       .text(width / 2, height * 0.72, "BACK", {
         fontSize: "22px",
@@ -398,7 +407,7 @@ export class BootScene extends Phaser.Scene {
     });
     back.on("pointerdown", () => this.hideAbout());
 
-    this.aboutOverlay = this.add.container(0, 0, [bg, title, desc, webUrl, ghUrl, back]);
+    this.aboutOverlay = this.add.container(0, 0, [bg, title, desc, webUrl, ghUrl, versionText, back]);
     this.aboutOverlay.setDepth(50);
   }
 

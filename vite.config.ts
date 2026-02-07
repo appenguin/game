@@ -1,7 +1,15 @@
 import { defineConfig } from "vite";
+import { execSync } from "child_process";
 import { VitePWA } from "vite-plugin-pwa";
 
+const commitHash = execSync("git rev-parse --short HEAD").toString().trim();
+const buildDate = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+
 export default defineConfig({
+  define: {
+    __COMMIT_HASH__: JSON.stringify(commitHash),
+    __BUILD_DATE__: JSON.stringify(buildDate),
+  },
   base: "./",
   build: {
     minify: "terser",

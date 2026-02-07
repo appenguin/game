@@ -81,8 +81,8 @@ export class BootScene extends Phaser.Scene {
 
     // Title
     this.add
-      .text(width / 2, height * 0.2, "PENGUINSKI 🐧", {
-        fontSize: "42px",
+      .text(width / 2, height * 0.12, "Penguinski 🐧", {
+        fontSize: "38px",
         color: "#1a1a2e",
         fontFamily: "system-ui, sans-serif",
         fontStyle: "bold",
@@ -90,17 +90,17 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(width / 2, height * 0.28, "Choose difficulty", {
-        fontSize: "18px",
+      .text(width / 2, height * 0.19, "Choose difficulty", {
+        fontSize: "16px",
         color: "#64748b",
         fontFamily: "system-ui, sans-serif",
       })
       .setOrigin(0.5);
 
     // Difficulty menu items
-    const startY = height * 0.42;
-    const gap = 52;
-    const toggleGap = 20; // extra space between difficulty items and toggles
+    const startY = height * 0.28;
+    const gap = 42;
+    const toggleGap = 12; // extra space between difficulty items and toggles
     const hitPad = 16;
     this.menuTexts = [];
     this.cursor = 1; // default to Medium
@@ -108,7 +108,7 @@ export class BootScene extends Phaser.Scene {
     for (let i = 0; i < LEVELS.length; i++) {
       const txt = this.add
         .text(width / 2, startY + i * gap, LEVELS[i].label, {
-          fontSize: "24px",
+          fontSize: "22px",
           color: "#9ca3af",
           fontFamily: "system-ui, sans-serif",
           fontStyle: "bold",
@@ -193,7 +193,7 @@ export class BootScene extends Phaser.Scene {
     const soundLabel = this.sfxMuted ? "SOUND: OFF" : "SOUND: ON";
     this.soundText = this.add
       .text(width / 2, startY + SOUND_INDEX * gap + toggleGap, "\u25B6 " + soundLabel, {
-        fontSize: "24px",
+        fontSize: "22px",
         color: "#9ca3af",
         fontFamily: "system-ui, sans-serif",
         fontStyle: "bold",
@@ -220,7 +220,7 @@ export class BootScene extends Phaser.Scene {
     const musicLabel = music.muted ? "MUSIC: OFF" : "MUSIC: ON";
     this.musicText = this.add
       .text(width / 2, startY + MUSIC_INDEX * gap + toggleGap, "\u25B6 " + musicLabel, {
-        fontSize: "24px",
+        fontSize: "22px",
         color: "#9ca3af",
         fontFamily: "system-ui, sans-serif",
         fontStyle: "bold",
@@ -248,7 +248,7 @@ export class BootScene extends Phaser.Scene {
     const hapticsLabel = this.hapticsMuted ? "HAPTICS: OFF" : "HAPTICS: ON";
     this.hapticsText = this.add
       .text(width / 2, startY + HAPTICS_INDEX * gap + toggleGap, "\u25B6 " + hapticsLabel, {
-        fontSize: "24px",
+        fontSize: "22px",
         color: "#9ca3af",
         fontFamily: "system-ui, sans-serif",
         fontStyle: "bold",
@@ -280,7 +280,7 @@ export class BootScene extends Phaser.Scene {
     // About
     this.aboutText = this.add
       .text(width / 2, startY + ABOUT_INDEX * gap + toggleGap, "  ABOUT", {
-        fontSize: "24px",
+        fontSize: "22px",
         color: "#9ca3af",
         fontFamily: "system-ui, sans-serif",
         fontStyle: "bold",

@@ -148,7 +148,7 @@ export class Effects {
 
     // --- Storm visibility overlay ---
     const { width: sw, height: sh } = scene.scale;
-    this.stormOverlay = scene.add.rectangle(sw / 2, sh / 2, sw, sh, 0xffffff, 0);
+    this.stormOverlay = scene.add.rectangle(sw / 2, sh / 2, sw, sh, 0x7a8fa3, 0);
     this.stormOverlay.setScrollFactor(0);
     this.stormOverlay.setDepth(9);
 
@@ -320,7 +320,7 @@ export class Effects {
 
   setStormIntensity(intensity: number): void {
     this.stormIntensity = Phaser.Math.Clamp(intensity, 0, 1);
-    this.stormOverlay.setAlpha(this.stormIntensity * 0.15);
+    this.stormOverlay.setAlpha(this.stormIntensity * 0.35);
   }
 
   getWindLateral(): number {

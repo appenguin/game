@@ -65,7 +65,7 @@ export class BootScene extends Phaser.Scene {
 
     // Title
     this.add
-      .text(width / 2, height * 0.2, "PENGUINSKI", {
+      .text(width / 2, height * 0.2, "PENGUINSKI 🐧", {
         fontSize: "42px",
         color: "#1a1a2e",
         fontFamily: "system-ui, sans-serif",
@@ -348,7 +348,7 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const webUrl = this.add
-      .text(width / 2, height * 0.48, "game.appenguin.com", {
+      .text(width / 2, height * 0.45, "game.appenguin.com", {
         fontSize: "20px",
         color: "#38bdf8",
         fontFamily: "system-ui, sans-serif",
@@ -362,7 +362,7 @@ export class BootScene extends Phaser.Scene {
     webUrl.on("pointerdown", () => window.open("https://game.appenguin.com", "_blank"));
 
     const ghUrl = this.add
-      .text(width / 2, height * 0.55, "Source on GitHub", {
+      .text(width / 2, height * 0.53, "Source on GitHub", {
         fontSize: "20px",
         color: "#38bdf8",
         fontFamily: "system-ui, sans-serif",
@@ -375,9 +375,22 @@ export class BootScene extends Phaser.Scene {
     });
     ghUrl.on("pointerdown", () => window.open("https://github.com/appenguin/game", "_blank"));
 
+    const aeLabel = this.add
+      .text(width / 2, height * 0.62, "By: appenguin.com 🐧", {
+        fontSize: "14px",
+        color: "#38bdf8",
+        fontFamily: "system-ui, sans-serif",
+      })
+      .setOrigin(0.5);
+    aeLabel.setInteractive({ useHandCursor: true,
+      hitArea: new Phaser.Geom.Rectangle(-hitPad, -hitPad, aeLabel.width + hitPad * 2, aeLabel.height + hitPad * 2),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+    });
+    aeLabel.on("pointerdown", () => window.open("https://appenguin.com", "_blank"));
+
     const version = `v1.${__BUILD_DATE__}.${__COMMIT_HASH__}`;
     const versionText = this.add
-      .text(width / 2, height * 0.64, version, {
+      .text(width / 2, height * 0.70, version, {
         fontSize: "14px",
         color: "#64748b",
         fontFamily: "system-ui, sans-serif",
@@ -385,7 +398,7 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const back = this.add
-      .text(width / 2, height * 0.72, "BACK", {
+      .text(width / 2, height * 0.78, "BACK", {
         fontSize: "22px",
         color: "#ffffff",
         fontFamily: "system-ui, sans-serif",
@@ -398,7 +411,7 @@ export class BootScene extends Phaser.Scene {
     });
     back.on("pointerdown", () => this.hideAbout());
 
-    this.aboutOverlay = this.add.container(0, 0, [bg, desc, webUrl, ghUrl, versionText, back]);
+    this.aboutOverlay = this.add.container(0, 0, [bg, desc, webUrl, ghUrl, aeLabel, versionText, back]);
     this.aboutOverlay.setDepth(50);
   }
 

@@ -89,6 +89,7 @@ src/
       Input.ts            Keyboard + touch input
       Spawner.ts          Obstacle spawning, collision
       Music.ts            Strudel lifecycle, layer progression
+      SFX.ts              Procedural sound effects (Web Audio API)
       Effects.ts          Particles, trails, visual effects
 public/                   Static assets (sprites, icons, manifest)
 android/                  Capacitor Android wrapper
@@ -97,6 +98,20 @@ android/                  Capacitor Android wrapper
   install                 ADB install script
 index.html                Entry point + splash screen
 ```
+
+## What's next
+
+The game and music are still in progress. Some areas we're working on:
+
+- **Game balance** -- scoring, obstacle density, storm difficulty
+- **Art** -- new sprite art for the penguin, obstacles, or background elements (we can help with converting it to sprite sheets)
+- **Levels** -- new terrain, obstacle layouts, difficulty progression
+- **New obstacles or slope elements**
+- **Haptic feedback** for Android (Capacitor)
+- **Share button** for scores
+- **Bug fixes** and performance improvements
+
+Contributions are welcome -- open a PR or file an issue.
 
 ## License
 

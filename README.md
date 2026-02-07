@@ -66,7 +66,7 @@ Output: `android/android/app/build/outputs/apk/debug/app-debug.apk`
 - [Strudel](https://strudel.cc/) -- procedural music (`@strudel/web`)
 - [Capacitor](https://capacitorjs.com/) -- Android APK wrapper
 
-No backend. All data stored in localStorage.
+No backend. All data stored in localStorage. [Umami](https://umami.is/) analytics (graceful no-op when offline).
 
 ## Project structure
 

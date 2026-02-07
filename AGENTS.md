@@ -205,6 +205,10 @@ npm run build:android      # Full Android APK build (web + copy + cap sync + gra
 npm run preview            # Preview production build
 ```
 
+## Analytics
+
+[Umami](https://umami.is/) analytics via external script in `index.html`. Tracks `game-over` events (level, score, distance, newBest) in `RunScene.ts`. The tracking call is guarded by `typeof umami !== "undefined"`, so when offline the external script silently fails to load and tracking is a no-op.
+
 ## Deployment
 
 **Web:** GitHub Pages at `game.appenguin.com`

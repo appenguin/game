@@ -201,7 +201,8 @@ Procedural SFX synthesised at runtime using the Web Audio API — no audio files
 npm install                # Install dependencies
 npm run dev                # Dev server (Vite, port 8080)
 npm run build              # Production build (tsc + vite)
-npm run build:android      # Full Android APK build (web + copy + cap sync + gradle)
+npm run build:android      # Debug APK build (web + copy + cap sync + gradle)
+./android/build-release    # Signed release APK (same pipeline, assembleRelease)
 npm run preview            # Preview production build
 ```
 
@@ -216,13 +217,21 @@ npm run preview            # Preview production build
 
 **Android APK:** Built from `android/` directory using Capacitor + Gradle
 - Bundled mode (offline, all assets included in APK)
-- Build: `npm run build:android` (or `./android/build`)
-- Output: `android/android/app/build/outputs/apk/debug/app-debug.apk`
-- Size: ~5.1MB (includes all game assets)
+- Debug: `npm run build:android` (or `./android/build`)
+- Release: `./android/build-release` (signed, smaller)
+- Debug output: `android/android/app/build/outputs/apk/debug/app-debug.apk` (~6.1MB)
+- Release output: `android/android/app/build/outputs/apk/release/app-release.apk` (~5.1MB)
 - Install: `./android/install` (requires adb)
 - Requires Node >=22 for Capacitor CLI
 - Android back button calls `window.__gameTogglePause()` directly (no synthetic keyboard events)
 - Auto-pause on background via `window.__gamePause()` (pause-only, never unpauses)
+
+### Release signing
+
+- Keystore: `android/penguinski-release.jks` (gitignored, back up separately)
+- Signing config in `android/android/gradle.properties` (RELEASE_STORE_FILE, RELEASE_KEY_ALIAS, passwords)
+- `build.gradle` conditionally reads signing config when properties are present
+- Keystore validity: 10,000 days (~27 years)
 
 ## Git standards
 

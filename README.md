@@ -52,11 +52,13 @@ npm run preview   # preview the build locally
 **Android APK** (requires Node 22+ for Capacitor CLI, Android SDK):
 
 ```bash
-npm run build:android   # full pipeline: web build + cap sync + gradle
-./android/install       # install to connected device via adb
+npm run build:android     # debug APK: web build + cap sync + gradle
+./android/build-release   # signed release APK (same pipeline)
+./android/install         # install to connected device via adb
 ```
 
-Output: `android/android/app/build/outputs/apk/debug/app-debug.apk`
+Debug output: `android/android/app/build/outputs/apk/debug/app-debug.apk` (~6.1MB)
+Release output: `android/android/app/build/outputs/apk/release/app-release.apk` (~5.1MB)
 
 ## Tech stack
 
@@ -90,7 +92,8 @@ src/
       Effects.ts          Particles, trails, visual effects
 public/                   Static assets (sprites, icons, manifest)
 android/                  Capacitor Android wrapper
-  build                   Full build script
+  build                   Debug APK build script
+  build-release           Signed release APK build script
   install                 ADB install script
 index.html                Entry point + splash screen
 ```

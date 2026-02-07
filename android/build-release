@@ -1,10 +1,27 @@
 #!/bin/bash
-# Build signed release APK
-# Requires gradle.properties with signing config
+# Build signed release APK (full pipeline: web build → copy → cap sync → gradle)
+set -e
 
-cd android && ./gradlew assembleRelease
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "Release APK: android/app/build/outputs/apk/release/app-release.apk"
-fi
+# 1. Build web assets
+echo "==> Building web assets..."
+npm --prefix "$PROJECT_DIR" run build
+
+# 2. Copy dist to android/www
+echo "==> Copying to android/www..."
+rm -rf "$SCRIPT_DIR/www"
+mkdir "$SCRIPT_DIR/www"
+cp -r "$PROJECT_DIR/dist/"* "$SCRIPT_DIR/www/"
+
+# 3. Capacitor sync
+echo "==> Syncing Capacitor..."
+cd "$SCRIPT_DIR" && npx cap sync android
+
+# 4. Gradle release build
+echo "==> Building release APK..."
+cd "$SCRIPT_DIR/android" && ./gradlew assembleRelease
+
+APK="$SCRIPT_DIR/android/app/build/outputs/apk/release/app-release.apk"
+echo "==> Done: $APK ($(du -h "$APK" | cut -f1))"

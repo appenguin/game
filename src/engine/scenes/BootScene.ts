@@ -10,7 +10,8 @@ const LEVELS = [
 
 const SOUND_INDEX = LEVELS.length;
 const MUSIC_INDEX = LEVELS.length + 1;
-const MENU_COUNT = LEVELS.length + 2; // difficulties + sound toggle + music toggle
+const ABOUT_INDEX = LEVELS.length + 2;
+const MENU_COUNT = LEVELS.length + 3; // difficulties + sound toggle + music toggle + about
 
 const SFX_STORAGE_KEY = "penguinski:sfx";
 
@@ -27,7 +28,9 @@ export class BootScene extends Phaser.Scene {
   private menuTexts: Phaser.GameObjects.Text[] = [];
   private soundText!: Phaser.GameObjects.Text;
   private musicText!: Phaser.GameObjects.Text;
+  private aboutText!: Phaser.GameObjects.Text;
   private bestText!: Phaser.GameObjects.Text;
+  private aboutOverlay: Phaser.GameObjects.Container | null = null;
   private sfxMuted: boolean;
 
   constructor() {
@@ -118,38 +121,51 @@ export class BootScene extends Phaser.Scene {
     // Keyboard
     if (this.input.keyboard) {
       this.input.keyboard.on("keydown-UP", () => {
+        if (this.aboutOverlay) return;
         this.cursor = (this.cursor - 1 + MENU_COUNT) % MENU_COUNT;
         this.updateHighlight();
       });
       this.input.keyboard.on("keydown-W", () => {
+        if (this.aboutOverlay) return;
         this.cursor = (this.cursor - 1 + MENU_COUNT) % MENU_COUNT;
         this.updateHighlight();
       });
       this.input.keyboard.on("keydown-DOWN", () => {
+        if (this.aboutOverlay) return;
         this.cursor = (this.cursor + 1) % MENU_COUNT;
         this.updateHighlight();
       });
       this.input.keyboard.on("keydown-S", () => {
+        if (this.aboutOverlay) return;
         this.cursor = (this.cursor + 1) % MENU_COUNT;
         this.updateHighlight();
       });
       this.input.keyboard.on("keydown-SPACE", () => {
+        if (this.aboutOverlay) { this.hideAbout(); return; }
         if (this.cursor === SOUND_INDEX) {
           this.toggleSound();
         } else if (this.cursor === MUSIC_INDEX) {
           this.toggleMusic();
+        } else if (this.cursor === ABOUT_INDEX) {
+          this.showAbout();
         } else {
           this.selectLevel();
         }
       });
       this.input.keyboard.on("keydown-ENTER", () => {
+        if (this.aboutOverlay) { this.hideAbout(); return; }
         if (this.cursor === SOUND_INDEX) {
           this.toggleSound();
         } else if (this.cursor === MUSIC_INDEX) {
           this.toggleMusic();
+        } else if (this.cursor === ABOUT_INDEX) {
+          this.showAbout();
         } else {
           this.selectLevel();
         }
+      });
+      this.input.keyboard.on("keydown-ESC", () => {
+        if (this.aboutOverlay) this.hideAbout();
       });
     }
 
@@ -208,9 +224,35 @@ export class BootScene extends Phaser.Scene {
       this.updateHighlight();
     });
 
+    // About
+    this.aboutText = this.add
+      .text(width / 2, startY + ABOUT_INDEX * gap + toggleGap, "  ABOUT", {
+        fontSize: "24px",
+        color: "#9ca3af",
+        fontFamily: "system-ui, sans-serif",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    this.aboutText.setInteractive({
+      useHandCursor: true,
+      hitArea: new Phaser.Geom.Rectangle(
+        -hitPad, -hitPad,
+        this.aboutText.width + hitPad * 2,
+        this.aboutText.height + hitPad * 2,
+      ),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+    });
+    this.aboutText.on("pointerdown", () => {
+      this.showAbout();
+    });
+    this.aboutText.on("pointerover", () => {
+      this.cursor = ABOUT_INDEX;
+      this.updateHighlight();
+    });
+
     // High score display
     this.bestText = this.add
-      .text(width / 2, startY + (MUSIC_INDEX + 1) * gap + toggleGap + 8, "", {
+      .text(width / 2, startY + (ABOUT_INDEX + 1) * gap + toggleGap + 8, "", {
         fontSize: "16px",
         color: "#64748b",
         fontFamily: "system-ui, sans-serif",
@@ -256,6 +298,14 @@ export class BootScene extends Phaser.Scene {
       this.musicText.setText("  " + musicLabel);
     }
 
+    if (this.cursor === ABOUT_INDEX) {
+      this.aboutText.setColor("#64748b");
+      this.aboutText.setText("\u25B6 ABOUT");
+    } else {
+      this.aboutText.setColor("#9ca3af");
+      this.aboutText.setText("  ABOUT");
+    }
+
     // Show high score for selected difficulty
     const level = this.cursor < LEVELS.length ? this.cursor : this.cursor - 1;
     const best = getBest(level);
@@ -278,6 +328,85 @@ export class BootScene extends Phaser.Scene {
   private toggleMusic(): void {
     music.toggleMute();
     this.updateHighlight();
+  }
+
+  private showAbout(): void {
+    if (this.aboutOverlay) return;
+    const { width, height } = this.scale;
+
+    const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x1a1a2e, 0.92);
+    const hitPad = 16;
+
+    const title = this.add
+      .text(width / 2, height * 0.22, "PENGUINSKI", {
+        fontSize: "36px",
+        color: "#ffffff",
+        fontFamily: "system-ui, sans-serif",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+
+    const desc = this.add
+      .text(width / 2, height * 0.32, "A penguin downhill ski game.\nDodge obstacles, hit ramps,\ndo tricks, collect fish!", {
+        fontSize: "16px",
+        color: "#94a3b8",
+        fontFamily: "system-ui, sans-serif",
+        align: "center",
+        lineSpacing: 4,
+      })
+      .setOrigin(0.5);
+
+    const webUrl = this.add
+      .text(width / 2, height * 0.48, "game.appenguin.com", {
+        fontSize: "20px",
+        color: "#38bdf8",
+        fontFamily: "system-ui, sans-serif",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    webUrl.setInteractive({ useHandCursor: true,
+      hitArea: new Phaser.Geom.Rectangle(-hitPad, -hitPad, webUrl.width + hitPad * 2, webUrl.height + hitPad * 2),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+    });
+    webUrl.on("pointerdown", () => window.open("https://game.appenguin.com", "_blank"));
+
+    const ghUrl = this.add
+      .text(width / 2, height * 0.55, "Source on GitHub", {
+        fontSize: "20px",
+        color: "#38bdf8",
+        fontFamily: "system-ui, sans-serif",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    ghUrl.setInteractive({ useHandCursor: true,
+      hitArea: new Phaser.Geom.Rectangle(-hitPad, -hitPad, ghUrl.width + hitPad * 2, ghUrl.height + hitPad * 2),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+    });
+    ghUrl.on("pointerdown", () => window.open("https://github.com/appenguin/game", "_blank"));
+
+    const back = this.add
+      .text(width / 2, height * 0.72, "BACK", {
+        fontSize: "22px",
+        color: "#ffffff",
+        fontFamily: "system-ui, sans-serif",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    back.setInteractive({ useHandCursor: true,
+      hitArea: new Phaser.Geom.Rectangle(-hitPad, -hitPad, back.width + hitPad * 2, back.height + hitPad * 2),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+    });
+    back.on("pointerdown", () => this.hideAbout());
+
+    this.aboutOverlay = this.add.container(0, 0, [bg, title, desc, webUrl, ghUrl, back]);
+    this.aboutOverlay.setDepth(50);
+  }
+
+  private hideAbout(): void {
+    if (this.aboutOverlay) {
+      this.aboutOverlay.destroy();
+      this.aboutOverlay = null;
+    }
   }
 
   private selectLevel(): void {

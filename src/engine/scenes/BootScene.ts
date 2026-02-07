@@ -334,20 +334,11 @@ export class BootScene extends Phaser.Scene {
     if (this.aboutOverlay) return;
     const { width, height } = this.scale;
 
-    const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x1a1a2e, 0.92);
+    const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x1a1a2e, 0.96);
     const hitPad = 16;
 
-    const title = this.add
-      .text(width / 2, height * 0.22, "PENGUINSKI", {
-        fontSize: "36px",
-        color: "#ffffff",
-        fontFamily: "system-ui, sans-serif",
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5);
-
     const desc = this.add
-      .text(width / 2, height * 0.32, "A penguin downhill ski game.\nDodge obstacles, hit ramps,\ndo tricks, collect fish!", {
+      .text(width / 2, height * 0.26, "A penguin downhill ski game.\nDodge obstacles, hit ramps,\ndo tricks, collect fish!", {
         fontSize: "16px",
         color: "#94a3b8",
         fontFamily: "system-ui, sans-serif",
@@ -407,7 +398,7 @@ export class BootScene extends Phaser.Scene {
     });
     back.on("pointerdown", () => this.hideAbout());
 
-    this.aboutOverlay = this.add.container(0, 0, [bg, title, desc, webUrl, ghUrl, versionText, back]);
+    this.aboutOverlay = this.add.container(0, 0, [bg, desc, webUrl, ghUrl, versionText, back]);
     this.aboutOverlay.setDepth(50);
   }
 

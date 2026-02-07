@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { Haptics as CapacitorHaptics, ImpactStyle } from "@capacitor/haptics";
 import { getBest } from "../../core/storage";
 import { music } from "../systems/Music";
 
@@ -50,7 +51,7 @@ export class BootScene extends Phaser.Scene {
     super("Boot");
     this.sfxMuted = getSfxMuted();
     this.hapticsMuted = getHapticsMuted();
-    this.hapticsSupported = typeof navigator !== "undefined" && "vibrate" in navigator;
+    this.hapticsSupported = true; // Capacitor handles platform detection
   }
 
   create(): void {
@@ -399,16 +400,11 @@ export class BootScene extends Phaser.Scene {
   }
 
   private toggleHaptics(): void {
-    if (!this.hapticsSupported) return;
     this.hapticsMuted = !this.hapticsMuted;
     setHapticsMuted(this.hapticsMuted);
     // Give a short vibration as feedback when enabling
     if (!this.hapticsMuted) {
-      try {
-        navigator.vibrate(30);
-      } catch {
-        // ignore
-      }
+      CapacitorHaptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
     }
     this.updateHighlight();
   }

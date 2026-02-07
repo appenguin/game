@@ -198,12 +198,12 @@ Procedural SFX synthesised at runtime using the Web Audio API — no audio files
 
 ### Haptic feedback
 
-Vibration feedback using the Web Vibration API (`navigator.vibrate()`). All haptics live in `src/engine/systems/Haptics.ts`.
+Vibration feedback using the Capacitor Haptics plugin (`@capacitor/haptics`). All haptics live in `src/engine/systems/Haptics.ts`.
 
-- Works on Android (web and Capacitor WebView), gracefully no-ops on iOS and desktop
+- Works on Android and iOS native apps via Capacitor, gracefully no-ops on web
 - Haptics toggle on boot screen, preference persisted in localStorage (`penguinski:haptics`)
-- Shows "HAPTICS: N/A" on unsupported platforms
-- Events: rock hit (200ms), tree hit (30-100ms scaled), fish collect (25ms), ramp/mogul launch, ice entry, snowdrift, landings (clean/sloppy/crash), trick performed, fling (rumble pattern), game over (long rumble)
+- Uses native haptic patterns: ImpactStyle (Light/Medium/Heavy) and NotificationType (Success/Warning/Error)
+- Events: rock hit (heavy), tree hit (light/medium/heavy by centeredness), fish collect (light), ramp launch (medium), mogul (light), ice/snowdrift (light), landings (success/warning/error), trick (light), fling/game over (vibrate)
 
 ## Development
 

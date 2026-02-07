@@ -1,15 +1,13 @@
+import { Haptics as CapacitorHaptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
+
 /**
- * Haptic feedback using the Web Vibration API.
- * Works on Android (web and Capacitor WebView).
- * Gracefully no-ops on iOS and desktop.
+ * Haptic feedback using Capacitor Haptics plugin.
+ * Works on Android and iOS native apps.
+ * Gracefully no-ops on web.
  */
 export class Haptics {
   private _muted = false;
-  private _supported: boolean;
-
-  constructor() {
-    this._supported = typeof navigator !== "undefined" && "vibrate" in navigator;
-  }
+  private _supported = true; // Capacitor handles platform detection
 
   get muted(): boolean {
     return this._muted;
@@ -23,12 +21,30 @@ export class Haptics {
     this._muted = m;
   }
 
-  private vibrate(pattern: number | number[]): void {
-    if (this._muted || !this._supported) return;
+  private async impact(style: ImpactStyle): Promise<void> {
+    if (this._muted) return;
     try {
-      navigator.vibrate(pattern);
+      await CapacitorHaptics.impact({ style });
     } catch {
-      // Silently ignore errors (e.g., some browsers throw on certain patterns)
+      // Silently ignore errors on unsupported platforms
+    }
+  }
+
+  private async notification(type: NotificationType): Promise<void> {
+    if (this._muted) return;
+    try {
+      await CapacitorHaptics.notification({ type });
+    } catch {
+      // Silently ignore errors
+    }
+  }
+
+  private async vibrate(duration: number): Promise<void> {
+    if (this._muted) return;
+    try {
+      await CapacitorHaptics.vibrate({ duration });
+    } catch {
+      // Silently ignore errors
     }
   }
 
@@ -36,67 +52,72 @@ export class Haptics {
 
   /** Strong impact — rock hit, life lost. */
   rockHit(): void {
-    this.vibrate(200);
+    this.impact(ImpactStyle.Heavy);
   }
 
   /** Medium impact — tree collision, scaled by centeredness (0–1). */
   treeHit(centeredness: number): void {
-    const duration = Math.round(30 + centeredness * 70); // 30-100ms
-    this.vibrate(duration);
+    if (centeredness > 0.6) {
+      this.impact(ImpactStyle.Heavy);
+    } else if (centeredness > 0.3) {
+      this.impact(ImpactStyle.Medium);
+    } else {
+      this.impact(ImpactStyle.Light);
+    }
   }
 
   /** Light tap — fish collected. */
   fishCollect(): void {
-    this.vibrate(25);
+    this.impact(ImpactStyle.Light);
   }
 
   /** Quick pulse — ramp launch. */
   rampLaunch(): void {
-    this.vibrate(40);
+    this.impact(ImpactStyle.Medium);
   }
 
   /** Short bump — mogul bounce. */
   mogulLaunch(): void {
-    this.vibrate(30);
+    this.impact(ImpactStyle.Light);
   }
 
   /** Subtle pulse — ice patch entry. */
   iceEntry(): void {
-    this.vibrate(20);
+    this.impact(ImpactStyle.Light);
   }
 
   /** Soft thud — snowdrift hit. */
   snowdriftHit(): void {
-    this.vibrate(35);
+    this.impact(ImpactStyle.Light);
   }
 
   /** Clean landing — satisfying tap. */
   cleanLanding(): void {
-    this.vibrate(30);
+    this.notification(NotificationType.Success);
   }
 
   /** Sloppy landing — medium bump. */
   sloppyLanding(): void {
-    this.vibrate(50);
+    this.notification(NotificationType.Warning);
   }
 
   /** Crash landing — strong thud. */
   crashLanding(): void {
-    this.vibrate(100);
+    this.notification(NotificationType.Error);
   }
 
   /** Trick performed — quick pulse. */
   trickPerformed(): void {
-    this.vibrate(25);
+    this.impact(ImpactStyle.Light);
   }
 
   /** Fling — strong impact with rumble pattern. */
   fling(): void {
-    this.vibrate([100, 50, 80]);
+    this.vibrate(200);
   }
 
   /** Game over — long rumble. */
   gameOver(): void {
-    this.vibrate([150, 80, 200]);
+    this.vibrate(400);
   }
 }

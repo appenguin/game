@@ -40,6 +40,7 @@ src/
       Spawner.ts      Obstacle spawning, scrolling, collision, hit tracking
       Music.ts        Strudel lifecycle, score-driven layer progression
       SFX.ts          Procedural sound effects (Web Audio API synthesis, no audio files)
+      Haptics.ts      Vibration feedback (Web Vibration API, Android only)
       Effects.ts      Snow spray, ski trail, event particle bursts, ice sparkle, tree snow
   strudel.d.ts        TypeScript declarations for @strudel/web
   platform/           (planned) Platform adapters (web vs Capacitor)
@@ -194,6 +195,15 @@ Procedural SFX synthesised at runtime using the Web Audio API — no audio files
 - AudioContext created synchronously inside native DOM gesture handler (`pointerdown`/`keydown`), then injected into superdough via `setAudioContext()` before `initStrudel()` runs. This bypasses Strudel's built-in `initAudioOnFirstClick()` which only listens for `mousedown`
 - Injected into Phaser's `WebAudioSoundManager.setAudioContext()` and into the SFX system constructor
 - Avoids mobile browser issues with multiple contexts
+
+### Haptic feedback
+
+Vibration feedback using the Web Vibration API (`navigator.vibrate()`). All haptics live in `src/engine/systems/Haptics.ts`.
+
+- Works on Android (web and Capacitor WebView), gracefully no-ops on iOS and desktop
+- Haptics toggle on boot screen, preference persisted in localStorage (`penguinski:haptics`)
+- Shows "HAPTICS: N/A" on unsupported platforms
+- Events: rock hit (200ms), tree hit (30-100ms scaled), fish collect (25ms), ramp/mogul launch, ice entry, snowdrift, landings (clean/sloppy/crash), trick performed, fling (rumble pattern), game over (long rumble)
 
 ## Development
 

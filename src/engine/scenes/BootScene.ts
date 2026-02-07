@@ -10,10 +10,12 @@ const LEVELS = [
 
 const SOUND_INDEX = LEVELS.length;
 const MUSIC_INDEX = LEVELS.length + 1;
-const ABOUT_INDEX = LEVELS.length + 2;
-const MENU_COUNT = LEVELS.length + 3; // difficulties + sound toggle + music toggle + about
+const HAPTICS_INDEX = LEVELS.length + 2;
+const ABOUT_INDEX = LEVELS.length + 3;
+const MENU_COUNT = LEVELS.length + 4; // difficulties + sound + music + haptics + about
 
 const SFX_STORAGE_KEY = "penguinski:sfx";
+const HAPTICS_STORAGE_KEY = "penguinski:haptics";
 
 function getSfxMuted(): boolean {
   return localStorage.getItem(SFX_STORAGE_KEY) === "off";
@@ -23,24 +25,38 @@ function setSfxMuted(muted: boolean): void {
   localStorage.setItem(SFX_STORAGE_KEY, muted ? "off" : "on");
 }
 
+function getHapticsMuted(): boolean {
+  return localStorage.getItem(HAPTICS_STORAGE_KEY) === "off";
+}
+
+function setHapticsMuted(muted: boolean): void {
+  localStorage.setItem(HAPTICS_STORAGE_KEY, muted ? "off" : "on");
+}
+
 export class BootScene extends Phaser.Scene {
   private cursor = 0;
   private menuTexts: Phaser.GameObjects.Text[] = [];
   private soundText!: Phaser.GameObjects.Text;
   private musicText!: Phaser.GameObjects.Text;
+  private hapticsText!: Phaser.GameObjects.Text;
   private aboutText!: Phaser.GameObjects.Text;
   private bestText!: Phaser.GameObjects.Text;
   private aboutOverlay: Phaser.GameObjects.Container | null = null;
   private sfxMuted: boolean;
+  private hapticsMuted: boolean;
+  private hapticsSupported: boolean;
 
   constructor() {
     super("Boot");
     this.sfxMuted = getSfxMuted();
+    this.hapticsMuted = getHapticsMuted();
+    this.hapticsSupported = typeof navigator !== "undefined" && "vibrate" in navigator;
   }
 
   create(): void {
     const { width, height } = this.scale;
     this.sfxMuted = getSfxMuted();
+    this.hapticsMuted = getHapticsMuted();
 
     // Defer Strudel init to first user gesture (browser AudioContext requirement).
     // Create AudioContext synchronously inside the gesture callback so the browser
@@ -146,6 +162,8 @@ export class BootScene extends Phaser.Scene {
           this.toggleSound();
         } else if (this.cursor === MUSIC_INDEX) {
           this.toggleMusic();
+        } else if (this.cursor === HAPTICS_INDEX) {
+          this.toggleHaptics();
         } else if (this.cursor === ABOUT_INDEX) {
           this.showAbout();
         } else {
@@ -158,6 +176,8 @@ export class BootScene extends Phaser.Scene {
           this.toggleSound();
         } else if (this.cursor === MUSIC_INDEX) {
           this.toggleMusic();
+        } else if (this.cursor === HAPTICS_INDEX) {
+          this.toggleHaptics();
         } else if (this.cursor === ABOUT_INDEX) {
           this.showAbout();
         } else {
@@ -223,6 +243,39 @@ export class BootScene extends Phaser.Scene {
       this.cursor = MUSIC_INDEX;
       this.updateHighlight();
     });
+
+    // Haptics toggle (only show if supported)
+    const hapticsLabel = this.hapticsMuted ? "HAPTICS: OFF" : "HAPTICS: ON";
+    this.hapticsText = this.add
+      .text(width / 2, startY + HAPTICS_INDEX * gap + toggleGap, "\u25B6 " + hapticsLabel, {
+        fontSize: "24px",
+        color: "#9ca3af",
+        fontFamily: "system-ui, sans-serif",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+
+    if (this.hapticsSupported) {
+      this.hapticsText.setInteractive({
+        useHandCursor: true,
+        hitArea: new Phaser.Geom.Rectangle(
+          -hitPad, -hitPad,
+          this.hapticsText.width + hitPad * 2,
+          this.hapticsText.height + hitPad * 2,
+        ),
+        hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      });
+      this.hapticsText.on("pointerdown", () => {
+        this.toggleHaptics();
+      });
+      this.hapticsText.on("pointerover", () => {
+        this.cursor = HAPTICS_INDEX;
+        this.updateHighlight();
+      });
+    } else {
+      // Dim the text on unsupported platforms
+      this.hapticsText.setAlpha(0.4);
+    }
 
     // About
     this.aboutText = this.add
@@ -298,6 +351,21 @@ export class BootScene extends Phaser.Scene {
       this.musicText.setText("  " + musicLabel);
     }
 
+    const hapticsLabel = this.hapticsMuted ? "HAPTICS: OFF" : "HAPTICS: ON";
+    if (this.hapticsSupported) {
+      if (this.cursor === HAPTICS_INDEX) {
+        this.hapticsText.setColor("#06b6d4");
+        this.hapticsText.setText("\u25B6 " + hapticsLabel);
+      } else {
+        this.hapticsText.setColor("#9ca3af");
+        this.hapticsText.setText("  " + hapticsLabel);
+      }
+    } else {
+      // Show as unavailable on unsupported platforms
+      this.hapticsText.setColor("#6b7280");
+      this.hapticsText.setText("  HAPTICS: N/A");
+    }
+
     if (this.cursor === ABOUT_INDEX) {
       this.aboutText.setColor("#64748b");
       this.aboutText.setText("\u25B6 ABOUT");
@@ -327,6 +395,21 @@ export class BootScene extends Phaser.Scene {
 
   private toggleMusic(): void {
     music.toggleMute();
+    this.updateHighlight();
+  }
+
+  private toggleHaptics(): void {
+    if (!this.hapticsSupported) return;
+    this.hapticsMuted = !this.hapticsMuted;
+    setHapticsMuted(this.hapticsMuted);
+    // Give a short vibration as feedback when enabling
+    if (!this.hapticsMuted) {
+      try {
+        navigator.vibrate(30);
+      } catch {
+        // ignore
+      }
+    }
     this.updateHighlight();
   }
 
@@ -423,6 +506,10 @@ export class BootScene extends Phaser.Scene {
   }
 
   private selectLevel(): void {
-    this.scene.start("Run", { level: this.cursor, sfxMuted: this.sfxMuted });
+    this.scene.start("Run", {
+      level: this.cursor,
+      sfxMuted: this.sfxMuted,
+      hapticsMuted: this.hapticsMuted,
+    });
   }
 }

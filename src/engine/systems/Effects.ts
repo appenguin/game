@@ -318,6 +318,15 @@ export class Effects {
     this.stormActive = true;
   }
 
+  stopStorm(): void {
+    this.stormActive = false;
+    this.stormIntensity = 0;
+    this.stormOverlay.setAlpha(0);
+    this.windLateral = 0;
+    for (const sf of this.snowflakes) sf.obj.destroy();
+    this.snowflakes.length = 0;
+  }
+
   setStormIntensity(intensity: number): void {
     this.stormIntensity = Phaser.Math.Clamp(intensity, 0, 1);
     this.stormOverlay.setAlpha(this.stormIntensity * 0.35);

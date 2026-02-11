@@ -544,17 +544,24 @@ export class RunScene extends Phaser.Scene {
     // --- Effects (snow spray + ski trail) ---
     this.effects.update(dt, this.penguin.x, this.penguin.y, this.heading, this.scrollSpeed, this.isAirborne, inObstacle);
 
-    // --- Storm ---
+    // --- Storm (tied to solo: level 14) ---
     const meters = Math.floor(this.distanceTraveled / 18);
-    const soloLevel = LEVEL_THRESHOLDS.length - 1;
-    if (!this.stormStarted && this.music.level >= soloLevel) {
+    const soloLevel = LEVEL_THRESHOLDS.length - 2; // solo level (14)
+    const postSoloLevel = LEVEL_THRESHOLDS.length - 1; // post-solo (15)
+    if (!this.stormStarted && this.music.level >= soloLevel && this.music.level < postSoloLevel) {
       this.stormStarted = true;
       this.stormStartMeters = meters;
       this.effects.startStorm();
     }
     if (this.stormStarted) {
-      const intensity = Math.min(1, (meters - this.stormStartMeters) / 100);
-      this.effects.setStormIntensity(intensity);
+      if (this.music.level >= postSoloLevel) {
+        // Solo ended — stop storm
+        this.stormStarted = false;
+        this.effects.stopStorm();
+      } else {
+        const intensity = Math.min(1, (meters - this.stormStartMeters) / 100);
+        this.effects.setStormIntensity(intensity);
+      }
     }
     const windX = this.effects.getWindLateral();
     if (windX !== 0) {

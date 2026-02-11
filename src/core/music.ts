@@ -17,7 +17,7 @@
 const g = () => globalThis as any;
 
 // ---------------------------------------------------------------------------
-// Distance thresholds (meters) — distance required to unlock each level (0-14)
+// Distance thresholds (meters) — distance required to unlock each level (0-15)
 // Instruments enter one at a time for a progressive build.
 // ---------------------------------------------------------------------------
 
@@ -36,7 +36,8 @@ export const LEVEL_THRESHOLDS = [
   950,  // 11 bass3 progression
   1080, // 12 bass4 double-time
   1260, // 13 + lead2 melody
-  1500, // 14 full solo
+  2000, // 14 full solo
+  3000, // 15 post-solo groove
 ];
 
 // ---------------------------------------------------------------------------
@@ -50,7 +51,7 @@ export const LEVEL_BPM = [110, 124, 140]; // Easy, Medium, Hard
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Map distance (meters) → music level (0-14). */
+/** Map distance (meters) → music level (0-15). */
 export function getMusicLevel(meters: number): number {
   for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
     if (meters >= LEVEL_THRESHOLDS[i]) return i;
@@ -75,7 +76,8 @@ export function getDeathPattern(): any {
 //   0: silence → 1: chord → 2: +bass → 3: bass solo →
 //   4: +kick → 5: +hh → 6: +snare → 7: bass2 → 8: +ghost →
 //   9: +lead (arrange a/b/c) → 10: bass change+lead →
-//   11: bass3 → 12: bass4 → 13: +lead2 → 14: full solo
+//   11: bass3 → 12: bass4 → 13: +lead2 → 14: full solo →
+//   15: post-solo groove (bass4 + drums)
 //
 // Strudel cheat-sheet:
 //   note("b2*4")           4 B2 notes per cycle
@@ -136,12 +138,30 @@ export function getPatternForLevel(level: number): any {
   const bass3 = bass2.note("[b1 d2 e2 [eb2 d2]]/4");
   const bass4 = bass3.note("[b1 d2 e2 [eb2 d2]]/2");
 
-  const lead2 = lead1a.note("[f#4 [b4 b4 <b4 d5> b4]]/4");
+  const lead2 = note("- f#4 a4 b4 - d5 - b4 - a4 - <b4 d5> - c#5 - b4")
+    .slow(2).sound("sawtooth")
+    .lpf(sine.range(800, 4000).lpq(4).slow(8))
+    .gain(0.5).delay(0.3);
 
   const lead3 = note(`<
 b4 d5 f#5 d5 f#5 e5 f#5 g5 a5 b5 f#5 d5 f#5 e5 d5 c#5
 b4 c#5 d5 c#5 e5 d5 c#5 d5 f#5 e5 d5 e5 f#5 e5 d5 bb4
 b4 _ _ _ b4 d5 f#5 b5 a5 b5 f#5 d5 f#5 g5 a5 b5
+b4 c#5 d5 c#5 e5 d5 c#5 d5 f#5 e5 d5 e5 f#5 e5 d5 c#5
+
+b4 - b4 - c#5 - c#5 - d5 c#5 d5 c#5 f#5 e5 d5 c#5
+b4 d5 f#5 d5 f#5 a5 c#5 f#5 g5 f#5 e5 d5 b4 _ _ c#5
+b4 b4 b4 b4 b4 d5 f#5 b5 a5 b5 a5 b5 f#5 g5 a5 b5
+b4 c#5 d5 c#5 e5 d5 c#5 d5 f#5 e5 d5 e5 f#5 e5 d5 c#5
+
+b4 d5 f#5 d5 b4 d5 f#5 d5 b4 d5 a5 d5 b4 d5 a5 d5
+b4 c#5 d5 c#5 e5 d5 c#5 d5 f#5 e5 d5 e5 f#5 e5 d5 bb4
+b4 d5 a5 d5 b4 d5 b5 d5 b4 d5 c#6 d5 b4 d5 b4 d5
+b4 c#5 d5 c#5 e5 d5 c#5 d5 f#5 e5 d5 e5 f#5 e5 d5 c#5
+
+b4 _ b4 _ c#5 _ c#5 _ d5 c#5 d5 c#5 f#5 e5 d5 c#5
+b4 d5 f#5 d5 f#5 a5 c#5 f#5 g5 f#5 e5 d5 b4 _ _ c#5
+b4 b4 b4 b4 b4 d5 f#5 b5 a5 b5 a5 b5 f#5 g5 a5 b5
 b4 c#5 d5 c#5 e5 d5 c#5 d5 f#5 e5 d5 e5 f#5 e5 d5 c#5
 >`).fast(16).sound("sawtooth").lpf(3000).lpq(2).gain(0.25).delay(0.1);
 
@@ -163,6 +183,7 @@ b4 c#5 d5 c#5 e5 d5 c#5 d5 f#5 e5 d5 e5 f#5 e5 d5 c#5
     case 12: return stack(bass4, kick, hh, snare, ghost);
     case 13: return stack(bass4, kick, hh, snare, ghost, lead2);
     case 14: return stack(bass3, kick, hh, snare, ghost, lead3);
+    case 15: return stack(bass4, kick, hh, snare, ghost);
     default: return silence;
   }
 }

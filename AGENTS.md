@@ -105,7 +105,7 @@ android/              Android APK wrapper (Capacitor)
 - **3 lives** (🐧🐧🐧 in HUD): rock hit flings penguin off-screen (tween: spin, shrink, fade), respawn at center with 2s invincibility flash. Camera freezes during fling. Final death on last life
 - Obstacles persist after being hit (marked with `hit` flag to prevent re-triggering); only fish are removed on collection
 - Event particle bursts on collisions and landings; camera bump on landing
-- Snowstorm at 1500m: 500 screen-fixed snowflake circles (`setScrollFactor(0)`) with organic wind gusts (160 px/s max); wind pushes penguin and obstacles laterally (5× push when airborne); white overlay reduces visibility; +30% air time during storm; ramps up over 100m
+- Snowstorm at 2000-3000m (tied to solo): 500 screen-fixed snowflake circles (`setScrollFactor(0)`) with organic wind gusts (160 px/s max); wind pushes penguin and obstacles laterally (5× push when airborne); white overlay reduces visibility; +30% air time during storm; ramps up over 100m, ends when solo ends
 - UI pinned to screen with `setScrollFactor(0)` on each element individually (not via container, which breaks Phaser touch hit testing): HUD bar, buttons, menus
 
 ## Depth layering
@@ -171,8 +171,8 @@ Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by leve
 
 Procedural layered music powered by **Strudel** (`@strudel/web`). Samples loaded from `github:tidalcycles/dirt-samples`.
 
-- 15-level progressive arrangement (0-14) driven by distance (meters), not score — instruments enter one at a time
-- Starts with Bmin9 triangle chord pad, builds through sawtooth bass, drums (bd, hh, sd), ghost snares (TR-909), saw leads with `arrange()` cycling, bass progressions, to full solo at 1500m
+- 16-level progressive arrangement (0-15) driven by distance (meters), not score — instruments enter one at a time
+- Starts with Bmin9 triangle chord pad, builds through sawtooth bass, drums (bd, hh, sd), ghost snares (TR-909), saw leads with `arrange()` cycling, bass progressions, to full solo at 2000m. Solo runs 2000-3000m with storm, then drops back to groove (bass4 + drums) post-solo
 - Key: B minor. Tempo: BASE_BPM 140, per-difficulty: Easy 110, Medium 124, Hard 140 BPM (fixed throughout game)
 - Level changes quantised to 4-bar boundaries for musical coherence
 - On init, the full arrangement plays silently (`gain(0)`) for 500ms to preload all samples

@@ -458,6 +458,18 @@ export class RunScene extends Phaser.Scene {
         this.hud.showTrickText(trick.name);
         this.sfx.trickPerformed();
         this.haptics.trickPerformed();
+
+        // Tuck animation: quick squeeze
+        if (trickKey === "tuck") {
+          this.tweens.add({
+            targets: this.penguin,
+            scaleX: 0.6,
+            scaleY: 1.6,
+            duration: 150,
+            yoyo: true,
+            ease: "Sine.easeInOut",
+          });
+        }
       }
     }
 

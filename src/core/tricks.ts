@@ -6,7 +6,8 @@ export interface Trick {
 }
 
 export const TRICKS: Record<string, Trick> = {
-  trick: { name: "Flip", points: 300, rotation: 0 },
+  flip: { name: "Flip", points: 300, rotation: Math.PI * 2 },
+  tuck: { name: "Tuck", points: 200, rotation: 0 },
 };
 
 /** Sum base points + variety bonus (+50 per extra trick) */
@@ -19,12 +20,11 @@ export function calcTrickScore(queue: Trick[]): number {
   return total;
 }
 
-/** Can this trick be queued? Not already in queue + enough air time remaining */
+/** Can this trick be queued? Enough air time remaining */
 export function canQueueTrick(
-  queue: Trick[],
-  trick: Trick,
+  _queue: Trick[],
+  _trick: Trick,
   timeLeft: number,
 ): boolean {
-  if (timeLeft <= 0.4) return false;
-  return !queue.some((t) => t.name === trick.name);
+  return timeLeft > 0.4;
 }

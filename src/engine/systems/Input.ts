@@ -16,7 +16,8 @@ export class Input {
   private steerPointerId: number | null = null;
 
   // Touch buttons
-  private touchTrickActive = false; // one-shot: tapped TRICK button
+  private touchFlipActive = false; // one-shot: tapped FLIP button
+  private touchTuckTrickActive = false; // one-shot: tapped TUCK while airborne
   private touchTuckHeld = false; // held: TUCK button
   private tuckButton!: Phaser.GameObjects.Container;
   private trickButton!: Phaser.GameObjects.Container;
@@ -69,13 +70,24 @@ export class Input {
     return false;
   }
 
-  /** Resolve trick key: Space/Enter or TRICK touch button. Returns "trick" or "" */
+  /** Resolve trick key (one-shot per press). Returns "flip", "tuck", or "" */
   getTrickKey(): string {
-    if (this.keys?.space.isDown || this.keys?.enter.isDown) return "trick";
+    // Flip: X/Space/Enter or FLIP touch button
+    const xDown = this.keys?.x && Phaser.Input.Keyboard.JustDown(this.keys.x);
+    const spDown = this.keys?.space && Phaser.Input.Keyboard.JustDown(this.keys.space);
+    const enDown = this.keys?.enter && Phaser.Input.Keyboard.JustDown(this.keys.enter);
+    if (xDown || spDown || enDown) return "flip";
+    if (this.touchFlipActive) {
+      this.touchFlipActive = false;
+      return "flip";
+    }
 
-    if (this.touchTrickActive) {
-      this.touchTrickActive = false;
-      return "trick";
+    // Tuck: Z key or TUCK touch while airborne
+    const zDown = this._airborne && this.keys?.z && Phaser.Input.Keyboard.JustDown(this.keys.z);
+    if (zDown) return "tuck";
+    if (this.touchTuckTrickActive) {
+      this.touchTuckTrickActive = false;
+      return "tuck";
     }
 
     return "";
@@ -112,7 +124,8 @@ export class Input {
   reset(): void {
     this.touchSteerX = 0;
     this.steerPointerId = null;
-    this.touchTrickActive = false;
+    this.touchFlipActive = false;
+    this.touchTuckTrickActive = false;
     this.touchTuckHeld = false;
     this.tuckPointerId = null;
   }
@@ -127,6 +140,8 @@ export class Input {
         d: this.scene.input.keyboard.addKey("D"),
         w: this.scene.input.keyboard.addKey("W"),
         s: this.scene.input.keyboard.addKey("S"),
+        z: this.scene.input.keyboard.addKey("Z"),
+        x: this.scene.input.keyboard.addKey("X"),
         r: this.scene.input.keyboard.addKey("R"),
         esc: this.scene.input.keyboard.addKey("ESC"),
         space: this.scene.input.keyboard.addKey("SPACE"),
@@ -149,7 +164,7 @@ export class Input {
         return;
       }
       if (this.isOnTrickButton(pointer)) {
-        this.handleTrickButtonPress();
+        this.handleFlipButtonPress();
         return;
       }
       if (this.isOnSteerButton(pointer)) {
@@ -220,7 +235,7 @@ export class Input {
     const trickBg = this.scene.add.rectangle(0, 0, btnW, btnH, 0x3b82f6, 0.35);
     trickBg.setStrokeStyle(2, 0x60a5fa);
     const trickLabel = this.scene.add
-      .text(0, 0, "\u2605 TRICK", { fontSize: "13px", color: "#ffffff", fontFamily: "system-ui, sans-serif", fontStyle: "bold" })
+      .text(0, 0, "\u2605 FLIP", { fontSize: "13px", color: "#ffffff", fontFamily: "system-ui, sans-serif", fontStyle: "bold" })
       .setOrigin(0.5);
     this.trickButton = this.scene.add.container(x2, btnY, [trickBg, trickLabel]);
     this.trickButton.setDepth(20).setAlpha(0.4).setScrollFactor(0);
@@ -276,10 +291,11 @@ export class Input {
   private handleTuckButtonPress(pointer: Phaser.Input.Pointer): void {
     this.touchTuckHeld = true;
     this.tuckPointerId = pointer.id;
+    if (this._airborne) this.touchTuckTrickActive = true;
   }
 
-  private handleTrickButtonPress(): void {
+  private handleFlipButtonPress(): void {
     if (!this._airborne) return;
-    this.touchTrickActive = true;
+    this.touchFlipActive = true;
   }
 }

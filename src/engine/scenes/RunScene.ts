@@ -8,7 +8,10 @@ import { Spawner, type SlopeObject } from "../systems/Spawner";
 import { Effects } from "../systems/Effects";
 import { SFX } from "../systems/SFX";
 import { Haptics } from "../systems/Haptics";
+import { Menu } from "../systems/Menu";
+import { HUD } from "../systems/HUD";
 import { music } from "../systems/Music";
+import { generateTextures } from "../Textures";
 
 /**
  * Main gameplay scene: Ski or Die-style downhill.
@@ -64,17 +67,6 @@ export class RunScene extends Phaser.Scene {
   private flinging = false;
   private gameOver = false;
   private paused = false;
-  private pauseOverlay: Phaser.GameObjects.Container | null = null;
-
-  // UI
-  private scoreText!: Phaser.GameObjects.Text;
-  private speedText!: Phaser.GameObjects.Text;
-  private distText!: Phaser.GameObjects.Text;
-  private trickText!: Phaser.GameObjects.Text;
-  private comboText!: Phaser.GameObjects.Text;
-  private statusText!: Phaser.GameObjects.Text;
-  private effectText!: Phaser.GameObjects.Text;
-  private livesText!: Phaser.GameObjects.Text;
 
   // Background
   private snowBg!: Phaser.GameObjects.TileSprite;
@@ -85,6 +77,8 @@ export class RunScene extends Phaser.Scene {
   private effects!: Effects;
   private sfx!: SFX;
   private haptics!: Haptics;
+  private menu!: Menu;
+  private hud!: HUD;
   private music = music;
 
   constructor() {
@@ -105,143 +99,7 @@ export class RunScene extends Phaser.Scene {
       frameHeight: 30,
     });
 
-    // Generate particle textures
-    const particles: [string, number, number, number][] = [
-      ["snow-particle", 0x9ec5e8, 4, 8],
-      ["gold-particle", 0xfbbf24, 3, 6],
-      ["red-particle", 0xef4444, 3, 6],
-      ["yellow-particle", 0xfde047, 2, 4],
-      ["gray-particle", 0x6b7280, 4, 8],
-      ["cyan-particle", 0x67e8f9, 2, 4],
-      ["white-particle", 0xe2e8f0, 2.5, 5],
-    ];
-    const g = this.add.graphics();
-    for (const [key, color, radius, size] of particles) {
-      if (!this.textures.exists(key)) {
-        g.clear();
-        g.fillStyle(color);
-        g.fillCircle(radius, radius, radius);
-        g.generateTexture(key, size, size);
-      }
-    }
-    g.destroy();
-
-    // Snow background texture (tileable)
-    if (!this.textures.exists("snow-bg")) {
-      const bg = this.add.graphics();
-      const size = 128;
-      bg.fillStyle(0xf6f9ff);
-      bg.fillRect(0, 0, size, size);
-      const snow = (v: number) => (v << 16) | (v << 8) | v;
-      // Soft broad variation
-      for (let i = 0; i < 40; i++) {
-        const sx = Math.random() * size;
-        const sy = Math.random() * size;
-        const sr = 2 + Math.random() * 5;
-        bg.fillStyle(snow(244 + Math.floor(Math.random() * 12)), 0.1 + Math.random() * 0.1);
-        bg.fillCircle(sx, sy, sr);
-      }
-      // Fine grain
-      for (let i = 0; i < 250; i++) {
-        const sx = Math.random() * size;
-        const sy = Math.random() * size;
-        const sr = 0.3 + Math.random() * 0.8;
-        bg.fillStyle(snow(240 + Math.floor(Math.random() * 16)), 0.2 + Math.random() * 0.3);
-        bg.fillCircle(sx, sy, sr);
-      }
-      // Sparkle pinpoints
-      for (let i = 0; i < 100; i++) {
-        const sx = Math.random() * size;
-        const sy = Math.random() * size;
-        const sr = 0.2 + Math.random() * 0.4;
-        bg.fillStyle(0xffffff, 0.3 + Math.random() * 0.5);
-        bg.fillCircle(sx, sy, sr);
-      }
-      // Shadow pinpoints
-      for (let i = 0; i < 60; i++) {
-        const sx = Math.random() * size;
-        const sy = Math.random() * size;
-        const sr = 0.3 + Math.random() * 0.6;
-        bg.fillStyle(snow(230 + Math.floor(Math.random() * 16)), 0.15 + Math.random() * 0.15);
-        bg.fillCircle(sx, sy, sr);
-      }
-      bg.generateTexture("snow-bg", size, size);
-      bg.destroy();
-    }
-
-    // Ramp texture (procedural snow wedge)
-    if (!this.textures.exists("ramp-tex")) {
-      const rg = this.add.graphics();
-      const rw = 60, rh = 32;
-      // Shadow underneath
-      rg.fillStyle(0x8faabe, 0.3);
-      rg.beginPath();
-      rg.moveTo(-2, 3);
-      rg.lineTo(rw + 2, 3);
-      rg.lineTo(rw - 8, rh + 2);
-      rg.lineTo(8, rh + 2);
-      rg.closePath();
-      rg.fillPath();
-      // Ramp body — trapezoid (wider at top/lip, narrower at base)
-      rg.fillStyle(0xdce8f4);
-      rg.beginPath();
-      rg.moveTo(0, 0);
-      rg.lineTo(rw, 0);
-      rg.lineTo(rw - 10, rh);
-      rg.lineTo(10, rh);
-      rg.closePath();
-      rg.fillPath();
-      // Slope surface lines
-      rg.lineStyle(0.5, 0xb0c8dc, 0.4);
-      for (let i = 6; i < rh - 2; i += 5) {
-        const t = i / rh;
-        const inset = t * 10;
-        rg.beginPath();
-        rg.moveTo(inset + 2, i);
-        rg.lineTo(rw - inset - 2, i);
-        rg.strokePath();
-      }
-      // Lip highlight (bottom edge / launch lip)
-      rg.fillStyle(0xf4f8ff);
-      rg.fillRect(12, rh - 3, rw - 24, 3);
-      // Outline
-      rg.lineStyle(1.5, 0x8faabe);
-      rg.beginPath();
-      rg.moveTo(0, 0);
-      rg.lineTo(rw, 0);
-      rg.lineTo(rw - 10, rh);
-      rg.lineTo(10, rh);
-      rg.closePath();
-      rg.strokePath();
-      rg.generateTexture("ramp-tex", rw + 3, rh + 3);
-      rg.destroy();
-    }
-
-    // Fish texture (procedural gold fish)
-    if (!this.textures.exists("fish-tex")) {
-      const fg = this.add.graphics();
-      const fw = 18, fh = 12;
-      const cx = fw / 2, cy = fh / 2;
-      // Tail
-      fg.fillStyle(0xe8920b);
-      fg.beginPath();
-      fg.moveTo(1, cy - 4);
-      fg.lineTo(5, cy);
-      fg.lineTo(1, cy + 4);
-      fg.closePath();
-      fg.fillPath();
-      // Body (ellipse)
-      fg.fillStyle(0xf59e0b);
-      fg.fillEllipse(cx + 1, cy, 12, 9);
-      // Belly highlight
-      fg.fillStyle(0xfde68a, 0.5);
-      fg.fillEllipse(cx + 2, cy - 1, 7, 4);
-      // Eye
-      fg.fillStyle(0x1a1a2e);
-      fg.fillCircle(cx + 4, cy - 1, 1.2);
-      fg.generateTexture("fish-tex", fw, fh);
-      fg.destroy();
-    }
+    generateTextures(this);
   }
 
   create(): void {
@@ -273,7 +131,6 @@ export class RunScene extends Phaser.Scene {
     this.invincible = false;
     this.flinging = false;
     this.paused = false;
-    this.pauseOverlay = null;
     this.cameras.main.setBackgroundColor("#f8fbff");
 
     // Snow background tile
@@ -292,104 +149,9 @@ export class RunScene extends Phaser.Scene {
     this.penguin = this.add.sprite(width / 2, height * 0.25, "penguin", 0);
     this.penguin.setDepth(5);
 
-
-    // UI — top bar
-    const barH = 36;
-    const levelNames = ["EASY", "MED", "HARD"];
-    const textStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontSize: "13px",
-      color: "#ffffff",
-      fontFamily: "system-ui, sans-serif",
-      fontStyle: "bold",
-    };
-
-    const hudBar = this.add
-      .rectangle(width / 2, barH / 2, width, barH, 0x1a1a2e, 0.45)
-      .setDepth(10)
-      .setScrollFactor(0)
-      .setInteractive();
-    hudBar.on("pointerdown", () => this.togglePause());
-
-    this.scoreText = this.add
-      .text(12, barH / 2, "Score: 0", textStyle)
-      .setOrigin(0, 0.5)
-      .setDepth(11)
-      .setScrollFactor(0);
-
-    this.distText = this.add
-      .text(width * 0.33, barH / 2, "0.0 km", textStyle)
-      .setOrigin(0, 0.5)
-      .setDepth(11)
-      .setScrollFactor(0);
-
-    this.speedText = this.add
-      .text(width * 0.62, barH / 2, "0 km/h", textStyle)
-      .setOrigin(0, 0.5)
-      .setDepth(11)
-      .setScrollFactor(0);
-
-    this.livesText = this.add
-      .text(width - 60, barH / 2, "\uD83D\uDC27".repeat(this.lives), textStyle)
-      .setOrigin(1, 0.5)
-      .setDepth(11)
-      .setScrollFactor(0);
-
-    this.add
-      .text(width - 12, barH / 2, levelNames[this.level] ?? "MED", textStyle)
-      .setOrigin(1, 0.5)
-      .setDepth(11)
-      .setScrollFactor(0);
-
-    this.comboText = this.add
-      .text(width / 2, barH + 8, "", {
-        fontSize: "16px",
-        color: "#7c3aed",
-        fontFamily: "system-ui, sans-serif",
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5, 0)
-      .setDepth(10)
-      .setScrollFactor(0);
-
-    this.trickText = this.add
-      .text(width / 2, height * 0.5, "", {
-        fontSize: "28px",
-        color: "#f59e0b",
-        fontFamily: "system-ui, sans-serif",
-        fontStyle: "bold",
-        align: "center",
-      })
-      .setOrigin(0.5)
-      .setDepth(10)
-      .setAlpha(0)
-      .setScrollFactor(0);
-
-    this.statusText = this.add
-      .text(width / 2, height * 0.6, "", {
-        fontSize: "24px",
-        color: "#ef4444",
-        fontFamily: "system-ui, sans-serif",
-        fontStyle: "bold",
-        align: "center",
-      })
-      .setOrigin(0.5)
-      .setDepth(10)
-      .setAlpha(0)
-      .setScrollFactor(0);
-
-    this.effectText = this.add
-      .text(width / 2, height * 0.15, "", {
-        fontSize: "16px",
-        color: "#0ea5e9",
-        fontFamily: "system-ui, sans-serif",
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5)
-      .setDepth(10)
-      .setAlpha(0)
-      .setScrollFactor(0);
-
     // Systems
+    this.menu = new Menu(this);
+    this.hud = new HUD(this, this.level, this.lives, () => this.togglePause());
     this.inputHandler = new Input(this);
     this.spawner = new Spawner(this);
     this.effects = new Effects(this, this.penguin);
@@ -417,12 +179,12 @@ export class RunScene extends Phaser.Scene {
         this.distanceTraveled += 100 * 18;
         this.score = 0;
         this.cameras.main.flash(300, 255, 255, 255, false, undefined, this);
-        this.showStatusText("CHEAT +100m", "#a855f7");
+        this.hud.showStatusText("CHEAT +100m", "#a855f7");
       } else if (e.key === "-" || e.key === "_") {
         this.distanceTraveled = Math.max(0, this.distanceTraveled - 100 * 18);
         this.score = 0;
         this.cameras.main.flash(300, 255, 255, 255, false, undefined, this);
-        this.showStatusText("CHEAT -100m", "#a855f7");
+        this.hud.showStatusText("CHEAT -100m", "#a855f7");
       }
     });
   }
@@ -436,9 +198,32 @@ export class RunScene extends Phaser.Scene {
     }
 
     const dt = delta / 1000;
-    const { width, height } = this.scale;
 
-    // Force-based speed: gravity vs friction vs wing drag
+    this.updatePhysics(dt);
+    this.updateSteering(dt);
+    this.updateSpriteFrame();
+    this.updateEffectsAndStorm(dt);
+    this.updateCamera(dt);
+
+    const windX = this.effects.getWindLateral();
+    this.spawner.update(dt, this.scrollSpeed, this.distanceTraveled, this.penguin.x, windX);
+
+    if (this.isAirborne) this.checkFlyovers();
+    if (!this.isAirborne) {
+      this.checkCollisions();
+      if (this.gameOver) return;
+    }
+    this.updateAirborne(dt);
+
+    const meters = Math.floor(this.distanceTraveled / 18);
+    this.hud.update(this.score, meters, this.scrollSpeed, this.combo, this.slipperyTimer, this.snowdriftTimer);
+    this.inputHandler.setAirborne(this.isAirborne);
+    this.music.updateDistance(meters);
+  }
+
+  // --- Physics ---
+
+  private updatePhysics(dt: number): void {
     const profile = SPEED_PROFILES[this.level] ?? SPEED_PROFILES[1];
     const gravity = 120;
     const icy = this.slipperyTimer > 0;
@@ -454,7 +239,6 @@ export class RunScene extends Phaser.Scene {
       this.scrollSpeed + accel * dt, 0, profile.cap,
     );
 
-    const fullSpeed = this.scrollSpeed;
     const forwardSpeed = this.scrollSpeed * Math.cos(this.heading);
     this.distanceTraveled += forwardSpeed * dt;
     this.scoreFrac += forwardSpeed * dt * 0.02;
@@ -470,11 +254,20 @@ export class RunScene extends Phaser.Scene {
       if (this.slipperyTimer <= 0) this.effects.stopIceSparkle();
     }
     if (this.snowdriftTimer > 0) this.snowdriftTimer -= dt;
-    // --- Steering (angle-based with momentum) ---
+  }
+
+  // --- Steering ---
+
+  private updateSteering(dt: number): void {
+    const icy = this.slipperyTimer > 0;
+    const fullSpeed = this.scrollSpeed;
+
     // Skip steering/rotation during fling (let tween control penguin)
     if (this.flinging) {
-      // Do nothing — tween is animating the penguin
-    } else if (!this.isAirborne) {
+      return;
+    }
+
+    if (!this.isAirborne) {
       const steerDir = this.inputHandler.getSteerDir();
 
       if (steerDir !== 0) {
@@ -520,20 +313,25 @@ export class RunScene extends Phaser.Scene {
     } else {
       this.handleAirTricks(dt);
     }
+  }
 
-    // --- Sprite frame selection ---
+  private updateSpriteFrame(): void {
+    if (this.isDead) return;
+    const tucked = this.inputHandler.getTuckHeld();
+    const spread = this.inputHandler.getSpreadHeld() && !this.isAirborne;
     // Ground: 0=neutral/tuck, 1=spread (brake)
     // Air: 1=default (spread), 0=tuck held
-    // Death: 1
-    if (!this.isDead) {
-      if (this.isAirborne) {
-        this.penguin.setFrame(tucked ? 0 : 1);
-      } else {
-        this.penguin.setFrame(spread ? 1 : 0);
-      }
+    if (this.isAirborne) {
+      this.penguin.setFrame(tucked ? 0 : 1);
+    } else {
+      this.penguin.setFrame(spread ? 1 : 0);
     }
+  }
 
-    // --- Check if penguin overlaps any obstacle (skip trail) ---
+  // --- Effects & Storm ---
+
+  private updateEffectsAndStorm(dt: number): void {
+    // Check if penguin overlaps any obstacle (for trail suppression)
     const inObstacle = !this.isAirborne && this.spawner.getObjects().some(
       (obj) => this.spawner.checkCollision(
         this.penguin.x, this.penguin.y,
@@ -541,13 +339,12 @@ export class RunScene extends Phaser.Scene {
       ),
     );
 
-    // --- Effects (snow spray + ski trail) ---
     this.effects.update(dt, this.penguin.x, this.penguin.y, this.heading, this.scrollSpeed, this.isAirborne, inObstacle);
 
-    // --- Storm (tied to solo: level 14) ---
+    // Storm (tied to solo: level 14)
     const meters = Math.floor(this.distanceTraveled / 18);
-    const soloLevel = LEVEL_THRESHOLDS.length - 2; // solo level (14)
-    const postSoloLevel = LEVEL_THRESHOLDS.length - 1; // post-solo (15)
+    const soloLevel = LEVEL_THRESHOLDS.length - 2;
+    const postSoloLevel = LEVEL_THRESHOLDS.length - 1;
     if (!this.stormStarted && this.music.level >= soloLevel && this.music.level < postSoloLevel) {
       this.stormStarted = true;
       this.stormStartMeters = meters;
@@ -555,7 +352,6 @@ export class RunScene extends Phaser.Scene {
     }
     if (this.stormStarted) {
       if (this.music.level >= postSoloLevel) {
-        // Solo ended — stop storm
         this.stormStarted = false;
         this.effects.stopStorm();
       } else {
@@ -563,117 +359,74 @@ export class RunScene extends Phaser.Scene {
         this.effects.setStormIntensity(intensity);
       }
     }
+
+    // Wind pushes penguin
     const windX = this.effects.getWindLateral();
     if (windX !== 0) {
       const windMul = this.isAirborne ? 5 : 1;
       this.penguin.x += windX * windMul * dt;
       this.penguinShadow.x = this.penguin.x;
     }
+  }
 
-    // --- Camera follows penguin horizontally (freeze during fling) ---
+  // --- Camera ---
+
+  private updateCamera(dt: number): void {
+    const { width } = this.scale;
     if (!this.flinging) {
       this.cameras.main.scrollX = this.penguin.x - width / 2;
     }
-
-    // --- Scroll snow background with world ---
     this.snowBg.tilePositionX = this.cameras.main.scrollX;
     this.snowBg.tilePositionY += this.scrollSpeed * dt;
+  }
 
-    // --- Spawn & scroll slope objects ---
-    this.spawner.update(dt, this.scrollSpeed, this.distanceTraveled, this.penguin.x, windX);
+  // --- Airborne ---
 
-    // --- Airborne flyover bonus ---
-    if (this.isAirborne) {
-      const px = this.penguin.x;
-      const py = this.penguin.y;
-      const pw = this.penguin.displayWidth * 0.7;
-      const ph = this.penguin.displayHeight * 0.7;
-      for (const obj of this.spawner.getObjects()) {
-        if (obj.hit) continue;
-        if (obj.type !== "rock" && obj.type !== "tree") continue;
-        if (!this.spawner.checkCollision(px, py, pw, ph, obj)) continue;
-        const pts = 50 * Math.max(1, this.combo);
-        this.score += pts;
-        this.showStatusText(`FLYOVER +${pts}`, "#a78bfa");
-        this.spawner.markHit(obj);
+  private checkFlyovers(): void {
+    const px = this.penguin.x;
+    const py = this.penguin.y;
+    const pw = this.penguin.displayWidth * 0.7;
+    const ph = this.penguin.displayHeight * 0.7;
+    for (const obj of this.spawner.getObjects()) {
+      if (obj.hit) continue;
+      if (obj.type !== "rock" && obj.type !== "tree") continue;
+      if (!this.spawner.checkCollision(px, py, pw, ph, obj)) continue;
+      const pts = 50 * Math.max(1, this.combo);
+      this.score += pts;
+      this.hud.showStatusText(`FLYOVER +${pts}`, "#a78bfa");
+      this.spawner.markHit(obj);
+    }
+  }
+
+  private updateAirborne(dt: number): void {
+    if (!this.isAirborne) return;
+    const { height } = this.scale;
+
+    this.airTime += dt;
+    const progress = this.airTime / this.airDuration;
+    const arc = 1 - (2 * progress - 1) ** 2;
+    this.penguinAirHeight = arc * 80;
+    this.penguin.y = height * 0.25 - this.penguinAirHeight;
+    this.penguin.setScale(1 + arc * 0.3);
+    this.penguinShadow.setScale(1 - arc * 0.3);
+    this.penguinShadow.setAlpha(0.2 * (1 - arc * 0.5));
+
+    const rotRemaining = this.targetTrickRotation - this.currentTrickRotation;
+    if (Math.abs(rotRemaining) > 0.01) {
+      // Constant speed: full 2π rotation takes 0.8s
+      const rotSpeed = (Math.PI * 2) / 0.8;
+      const step = Math.sign(rotRemaining) * rotSpeed * dt;
+      if (Math.abs(step) >= Math.abs(rotRemaining)) {
+        this.currentTrickRotation = this.targetTrickRotation;
+      } else {
+        this.currentTrickRotation += step;
       }
     }
+    this.penguin.setRotation(-this.heading + this.currentTrickRotation + this.spinRotation);
 
-    // --- Collisions ---
-    if (!this.isAirborne) {
-      const px = this.penguin.x;
-      const py = this.penguin.y;
-      const pw = this.penguin.displayWidth * 0.7;
-      const ph = this.penguin.displayHeight * 0.7;
-      for (const obj of this.spawner.getObjects()) {
-        if (!this.spawner.checkCollision(px, py, pw, ph, obj)) continue;
-        if (obj.hit) {
-          // Continuous effects while penguin overlaps hit objects
-          if (obj.type === "tree") {
-            this.effects.burstTreeHit(obj.sprite.x, obj.sprite.y, px, py);
-            this.spawner.redrawTree(obj);
-          } else if (obj.type === "ice") {
-            this.slipperyTimer = 2.5;
-          }
-          continue;
-        }
-        this.handleCollision(obj);
-        if (this.gameOver) return;
-      }
+    if (this.airTime >= this.airDuration) {
+      this.land();
     }
-
-    // --- Update airborne state ---
-    if (this.isAirborne) {
-      this.airTime += dt;
-      const progress = this.airTime / this.airDuration;
-      const arc = 1 - (2 * progress - 1) ** 2;
-      this.penguinAirHeight = arc * 80;
-      this.penguin.y = height * 0.25 - this.penguinAirHeight;
-      this.penguin.setScale(1 + arc * 0.3);
-      this.penguinShadow.setScale(1 - arc * 0.3);
-      this.penguinShadow.setAlpha(0.2 * (1 - arc * 0.5));
-
-      const rotRemaining = this.targetTrickRotation - this.currentTrickRotation;
-      if (Math.abs(rotRemaining) > 0.01) {
-        // Constant speed: full 2π rotation takes 0.8s
-        const rotSpeed = (Math.PI * 2) / 0.8;
-        const step = Math.sign(rotRemaining) * rotSpeed * dt;
-        if (Math.abs(step) >= Math.abs(rotRemaining)) {
-          this.currentTrickRotation = this.targetTrickRotation;
-        } else {
-          this.currentTrickRotation += step;
-        }
-      }
-      this.penguin.setRotation(-this.heading + this.currentTrickRotation + this.spinRotation);
-
-      if (this.airTime >= this.airDuration) {
-        this.land();
-      }
-    }
-
-    // --- UI ---
-    this.scoreText.setText(`Score: ${this.score}`);
-    const distStr = meters >= 1000
-      ? `${(meters / 1000).toFixed(1)} km`
-      : `${meters} m`;
-    this.distText.setText(distStr);
-    this.speedText.setText(`${Math.floor(this.scrollSpeed * 0.2)} km/h`);
-    this.comboText.setText(this.combo > 1 ? `x${this.combo} combo` : "");
-
-    if (this.slipperyTimer > 0) {
-      this.effectText.setText("ICY!");
-      this.effectText.setColor("#0ea5e9");
-      this.effectText.setAlpha(0.8);
-    } else if (this.snowdriftTimer > 0) {
-      this.effectText.setText("DRAG!");
-      this.effectText.setColor("#94a3b8");
-      this.effectText.setAlpha(0.8);
-    } else {
-      this.effectText.setAlpha(0);
-    }
-
-    this.inputHandler.setAirborne(this.isAirborne);
-    this.music.updateDistance(meters);
   }
 
   private handleAirTricks(dt: number): void {
@@ -691,7 +444,7 @@ export class RunScene extends Phaser.Scene {
           this.trickScore += 50 * (this.trickQueue.length - 1);
         }
 
-        this.showTrickText(trick.name);
+        this.hud.showTrickText(trick.name);
         this.sfx.trickPerformed();
         this.haptics.trickPerformed();
       }
@@ -737,15 +490,15 @@ export class RunScene extends Phaser.Scene {
         this.sfx.cleanLanding();
         this.haptics.cleanLanding();
         if (this.icyLaunch) {
-          this.showStatusText(`ICY COMBO +${points}`, "#06b6d4");
+          this.hud.showStatusText(`ICY COMBO +${points}`, "#06b6d4");
         } else {
-          this.showStatusText(`+${points}`, "#10b981");
+          this.hud.showStatusText(`+${points}`, "#10b981");
         }
       } else if (rotDiff < 1.2) {
         // Sloppy landing — no points, but don't reset combo
         this.sfx.sloppyLanding();
         this.haptics.sloppyLanding();
-        this.showStatusText("SLOPPY!", "#f59e0b");
+        this.hud.showStatusText("SLOPPY!", "#f59e0b");
       } else {
         // Crash — too far off
         this.combo = 0;
@@ -753,7 +506,7 @@ export class RunScene extends Phaser.Scene {
         this.sfx.crashLanding();
         this.haptics.crashLanding();
         this.penguinBounce();
-        this.showStatusText("CRASH!", "#ef4444");
+        this.hud.showStatusText("CRASH!", "#ef4444");
         // Lock tucked frame briefly during crash
         this.isDead = true;
         this.penguin.setFrame(0);
@@ -790,9 +543,33 @@ export class RunScene extends Phaser.Scene {
     this.targetTrickRotation = 0;
     this.spinRotation = 0;
     if (this.icyLaunch) {
-      this.showStatusText("ICY JUMP!", "#06b6d4");
+      this.hud.showStatusText("ICY JUMP!", "#06b6d4");
     } else if (!duration) {
-      this.showStatusText("AIR!", "#3b82f6");
+      this.hud.showStatusText("AIR!", "#3b82f6");
+    }
+  }
+
+  // --- Collisions ---
+
+  private checkCollisions(): void {
+    const px = this.penguin.x;
+    const py = this.penguin.y;
+    const pw = this.penguin.displayWidth * 0.7;
+    const ph = this.penguin.displayHeight * 0.7;
+    for (const obj of this.spawner.getObjects()) {
+      if (!this.spawner.checkCollision(px, py, pw, ph, obj)) continue;
+      if (obj.hit) {
+        // Continuous effects while penguin overlaps hit objects
+        if (obj.type === "tree") {
+          this.effects.burstTreeHit(obj.sprite.x, obj.sprite.y, px, py);
+          this.spawner.redrawTree(obj);
+        } else if (obj.type === "ice") {
+          this.slipperyTimer = 2.5;
+        }
+        continue;
+      }
+      this.handleCollision(obj);
+      if (this.gameOver) return;
     }
   }
 
@@ -801,7 +578,7 @@ export class RunScene extends Phaser.Scene {
       case "rock":
         if (this.invincible) break;
         this.lives--;
-        this.livesText.setText("\uD83D\uDC27".repeat(Math.max(0, this.lives)));
+        this.hud.setLives(this.lives);
         this.effects.burstDeath(this.penguin.x, this.penguin.y);
         this.sfx.rockHit();
         this.haptics.rockHit();
@@ -825,7 +602,7 @@ export class RunScene extends Phaser.Scene {
         this.cameras.main.shake(150, 0.005);
         this.sfx.treeHit(centeredness);
         this.haptics.treeHit(centeredness);
-        this.showStatusText("HIT!", "#ef4444");
+        this.hud.showStatusText("HIT!", "#ef4444");
         // Redraw tree so it renders above trail marks, with a shake
         this.spawner.redrawTree(obj);
         this.spawner.markHit(obj);
@@ -837,7 +614,7 @@ export class RunScene extends Phaser.Scene {
         this.effects.burstSnowdrift(obj.sprite.x, obj.sprite.y);
         this.sfx.snowdriftHit();
         this.haptics.snowdriftHit();
-        this.showStatusText("SNOW!", "#94a3b8");
+        this.hud.showStatusText("SNOW!", "#94a3b8");
         this.spawner.markHit(obj);
         break;
 
@@ -851,7 +628,7 @@ export class RunScene extends Phaser.Scene {
         this.effects.startIceSparkle();
         this.sfx.iceEntry();
         this.haptics.iceEntry();
-        this.showStatusText(`ICE +${icePoints}`, "#0ea5e9");
+        this.hud.showStatusText(`ICE +${icePoints}`, "#0ea5e9");
         this.spawner.markHit(obj);
         break;
       }
@@ -879,6 +656,8 @@ export class RunScene extends Phaser.Scene {
         break;
     }
   }
+
+  // --- Fling & Respawn ---
 
   private flingPenguin(obj: SlopeObject): void {
     this.invincible = true;
@@ -963,6 +742,8 @@ export class RunScene extends Phaser.Scene {
     });
   }
 
+  // --- Game Over & Restart ---
+
   private endGame(): void {
     this.gameOver = true;
     this.isDead = true;
@@ -1000,23 +781,15 @@ export class RunScene extends Phaser.Scene {
 
     // Short delay so death animation plays before menu appears
     this.time.delayedCall(600, () => {
-      this.showMenu(`GAME OVER\n\n${stats}`, [
+      this.menu.show(`GAME OVER\n\n${stats}`, [
         { label: "RETRY", action: () => this.restartGame() },
-        { label: "QUIT", action: () => {
-          this.hidePauseMenu();
-          this.music.onRestart();
-          this.effects.destroy();
-          this.sfx.destroy();
-          this.spawner.destroyAll();
-          this.inputHandler.reset();
-          this.scene.start("Boot");
-        }},
+        { label: "QUIT", action: () => this.quitToMenu() },
       ]);
     });
   }
 
   private restartGame(): void {
-    this.hidePauseMenu();
+    this.menu.hide();
     this.music.onRestart();
     this.effects.destroy();
     this.sfx.destroy();
@@ -1029,13 +802,25 @@ export class RunScene extends Phaser.Scene {
     });
   }
 
+  private quitToMenu(): void {
+    this.menu.hide();
+    this.music.onRestart();
+    this.effects.destroy();
+    this.sfx.destroy();
+    this.spawner.destroyAll();
+    this.inputHandler.reset();
+    this.scene.start("Boot");
+  }
+
+  // --- Pause ---
+
   private togglePause(): void {
     if (this.gameOver) {
-      if (this.menuOnBack) this.menuOnBack();
+      this.menu.triggerBack();
       return;
     }
     if (this.paused) {
-      this.hidePauseMenu();
+      this.menu.hide();
       this.paused = false;
       this.music.resume();
     } else {
@@ -1046,171 +831,13 @@ export class RunScene extends Phaser.Scene {
   }
 
   private showPauseMenu(): void {
-    this.showMenu("PAUSED", [
+    this.menu.show("PAUSED", [
       { label: "RESUME", action: () => this.togglePause() },
-      {
-        label: "QUIT", action: () => {
-          this.hidePauseMenu();
-          this.music.onRestart();
-          this.effects.destroy();
-          this.sfx.destroy();
-          this.spawner.destroyAll();
-          this.inputHandler.reset();
-          this.scene.start("Boot");
-        },
-      },
+      { label: "QUIT", action: () => this.quitToMenu() },
     ], () => this.togglePause());
   }
 
-  private menuCursor = 0;
-  private menuItems: { label: string; action: () => void }[] = [];
-  private menuTexts: Phaser.GameObjects.Text[] = [];
-  private menuKeys: Phaser.Input.Keyboard.Key[] = [];
-  private menuOnBack: (() => void) | null = null;
-
-  private showMenu(
-    title: string,
-    items: { label: string; action: () => void }[],
-    onBack?: () => void,
-  ): void {
-    const { width, height } = this.scale;
-    this.menuCursor = 0;
-    this.menuItems = items;
-    this.menuTexts = [];
-    this.menuOnBack = onBack ?? null;
-
-    const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6);
-    bg.setDepth(50).setScrollFactor(0);
-
-    const titleText = this.add
-      .text(width / 2, height * 0.28, title, {
-        fontSize: "36px",
-        color: "#ffffff",
-        fontFamily: "system-ui, sans-serif",
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5)
-      .setDepth(51)
-      .setScrollFactor(0);
-
-    const children: Phaser.GameObjects.GameObject[] = [bg, titleText];
-    const startY = height * 0.42;
-    const gap = 52;
-    const hitPad = 16;
-
-    for (let i = 0; i < items.length; i++) {
-      const txt = this.add
-        .text(width / 2, startY + i * gap, items[i].label, {
-          fontSize: "22px",
-          color: "#9ca3af",
-          fontFamily: "system-ui, sans-serif",
-          fontStyle: "bold",
-        })
-        .setOrigin(0.5)
-        .setDepth(51)
-        .setScrollFactor(0);
-      // Enlarged touch target
-      txt.setInteractive({
-        useHandCursor: true,
-        hitArea: new Phaser.Geom.Rectangle(
-          -hitPad, -hitPad,
-          txt.width + hitPad * 2,
-          txt.height + hitPad * 2,
-        ),
-        hitAreaCallback: Phaser.Geom.Rectangle.Contains,
-      });
-      txt.on("pointerdown", () => {
-        this.menuCursor = i;
-        this.updateMenuHighlight();
-        items[i].action();
-      });
-      txt.on("pointerover", () => {
-        this.menuCursor = i;
-        this.updateMenuHighlight();
-      });
-      this.menuTexts.push(txt);
-      children.push(txt);
-    }
-
-    this.updateMenuHighlight();
-
-    this.pauseOverlay = this.add.container(0, 0, children);
-    this.pauseOverlay.setDepth(50);
-
-    // Keyboard navigation
-    if (this.input.keyboard) {
-      const upKey = this.input.keyboard.addKey("UP");
-      const downKey = this.input.keyboard.addKey("DOWN");
-      const enterKey = this.input.keyboard.addKey("ENTER");
-      const spaceKey = this.input.keyboard.addKey("SPACE");
-      const wKey = this.input.keyboard.addKey("W");
-      const sKey = this.input.keyboard.addKey("S");
-
-      const rKey = this.input.keyboard.addKey("R");
-      const qKey = this.input.keyboard.addKey("Q");
-
-      upKey.on("down", this.menuUp, this);
-      wKey.on("down", this.menuUp, this);
-      downKey.on("down", this.menuDown, this);
-      sKey.on("down", this.menuDown, this);
-      enterKey.on("down", this.menuSelect, this);
-      spaceKey.on("down", this.menuSelect, this);
-      rKey.on("down", () => this.menuAction("RETRY"));
-      qKey.on("down", () => this.menuAction("QUIT"));
-
-      this.menuKeys = [upKey, downKey, enterKey, spaceKey, wKey, sKey, rKey, qKey];
-    }
-  }
-
-  private menuUp(): void {
-    this.menuCursor = (this.menuCursor - 1 + this.menuItems.length) % this.menuItems.length;
-    this.updateMenuHighlight();
-  }
-
-  private menuDown(): void {
-    this.menuCursor = (this.menuCursor + 1) % this.menuItems.length;
-    this.updateMenuHighlight();
-  }
-
-  private menuSelect(): void {
-    if (this.menuItems[this.menuCursor]) {
-      this.menuItems[this.menuCursor].action();
-    }
-  }
-
-  private menuAction(label: string): void {
-    const item = this.menuItems.find((i) => i.label === label);
-    if (item) item.action();
-  }
-
-  private updateMenuHighlight(): void {
-    for (let i = 0; i < this.menuTexts.length; i++) {
-      if (i === this.menuCursor) {
-        this.menuTexts[i].setColor("#ffffff");
-        this.menuTexts[i].setText("\u25B6 " + this.menuItems[i].label);
-      } else {
-        this.menuTexts[i].setColor("#9ca3af");
-        this.menuTexts[i].setText("  " + this.menuItems[i].label);
-      }
-    }
-  }
-
-  private hidePauseMenu(): void {
-    // Clean up keyboard bindings
-    for (const key of this.menuKeys) {
-      key.removeAllListeners();
-      this.input.keyboard?.removeKey(key);
-    }
-    this.menuKeys = [];
-    this.menuTexts = [];
-    this.menuItems = [];
-    this.menuOnBack = null;
-
-    if (this.pauseOverlay) {
-      this.pauseOverlay.destroy();
-      this.pauseOverlay = null;
-    }
-  }
+  // --- Visual helpers ---
 
   private cameraBump(): void {
     const cam = this.cameras.main;
@@ -1232,33 +859,6 @@ export class RunScene extends Phaser.Scene {
       duration: 100,
       yoyo: true,
       ease: "Sine.easeInOut",
-    });
-  }
-
-  private showTrickText(text: string): void {
-    this.trickText.setText(text);
-    this.trickText.setAlpha(1);
-    this.tweens.add({
-      targets: this.trickText,
-      alpha: 0,
-      duration: 800,
-      ease: "Power2",
-    });
-  }
-
-  private showStatusText(text: string, color: string): void {
-    this.statusText.setText(text);
-    this.statusText.setColor(color);
-    this.statusText.setAlpha(1);
-    this.tweens.add({
-      targets: this.statusText,
-      alpha: 0,
-      y: this.scale.height * 0.55,
-      duration: 1000,
-      ease: "Power2",
-      onComplete: () => {
-        this.statusText.y = this.scale.height * 0.6;
-      },
     });
   }
 }

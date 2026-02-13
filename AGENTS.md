@@ -85,11 +85,11 @@ android/              Android APK wrapper (Capacitor)
 
 - **Steering:** Arrow keys or A/D (keyboard), LEFT/RIGHT buttons or tap screen halves (touch). Angle-based with momentum; steering reduces downhill speed via `cos(heading)`. Ice patches reduce turn rate and increase drift.
 - **Wing control (speed):** Up/W = spread wings (brake, +60 drag). Down/S = tuck wings (speed up, 0 drag). Neutral = 10 drag. Works on ground; tuck also works in air (changes sprite).
-- **Air trick:** Space/Enter or TRICK touch button. Single "Flip" trick (300 pts), once per jump. Spin with Left/Right while airborne.
+- **Air trick:** Two tricks, each once per jump unless repeated. Flip: X/Space/Enter or FLIP touch button (300 pts, full rotation). Tuck: Z or TUCK touch button while airborne (200 pts, squeeze animation). Multiple flips/tucks allowed if air time permits (each press = one trick, 0.4s air time required). Spin with Left/Right while airborne.
 - **Landing:** Clean = full points with combo; sloppy = no points; crash = no points + combo reset.
 - **Menus:** Arrow keys + Enter/Space navigate all menus (Doom-style). ESC pauses/resumes. R = retry, Q = quit. Touch also works. Tap HUD bar to pause on mobile. Pause menu: Resume / Quit. Game over menu: Retry / Quit.
 - **Cheat:** +/= teleport forward 100m, -/_ teleport back 100m. Zeroes score, camera flash, advances music + storm.
-- **Mobile layout:** `[<] [▼ TUCK] [★ TRICK] [>]` single row at bottom.
+- **Mobile layout:** `[<] [▼ TUCK] [★ FLIP] [>]` single row at bottom.
 
 ## Camera and rendering
 
@@ -157,8 +157,9 @@ Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by leve
 ## Scoring
 
 - **Distance:** slow trickle from forward movement
-- **Fish:** +10 pts on collection
-- **Trick (Flip):** 300 pts × combo on clean landing
+- **Fish:** +20 pts on collection
+- **Flip:** 300 pts × combo on clean landing (full rotation animation)
+- **Tuck:** 200 pts × combo on clean landing (squeeze animation)
 - **Spin:** 100 pts per half rotation on clean landing
 - **Ice:** 25 pts × combo, increments combo (chains with tricks)
 - **Icy Jump:** hit ramp while slippery → +50% air time, 2× trick score on clean landing ("ICY COMBO")

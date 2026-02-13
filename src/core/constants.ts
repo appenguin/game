@@ -47,7 +47,7 @@ export const LANDING_CLEAN_THRESHOLD = 0.5; // rotation diff for clean
 export const LANDING_SLOPPY_THRESHOLD = 1.2; // rotation diff for sloppy (above = crash)
 
 // --- Scoring ---
-export const FISH_POINTS = 10;
+export const FISH_POINTS = 20;
 export const ICE_POINTS = 25;
 export const FLYOVER_POINTS = 50;
 export const MULTI_TRICK_BONUS = 50;

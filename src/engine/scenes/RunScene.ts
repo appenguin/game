@@ -3,6 +3,20 @@ import { type Trick, TRICKS, canQueueTrick } from "../../core/tricks";
 import { SPEED_PROFILES } from "../../core/difficulty";
 import { saveScore } from "../../core/storage";
 import { LEVEL_THRESHOLDS } from "../../core/music";
+import {
+  PIXELS_PER_METER, PENGUIN_Y, HITBOX_SHRINK, STARTING_LIVES, INVINCIBILITY_MS,
+  GRAVITY, FRICTION_NORMAL, FRICTION_ICE, FRICTION_SNOWDRIFT_EXTRA,
+  WING_DRAG_TUCK, WING_DRAG_NEUTRAL, WING_DRAG_SPREAD, SCORE_RATE,
+  ICE_TURN_ACCEL, ICE_TURN_SPEED, ICE_DRAG, ICE_CENTER, COUNTER_STEER_BOOST,
+  AIR_ARC_HEIGHT, AIR_BASE_DURATION, AIR_SPEED_FACTOR, AIR_ICY_MULTIPLIER,
+  AIR_STORM_MULTIPLIER, AIR_DRIFT_FACTOR, MOGUL_AIR_DURATION, TRICK_ROTATION_TIME,
+  WIND_AIRBORNE_MULTIPLIER,
+  LANDING_CLEAN_THRESHOLD, LANDING_SLOPPY_THRESHOLD,
+  FISH_POINTS, ICE_POINTS, FLYOVER_POINTS, MULTI_TRICK_BONUS, SPIN_HALF_POINTS,
+  ICE_SPEED_BOOST,
+  TREE_GRAZE_DECEL, TREE_CENTER_DECEL, TREE_HIT_WIDTH,
+  SLIPPERY_DURATION, SNOWDRIFT_DURATION, CRASH_LOCK_MS, GAME_OVER_DELAY_MS,
+} from "../../core/constants";
 import { Input } from "../systems/Input";
 import { Spawner, type SlopeObject } from "../systems/Spawner";
 import { Effects } from "../systems/Effects";
@@ -62,7 +76,7 @@ export class RunScene extends Phaser.Scene {
   private scoreFrac = 0;
   private trickScore = 0;
   private combo = 0;
-  private lives = 3;
+  private lives = STARTING_LIVES;
   private invincible = false;
   private flinging = false;
   private gameOver = false;
@@ -127,7 +141,7 @@ export class RunScene extends Phaser.Scene {
     this.slipperyTimer = 0;
     this.snowdriftTimer = 0;
     this.stormStarted = false;
-    this.lives = 3;
+    this.lives = STARTING_LIVES;
     this.invincible = false;
     this.flinging = false;
     this.paused = false;
@@ -141,12 +155,12 @@ export class RunScene extends Phaser.Scene {
 
     // Penguin shadow
     this.penguinShadow = this.add.ellipse(
-      width / 2, height * 0.25, 36, 12, 0x000000, 0.2,
+      width / 2, height * PENGUIN_Y, 36, 12, 0x000000, 0.2,
     );
     this.penguinShadow.setDepth(4);
 
     // Penguin
-    this.penguin = this.add.sprite(width / 2, height * 0.25, "penguin", 0);
+    this.penguin = this.add.sprite(width / 2, height * PENGUIN_Y, "penguin", 0);
     this.penguin.setDepth(5);
 
     // Systems
@@ -176,12 +190,12 @@ export class RunScene extends Phaser.Scene {
     this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
       if (this.gameOver) return;
       if (e.key === "+" || e.key === "=") {
-        this.distanceTraveled += 100 * 18;
+        this.distanceTraveled += 100 * PIXELS_PER_METER;
         this.score = 0;
         this.cameras.main.flash(300, 255, 255, 255, false, undefined, this);
         this.hud.showStatusText("CHEAT +100m", "#a855f7");
       } else if (e.key === "-" || e.key === "_") {
-        this.distanceTraveled = Math.max(0, this.distanceTraveled - 100 * 18);
+        this.distanceTraveled = Math.max(0, this.distanceTraveled - 100 * PIXELS_PER_METER);
         this.score = 0;
         this.cameras.main.flash(300, 255, 255, 255, false, undefined, this);
         this.hud.showStatusText("CHEAT -100m", "#a855f7");
@@ -215,7 +229,7 @@ export class RunScene extends Phaser.Scene {
     }
     this.updateAirborne(dt);
 
-    const meters = Math.floor(this.distanceTraveled / 18);
+    const meters = Math.floor(this.distanceTraveled / PIXELS_PER_METER);
     this.hud.update(this.score, meters, this.scrollSpeed, this.combo, this.slipperyTimer, this.snowdriftTimer);
     this.inputHandler.setAirborne(this.isAirborne);
     this.music.updateDistance(meters);
@@ -225,23 +239,22 @@ export class RunScene extends Phaser.Scene {
 
   private updatePhysics(dt: number): void {
     const profile = SPEED_PROFILES[this.level] ?? SPEED_PROFILES[1];
-    const gravity = 120;
     const icy = this.slipperyTimer > 0;
     const drifting = this.snowdriftTimer > 0;
-    const baseFriction = icy ? 0.03 : 0.15;
-    const frictionCoeff = drifting ? baseFriction + 0.25 : baseFriction;
+    const baseFriction = icy ? FRICTION_ICE : FRICTION_NORMAL;
+    const frictionCoeff = drifting ? baseFriction + FRICTION_SNOWDRIFT_EXTRA : baseFriction;
     const friction = this.scrollSpeed * frictionCoeff;
     const spread = this.inputHandler.getSpreadHeld() && !this.isAirborne;
     const tucked = this.inputHandler.getTuckHeld();
-    const wingDrag = spread ? 60 : (tucked ? 0 : 10);
-    const accel = gravity - friction - wingDrag;
+    const wingDrag = spread ? WING_DRAG_SPREAD : (tucked ? WING_DRAG_TUCK : WING_DRAG_NEUTRAL);
+    const accel = GRAVITY - friction - wingDrag;
     this.scrollSpeed = Phaser.Math.Clamp(
       this.scrollSpeed + accel * dt, 0, profile.cap,
     );
 
     const forwardSpeed = this.scrollSpeed * Math.cos(this.heading);
     this.distanceTraveled += forwardSpeed * dt;
-    this.scoreFrac += forwardSpeed * dt * 0.02;
+    this.scoreFrac += forwardSpeed * dt * SCORE_RATE;
     const earned = Math.floor(this.scoreFrac);
     if (earned > 0) {
       this.score += earned;
@@ -274,17 +287,16 @@ export class RunScene extends Phaser.Scene {
         // Counter-steering (pressing opposite to current heading) gets a boost
         const counterSteer = (steerDir > 0 && this.heading < -0.05) ||
           (steerDir < 0 && this.heading > 0.05);
-        const baseAccel = counterSteer ? this.turnAccel * 2.0 : this.turnAccel;
-        // Ice: 8% turn acceleration — barely any steering
-        const effectiveAccel = icy ? baseAccel * 0.08 : baseAccel;
+        const baseAccel = counterSteer ? this.turnAccel * COUNTER_STEER_BOOST : this.turnAccel;
+        const effectiveAccel = icy ? baseAccel * ICE_TURN_ACCEL : baseAccel;
         this.headingVelocity += steerDir * effectiveAccel * dt;
-        const maxTurn = icy ? this.maxTurnSpeed * 0.15 : this.maxTurnSpeed;
+        const maxTurn = icy ? this.maxTurnSpeed * ICE_TURN_SPEED : this.maxTurnSpeed;
         this.headingVelocity = Phaser.Math.Clamp(
           this.headingVelocity, -maxTurn, maxTurn,
         );
       } else {
         // Ice: very low drag — heading velocity persists (drifty)
-        const drag = icy ? this.headingDrag * 0.2 : this.headingDrag;
+        const drag = icy ? this.headingDrag * ICE_DRAG : this.headingDrag;
         this.headingVelocity *= 1 - drag * dt;
         if (Math.abs(this.headingVelocity) < 0.05) this.headingVelocity = 0;
       }
@@ -294,7 +306,7 @@ export class RunScene extends Phaser.Scene {
       // Return heading toward straight downhill when not steering
       // Ice: very slow centering — penguin keeps sliding at an angle
       if (steerDir === 0) {
-        const center = icy ? this.headingCenter * 0.2 : this.headingCenter;
+        const center = icy ? this.headingCenter * ICE_CENTER : this.headingCenter;
         this.heading *= 1 - center * dt;
         if (Math.abs(this.heading) < 0.01) this.heading = 0;
       }
@@ -335,14 +347,14 @@ export class RunScene extends Phaser.Scene {
     const inObstacle = !this.isAirborne && this.spawner.getObjects().some(
       (obj) => this.spawner.checkCollision(
         this.penguin.x, this.penguin.y,
-        this.penguin.displayWidth * 0.7, this.penguin.displayHeight * 0.7, obj,
+        this.penguin.displayWidth * HITBOX_SHRINK, this.penguin.displayHeight * HITBOX_SHRINK, obj,
       ),
     );
 
     this.effects.update(dt, this.penguin.x, this.penguin.y, this.heading, this.scrollSpeed, this.isAirborne, inObstacle);
 
     // Storm (tied to solo: level 14)
-    const meters = Math.floor(this.distanceTraveled / 18);
+    const meters = Math.floor(this.distanceTraveled / PIXELS_PER_METER);
     const soloLevel = LEVEL_THRESHOLDS.length - 2;
     const postSoloLevel = LEVEL_THRESHOLDS.length - 1;
     if (!this.stormStarted && this.music.level >= soloLevel && this.music.level < postSoloLevel) {
@@ -363,7 +375,7 @@ export class RunScene extends Phaser.Scene {
     // Wind pushes penguin
     const windX = this.effects.getWindLateral();
     if (windX !== 0) {
-      const windMul = this.isAirborne ? 5 : 1;
+      const windMul = this.isAirborne ? WIND_AIRBORNE_MULTIPLIER : 1;
       this.penguin.x += windX * windMul * dt;
       this.penguinShadow.x = this.penguin.x;
     }
@@ -385,13 +397,13 @@ export class RunScene extends Phaser.Scene {
   private checkFlyovers(): void {
     const px = this.penguin.x;
     const py = this.penguin.y;
-    const pw = this.penguin.displayWidth * 0.7;
-    const ph = this.penguin.displayHeight * 0.7;
+    const pw = this.penguin.displayWidth * HITBOX_SHRINK;
+    const ph = this.penguin.displayHeight * HITBOX_SHRINK;
     for (const obj of this.spawner.getObjects()) {
       if (obj.hit) continue;
       if (obj.type !== "rock" && obj.type !== "tree") continue;
       if (!this.spawner.checkCollision(px, py, pw, ph, obj)) continue;
-      const pts = 50 * Math.max(1, this.combo);
+      const pts = FLYOVER_POINTS * Math.max(1, this.combo);
       this.score += pts;
       this.hud.showStatusText(`FLYOVER +${pts}`, "#a78bfa");
       this.spawner.markHit(obj);
@@ -405,16 +417,15 @@ export class RunScene extends Phaser.Scene {
     this.airTime += dt;
     const progress = this.airTime / this.airDuration;
     const arc = 1 - (2 * progress - 1) ** 2;
-    this.penguinAirHeight = arc * 80;
-    this.penguin.y = height * 0.25 - this.penguinAirHeight;
+    this.penguinAirHeight = arc * AIR_ARC_HEIGHT;
+    this.penguin.y = height * PENGUIN_Y - this.penguinAirHeight;
     this.penguin.setScale(1 + arc * 0.3);
     this.penguinShadow.setScale(1 - arc * 0.3);
     this.penguinShadow.setAlpha(0.2 * (1 - arc * 0.5));
 
     const rotRemaining = this.targetTrickRotation - this.currentTrickRotation;
     if (Math.abs(rotRemaining) > 0.01) {
-      // Constant speed: full 2π rotation takes 0.8s
-      const rotSpeed = (Math.PI * 2) / 0.8;
+      const rotSpeed = (Math.PI * 2) / TRICK_ROTATION_TIME;
       const step = Math.sign(rotRemaining) * rotSpeed * dt;
       if (Math.abs(step) >= Math.abs(rotRemaining)) {
         this.currentTrickRotation = this.targetTrickRotation;
@@ -441,7 +452,7 @@ export class RunScene extends Phaser.Scene {
         this.trickScore += trick.points;
 
         if (this.trickQueue.length > 1) {
-          this.trickScore += 50 * (this.trickQueue.length - 1);
+          this.trickScore += MULTI_TRICK_BONUS * (this.trickQueue.length - 1);
         }
 
         this.hud.showTrickText(trick.name);
@@ -457,14 +468,15 @@ export class RunScene extends Phaser.Scene {
     }
 
     // Passive air drift from heading at launch (reduced rate)
-    this.penguin.x += Math.sin(this.heading) * this.scrollSpeed * this.lateralFactor * 0.5 * dt;
+    this.penguin.x += Math.sin(this.heading) * this.scrollSpeed * this.lateralFactor * AIR_DRIFT_FACTOR * dt;
     this.penguinShadow.x = this.penguin.x;
   }
 
   private land(): void {
     this.isAirborne = false;
     this.penguin.setDepth(5);
-    this.penguin.y = this.scale.height * 0.25;
+    const { height: sceneH } = this.scale;
+    this.penguin.y = sceneH * PENGUIN_Y;
     this.penguin.setScale(1);
     this.penguin.setRotation(-this.heading);
     this.penguinShadow.setScale(1);
@@ -475,11 +487,11 @@ export class RunScene extends Phaser.Scene {
 
     // Award spin points (50 per half rotation)
     const spinHalves = Math.floor(Math.abs(this.spinRotation) / Math.PI);
-    const spinPoints = spinHalves * 100;
+    const spinPoints = spinHalves * SPIN_HALF_POINTS;
     this.trickScore += spinPoints;
 
     if (this.trickQueue.length > 0 || spinPoints > 0) {
-      if (rotDiff < 0.5) {
+      if (rotDiff < LANDING_CLEAN_THRESHOLD) {
         // Clean landing — icy jump doubles trick score
         const comboMultiplier = Math.max(1, this.combo);
         const icyMultiplier = this.icyLaunch ? 2 : 1;
@@ -494,7 +506,7 @@ export class RunScene extends Phaser.Scene {
         } else {
           this.hud.showStatusText(`+${points}`, "#10b981");
         }
-      } else if (rotDiff < 1.2) {
+      } else if (rotDiff < LANDING_SLOPPY_THRESHOLD) {
         // Sloppy landing — no points, but don't reset combo
         this.sfx.sloppyLanding();
         this.haptics.sloppyLanding();
@@ -510,7 +522,7 @@ export class RunScene extends Phaser.Scene {
         // Lock tucked frame briefly during crash
         this.isDead = true;
         this.penguin.setFrame(0);
-        this.time.delayedCall(500, () => {
+        this.time.delayedCall(CRASH_LOCK_MS, () => {
           if (!this.gameOver) {
             this.isDead = false;
           }
@@ -533,9 +545,9 @@ export class RunScene extends Phaser.Scene {
     this.penguin.setDepth(8);
     this.airTime = 0;
     this.icyLaunch = !duration && this.slipperyTimer > 0;
-    const baseDuration = duration ?? 1.2 + (this.scrollSpeed - 200) * 0.002;
-    let dur = this.icyLaunch ? baseDuration * 1.5 : baseDuration;
-    if (this.stormStarted) dur *= 1.3;
+    const baseDuration = duration ?? AIR_BASE_DURATION + (this.scrollSpeed - 200) * AIR_SPEED_FACTOR;
+    let dur = this.icyLaunch ? baseDuration * AIR_ICY_MULTIPLIER : baseDuration;
+    if (this.stormStarted) dur *= AIR_STORM_MULTIPLIER;
     this.airDuration = dur;
     this.trickQueue = [];
     this.trickScore = 0;
@@ -554,8 +566,8 @@ export class RunScene extends Phaser.Scene {
   private checkCollisions(): void {
     const px = this.penguin.x;
     const py = this.penguin.y;
-    const pw = this.penguin.displayWidth * 0.7;
-    const ph = this.penguin.displayHeight * 0.7;
+    const pw = this.penguin.displayWidth * HITBOX_SHRINK;
+    const ph = this.penguin.displayHeight * HITBOX_SHRINK;
     for (const obj of this.spawner.getObjects()) {
       if (!this.spawner.checkCollision(px, py, pw, ph, obj)) continue;
       if (obj.hit) {
@@ -564,7 +576,7 @@ export class RunScene extends Phaser.Scene {
           this.effects.burstTreeHit(obj.sprite.x, obj.sprite.y, px, py);
           this.spawner.redrawTree(obj);
         } else if (obj.type === "ice") {
-          this.slipperyTimer = 2.5;
+          this.slipperyTimer = SLIPPERY_DURATION;
         }
         continue;
       }
@@ -592,10 +604,9 @@ export class RunScene extends Phaser.Scene {
       case "tree": {
         // Center hit = huge decel, grazing = small nudge
         const dx = Math.abs(this.penguin.x - obj.sprite.x);
-        const maxDx = (obj.width + this.penguin.displayWidth) * 0.35;
+        const maxDx = (obj.width + this.penguin.displayWidth) * TREE_HIT_WIDTH;
         const centeredness = 1 - Phaser.Math.Clamp(dx / maxDx, 0, 1);
-        // grazing: -30, dead center: -300
-        const decel = 30 + centeredness * 270;
+        const decel = TREE_GRAZE_DECEL + centeredness * TREE_CENTER_DECEL;
         this.scrollSpeed = Math.max(0, this.scrollSpeed - decel);
         this.combo = 0;
         this.effects.burstTreeHit(obj.sprite.x, obj.sprite.y, this.penguin.x, this.penguin.y);
@@ -610,7 +621,7 @@ export class RunScene extends Phaser.Scene {
       }
 
       case "snowdrift":
-        this.snowdriftTimer = 1.2;
+        this.snowdriftTimer = SNOWDRIFT_DURATION;
         this.effects.burstSnowdrift(obj.sprite.x, obj.sprite.y);
         this.sfx.snowdriftHit();
         this.haptics.snowdriftHit();
@@ -619,10 +630,10 @@ export class RunScene extends Phaser.Scene {
         break;
 
       case "ice": {
-        this.slipperyTimer = 2.5;
+        this.slipperyTimer = SLIPPERY_DURATION;
         const cap = (SPEED_PROFILES[this.level] ?? SPEED_PROFILES[1]).cap;
-        this.scrollSpeed = Math.min(this.scrollSpeed + 40, cap);
-        const icePoints = 25 * Math.max(1, this.combo);
+        this.scrollSpeed = Math.min(this.scrollSpeed + ICE_SPEED_BOOST, cap);
+        const icePoints = ICE_POINTS * Math.max(1, this.combo);
         this.score += icePoints;
         this.combo++;
         this.effects.startIceSparkle();
@@ -634,7 +645,7 @@ export class RunScene extends Phaser.Scene {
       }
 
       case "mogul":
-        this.launch(0.5);
+        this.launch(MOGUL_AIR_DURATION);
         this.sfx.mogulLaunch();
         this.haptics.mogulLaunch();
         this.spawner.markHit(obj);
@@ -648,7 +659,7 @@ export class RunScene extends Phaser.Scene {
         break;
 
       case "fish":
-        this.score += 10;
+        this.score += FISH_POINTS;
         this.effects.burstFishCollected(obj.sprite.x, obj.sprite.y);
         this.sfx.fishCollect();
         this.haptics.fishCollect();
@@ -701,7 +712,7 @@ export class RunScene extends Phaser.Scene {
 
     // Reset penguin to screen center
     this.penguin.x = this.cameras.main.scrollX + width / 2;
-    this.penguin.y = height * 0.25;
+    this.penguin.y = height * PENGUIN_Y;
     this.penguin.setScale(1);
     this.penguin.setAlpha(1);
     this.penguin.setRotation(0);
@@ -735,7 +746,7 @@ export class RunScene extends Phaser.Scene {
         this.penguin.setAlpha(flashCount % 2 === 0 ? 1 : 0.3);
       },
     });
-    this.time.delayedCall(2000, () => {
+    this.time.delayedCall(INVINCIBILITY_MS, () => {
       flashTimer.destroy();
       this.penguin.setAlpha(1);
       this.invincible = false;
@@ -763,7 +774,7 @@ export class RunScene extends Phaser.Scene {
       ease: "Cubic.easeOut",
     });
 
-    const dist = Math.floor(this.distanceTraveled / 18);
+    const dist = Math.floor(this.distanceTraveled / PIXELS_PER_METER);
     const distStr = dist >= 1000 ? (dist / 1000).toFixed(1) + " km" : dist + " m";
     const isNewBest = saveScore(this.level, this.score, dist);
     const bestLine = isNewBest ? "NEW BEST!\n" : "";
@@ -780,7 +791,7 @@ export class RunScene extends Phaser.Scene {
     }
 
     // Short delay so death animation plays before menu appears
-    this.time.delayedCall(600, () => {
+    this.time.delayedCall(GAME_OVER_DELAY_MS, () => {
       this.menu.show(`GAME OVER\n\n${stats}`, [
         { label: "RETRY", action: () => this.restartGame() },
         { label: "QUIT", action: () => this.quitToMenu() },

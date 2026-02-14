@@ -164,9 +164,29 @@ class Music {
   /** Call every frame to update music layers based on distance (meters). */
   updateDistance(meters: number): void {
     if (!this.initialized || !this.audioCtx) return;
-    const next = Math.max(this.minLevel, getMusicLevel(meters));
-    if (next !== this.musicLevel && next !== this.pendingLevel) {
-      this.pendingLevel = next;
+    const target = Math.max(this.minLevel, getMusicLevel(meters));
+
+    if (target === this.musicLevel) {
+      // Already at the right level — cancel any stale pending change
+      if (this.pendingLevel >= 0) {
+        this.pendingLevel = -1;
+        if (this.changeTimer) { clearTimeout(this.changeTimer); this.changeTimer = null; }
+      }
+      return;
+    }
+
+    if (target < this.musicLevel) {
+      // Going backward (cheat teleport) — jump directly
+      if (target !== this.pendingLevel) {
+        this.pendingLevel = target;
+        this.scheduleChange();
+      }
+      return;
+    }
+
+    // Forward: step one level at a time so every arrangement gets heard
+    if (this.pendingLevel < 0) {
+      this.pendingLevel = this.musicLevel + 1;
       this.scheduleChange();
     }
   }

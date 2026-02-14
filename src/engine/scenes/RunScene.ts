@@ -16,7 +16,7 @@ import {
   WIND_AIRBORNE_MULTIPLIER,
   LANDING_CLEAN_THRESHOLD, LANDING_SLOPPY_THRESHOLD,
   FISH_POINTS, ICE_POINTS, FLYOVER_POINTS, MULTI_TRICK_BONUS, SPIN_HALF_POINTS,
-  ICE_SPEED_BOOST,
+  ICE_SPEED_BOOST, ICE_CAP_MULTIPLIER,
   ROCK_DECEL, TREE_GRAZE_DECEL, TREE_CENTER_DECEL, TREE_HIT_WIDTH,
   SLIPPERY_DURATION, SNOWDRIFT_DURATION, CRASH_LOCK_MS, GAME_OVER_DELAY_MS,
 } from "../../core/constants";
@@ -262,9 +262,16 @@ export class RunScene extends Phaser.Scene {
     const tucked = this.inputHandler.getTuckHeld();
     const wingDrag = spread ? WING_DRAG_SPREAD : (tucked ? WING_DRAG_TUCK : WING_DRAG_NEUTRAL);
     const accel = GRAVITY - friction - wingDrag;
-    this.scrollSpeed = Phaser.Math.Clamp(
-      this.scrollSpeed + accel * dt, 0, profile.cap,
-    );
+    const prevSpeed = this.scrollSpeed;
+    this.scrollSpeed = Math.max(0, this.scrollSpeed + accel * dt);
+    if (icy) {
+      this.scrollSpeed = Math.min(this.scrollSpeed, profile.cap * ICE_CAP_MULTIPLIER);
+    } else if (prevSpeed > profile.cap) {
+      // Overcap from ice: only deceleration (braking, trees, steering) can reduce it
+      this.scrollSpeed = Math.min(this.scrollSpeed, prevSpeed);
+    } else {
+      this.scrollSpeed = Math.min(this.scrollSpeed, profile.cap);
+    }
 
     const forwardSpeed = this.scrollSpeed * Math.cos(this.heading);
     this.distanceTraveled += forwardSpeed * dt;
@@ -671,8 +678,8 @@ export class RunScene extends Phaser.Scene {
 
       case "ice": {
         this.slipperyTimer = SLIPPERY_DURATION;
-        const cap = (SPEED_PROFILES[this.level] ?? SPEED_PROFILES[1]).cap;
-        this.scrollSpeed = Math.min(this.scrollSpeed + ICE_SPEED_BOOST, cap);
+        const iceCap = (SPEED_PROFILES[this.level] ?? SPEED_PROFILES[1]).cap * ICE_CAP_MULTIPLIER;
+        this.scrollSpeed = Math.min(this.scrollSpeed * (1 + ICE_SPEED_BOOST), iceCap);
         const icePoints = ICE_POINTS * Math.max(1, this.combo);
         this.score += icePoints;
         this.combo++;

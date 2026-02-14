@@ -131,8 +131,10 @@ export class Spawner {
   ): boolean {
     const ox = obj.sprite.x;
     const oy = obj.sprite.y;
-    const ow = obj.width * 0.7;
-    const oh = obj.height * 0.7;
+    // Ground effects (ice, snowdrift, mogul) use full hitbox; solid obstacles shrink by 0.7
+    const shrink = (obj.type === "ice" || obj.type === "snowdrift" || obj.type === "mogul") ? 1 : 0.7;
+    const ow = obj.width * shrink;
+    const oh = obj.height * shrink;
     return (
       Math.abs(px - ox) < (pw + ow) / 2 &&
       Math.abs(py - oy) < (ph + oh) / 2

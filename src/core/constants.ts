@@ -61,7 +61,8 @@ export const ICE_POINTS = 25;
 export const FLYOVER_POINTS = 50;
 export const MULTI_TRICK_BONUS = 50;
 export const SPIN_HALF_POINTS = 100;
-export const ICE_SPEED_BOOST = 40;
+export const ICE_SPEED_BOOST = 0.1; // 10% speed boost on ice contact
+export const ICE_CAP_MULTIPLIER = 1.2; // allow 20% over speed cap while icy
 
 // --- Collision ---
 export const ROCK_DECEL = 200;

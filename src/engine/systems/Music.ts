@@ -227,6 +227,8 @@ class Music {
   onGameOver(): void {
     if (!this.initialized || this._muted) return;
     this.clearDeathTimer();
+    this.pendingLevel = -1;
+    if (this.changeTimer) { clearTimeout(this.changeTimer); this.changeTimer = null; }
     // Play death pattern immediately
     const cps = this.baseBpm / 4 / 60;
     getDeathPattern().cps(cps).play();

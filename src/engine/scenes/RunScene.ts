@@ -738,6 +738,8 @@ export class RunScene extends Phaser.Scene {
     this.isDead = true;
     this.health = 0;
     this.hud.setHealth(0);
+    const meters = Math.floor(this.distanceTraveled / PIXELS_PER_METER);
+    this.hud.update(this.score, meters, this.scrollSpeed, this.combo, this.slipperyTimer, this.snowdriftTimer);
     this.penguin.setFrame(1);
     this.music.onGameOver();
     this.cameras.main.shake(400, 0.015);

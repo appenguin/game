@@ -740,7 +740,7 @@ export class RunScene extends Phaser.Scene {
     this.hud.setHealth(0);
     this.penguin.setFrame(1);
     this.music.onGameOver();
-    this.cameras.main.shake(600, 0.03);
+    this.cameras.main.shake(400, 0.015);
     this.cameras.main.flash(400, 255, 50, 50);
     this.sfx.gameOver();
     this.haptics.gameOver();

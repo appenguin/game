@@ -261,7 +261,8 @@ export class RunScene extends Phaser.Scene {
     const spread = this.inputHandler.getSpreadHeld() && !this.isAirborne;
     const tucked = this.inputHandler.getTuckHeld();
     const wingDrag = spread ? WING_DRAG_SPREAD : (tucked ? WING_DRAG_TUCK : WING_DRAG_NEUTRAL);
-    const accel = GRAVITY - friction - wingDrag;
+    const downhillGravity = GRAVITY * Math.cos(this.heading);
+    const accel = downhillGravity - friction - wingDrag;
     const prevSpeed = this.scrollSpeed;
     this.scrollSpeed = Math.max(0, this.scrollSpeed + accel * dt);
     if (icy) {

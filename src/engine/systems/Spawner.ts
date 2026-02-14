@@ -6,6 +6,7 @@ import {
   getRampInterval,
   pickObstacleType,
 } from "../../core/difficulty";
+import { PIXELS_PER_METER } from "../../core/constants";
 
 /** An object on the slope (obstacle, collectible, or ramp) */
 export interface SlopeObject {
@@ -42,7 +43,7 @@ export class Spawner {
   ): void {
     this.penguinX = penguinX;
     const { width, height } = this.scene.scale;
-    const diff = getDifficulty(distanceTraveled);
+    const diff = getDifficulty(distanceTraveled / PIXELS_PER_METER);
 
     // Spawn obstacles
     const spawnInterval = getSpawnInterval(diff);

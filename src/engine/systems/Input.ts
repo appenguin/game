@@ -50,6 +50,18 @@ export class Input {
     this.onGameOverTap = handler;
   }
 
+  /** True if any game key is currently held */
+  anyKeyDown(): boolean {
+    return !!(
+      this.cursors?.left.isDown || this.cursors?.right.isDown ||
+      this.cursors?.up.isDown || this.cursors?.down.isDown ||
+      this.keys?.a.isDown || this.keys?.d.isDown ||
+      this.keys?.w.isDown || this.keys?.s.isDown ||
+      this.keys?.space.isDown || this.keys?.enter.isDown ||
+      this.keys?.x.isDown || this.keys?.z.isDown
+    );
+  }
+
   /** Resolve steer direction: keyboard > touch. Returns -1, 0, or 1 */
   getSteerDir(): number {
     if (this.cursors?.left.isDown || this.keys?.a.isDown) return -1;

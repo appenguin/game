@@ -21,23 +21,25 @@ const g = () => globalThis as any;
 // Instruments enter one at a time for a progressive build.
 // ---------------------------------------------------------------------------
 
+// Ratios from arrange: 2:2:4 : 4(split 3) : 8(split 2) : 8:8:4:4:8:16
+// 68 parts total, ~33m each, solo at ~1700m
 export const LEVEL_THRESHOLDS = [
-  0,    // 0  Silence
-  5,    // 1  Chord pad
-  50,   // 2  + bass
-  120,  // 3  Bass solo
-  200,  // 4  + kick
-  280,  // 5  + hi-hats
-  370,  // 6  + snare
-  460,  // 7  deep bass (bass2)
-  560,  // 8  + ghost snares
-  680,  // 9  + lead arrangement (cycles a/b/c)
-  810,  // 10 bass change + lead
-  950,  // 11 bass3 progression
-  1080, // 12 bass4 double-time
-  1260, // 13 + lead2 melody
-  2000, // 14 full solo
-  3000, // 15 post-solo groove
+  0,    // 0  silence
+  5,    // 1  chord pad            ┐ 2 parts
+  65,   // 2  + bass               ┘ 2 parts
+  130,  // 3  bass solo              4 parts
+  260,  // 4  + kick               ┐
+  305,  // 5  + hi-hats            ├ 4 parts
+  350,  // 6  + snare              ┘
+  395,  // 7  bass2                ┐ 8 parts
+  525,  // 8  + ghost              ┘
+  655,  // 9  + lead                 8 parts
+  1000, // 10 bass + lead            8 parts
+  1350, // 11 bass3                  4 parts
+  1550, // 12 bass4                  4 parts
+  1750, // 13 + lead2                8 parts
+  2100, // 14 full solo             16 parts
+  2800, // 15 post-solo groove
 ];
 
 // ---------------------------------------------------------------------------
@@ -72,12 +74,12 @@ export function getDeathPattern(): any {
 // Pattern definitions — full arrangement per level
 //
 // Each level returns a complete stack of instruments.
-// Instruments enter one at a time:
-//   0: silence → 1: chord → 2: +bass → 3: bass solo →
-//   4: +kick → 5: +hh → 6: +snare → 7: bass2 → 8: +ghost →
-//   9: +lead (arrange a/b/c) → 10: bass change+lead →
-//   11: bass3 → 12: bass4 → 13: +lead2 → 14: full solo →
-//   15: post-solo groove (bass4 + drums)
+// Progression (ratios 2:2:4:4:8:8:8:4:4:8:16):
+//   0: chord → 1: chord+bass → 2: bass →
+//   3: drums+bass → 4: +ghost+bass2 → 5: +lead →
+//   6: bass+lead → 7: bass3 → 8: bass4 →
+//   9: +lead2 → 10: solo (bass3+lead3) →
+//   11: post-solo groove (bass4+drums)
 //
 // Strudel cheat-sheet:
 //   note("b2*4")           4 B2 notes per cycle

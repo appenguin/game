@@ -8,11 +8,11 @@ export type SlopeObjectType =
   | "mogul"
   | "snowdrift";
 
-/** Difficulty zone (0-3) based on distance traveled */
-export function getDifficulty(distance: number): number {
-  if (distance < 500) return 0;
-  if (distance < 1500) return 1;
-  if (distance < 3000) return 2;
+/** Difficulty zone (0-3) based on distance in meters */
+export function getDifficulty(meters: number): number {
+  if (meters < 300) return 0;
+  if (meters < 800) return 1;
+  if (meters < 1500) return 2;
   return 3;
 }
 
@@ -29,8 +29,8 @@ export function getBaseSpeed(distance: number, level: number = 1): number {
   return Math.min(p.cap, p.start + distance * p.accel);
 }
 
-const SPAWN_INTERVALS = [0.5, 0.38, 0.28, 0.2];
-const RAMP_INTERVALS = [2.5, 2.0, 1.8, 1.5];
+const SPAWN_INTERVALS = [0.6, 0.42, 0.3, 0.22];
+const RAMP_INTERVALS = [3.0, 2.2, 1.8, 1.5];
 
 /** Obstacle spawn interval for given difficulty */
 export function getSpawnInterval(difficulty: number): number {
@@ -47,37 +47,37 @@ export function getRampInterval(difficulty: number): number {
 type SpawnEntry = [number, SlopeObjectType];
 
 const SPAWN_TABLES: SpawnEntry[][] = [
-  // Difficulty 0 — Easy: lots of trees, fish, rare rocks
+  // Difficulty 0 — Gentle: mostly fish, some trees, very rare rocks
   [
-    [0.10, "rock"],
-    [0.50, "tree"],
-    [0.58, "snowdrift"],
+    [0.03, "rock"],
+    [0.25, "tree"],
+    [0.30, "snowdrift"],
     [1.0, "fish"],
   ],
-  // Difficulty 1 — Medium: trees dominant, ice patches, more rocks
+  // Difficulty 1 — Building: more trees, ice appears, some rocks
   [
-    [0.20, "rock"],
+    [0.12, "rock"],
+    [0.40, "tree"],
+    [0.48, "ice"],
+    [0.54, "snowdrift"],
+    [1.0, "fish"],
+  ],
+  // Difficulty 2 — Tough: dense obstacles, moguls, less fish
+  [
+    [0.22, "rock"],
     [0.50, "tree"],
     [0.58, "ice"],
-    [0.64, "snowdrift"],
+    [0.66, "mogul"],
+    [0.74, "snowdrift"],
     [1.0, "fish"],
   ],
-  // Difficulty 2 — Hard: dense trees, moguls, rocks
+  // Difficulty 3 — Expert: rocks and trees dominant, fish scarce
   [
-    [0.25, "rock"],
-    [0.48, "tree"],
-    [0.56, "ice"],
-    [0.65, "mogul"],
-    [0.72, "snowdrift"],
-    [1.0, "fish"],
-  ],
-  // Difficulty 3 — Expert: everything, rocks and trees dominant
-  [
-    [0.28, "rock"],
-    [0.45, "tree"],
-    [0.53, "ice"],
-    [0.62, "mogul"],
-    [0.70, "snowdrift"],
+    [0.30, "rock"],
+    [0.55, "tree"],
+    [0.62, "ice"],
+    [0.70, "mogul"],
+    [0.78, "snowdrift"],
     [1.0, "fish"],
   ],
 ];

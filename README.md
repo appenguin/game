@@ -9,9 +9,9 @@ A penguin downhill ski game. Dodge obstacles, hit ramps, perform tricks mid-air,
 - **Trick system** -- hit ramps to go airborne, flip and spin for points, land cleanly to keep your combo
 - **Combo scoring** -- chain tricks, ice patches, and flyovers to multiply your score
 - **3 difficulty levels** -- Easy, Medium, Hard with different speed caps and acceleration
-- **3 lives** -- rocks fling you off-screen; respawn with brief invincibility
-- **Procedural music** -- 15-layer progressive arrangement powered by Strudel, builds as you travel further
-- **Snowstorm** -- at 1500m, wind gusts push you and reduce visibility
+- **Health bar** -- regenerating health with speed-scaled rock damage, tree chip damage, fish healing
+- **Procedural music** -- 16-layer progressive arrangement powered by Strudel, builds as you travel further
+- **Snowstorm** -- at 2000m, wind gusts push you and reduce visibility
 - **PWA** -- install to home screen for offline play
 - **Android APK** -- bundled Capacitor build, all assets included
 
@@ -22,14 +22,15 @@ A penguin downhill ski game. Dodge obstacles, hit ramps, perform tricks mid-air,
 | Steer | Arrow keys / A, D | LEFT / RIGHT buttons or tap screen halves |
 | Brake (spread wings) | Up / W | -- |
 | Speed up (tuck wings) | Down / S | TUCK button (hold) |
-| Trick (airborne) | Space / Enter | TRICK button |
+| Flip (airborne) | X / Space / Enter | FLIP button |
+| Tuck (airborne) | Z | TUCK button (tap) |
 | Spin (airborne) | Left / Right | LEFT / RIGHT buttons |
 | Pause | ESC | Tap HUD bar |
 | Resume / navigate menus | Arrow keys + Enter | Touch menu items |
 | Retry (game over) | R | Touch |
 | Quit to menu | Q | Touch |
 
-**Mobile layout:** `[<] [TUCK] [TRICK] [>]` -- single row at bottom of screen.
+**Mobile layout:** `[<] [TUCK] [FLIP] [>]` -- single row at bottom of screen.
 
 ## Getting started
 
@@ -104,10 +105,8 @@ index.html                Entry point + splash screen
 The game and music are still in progress. Some areas we're working on:
 
 - **Game balance** -- scoring, obstacle density, storm difficulty
-- **Art** -- new sprite art for the penguin, obstacles, or background elements (we can help with converting it to sprite sheets)
-- **Levels** -- new terrain, obstacle layouts, difficulty progression
+- **Art** -- new sprite art for the penguin, obstacles, or background elements
 - **New obstacles or slope elements**
-- **Haptic feedback** for Android (Capacitor)
 - **Share button** for scores
 - **Bug fixes** and performance improvements
 

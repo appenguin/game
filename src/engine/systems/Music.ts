@@ -34,7 +34,8 @@ class Music {
   private deathTimer: ReturnType<typeof setTimeout> | null = null;
   private difficultyLevel = 1; // 0=easy, 1=medium, 2=hard
   private pendingLevel = -1;   // queued level, applied on next 4-bar boundary
-  private lastChangeTime = 0;  // timestamp (seconds) of last level change
+  private changeTimer: ReturnType<typeof setTimeout> | null = null;
+  private audioCtx: AudioContext | null = null;
 
   constructor() {
     this._muted = localStorage.getItem(STORAGE_KEY) === "off";
@@ -54,7 +55,10 @@ class Music {
     if (this.initialized) return;
     try {
       // Pre-set the AudioContext so Strudel reuses it (avoids browser autoplay block)
-      if (ctx) setAudioContext(ctx);
+      if (ctx) {
+        setAudioContext(ctx);
+        this.audioCtx = ctx;
+      }
       // Use locally bundled TR-909 samples (offline-ready)
       // Source: geikha/tidal-drum-machines (CC0 license)
       const localSamples = {
@@ -108,7 +112,8 @@ class Music {
         this.musicLevel = lvl;
         this.minLevel = lvl;
         this.pendingLevel = -1;
-        this.lastChangeTime = 0;
+    
+        if (this.changeTimer) { clearTimeout(this.changeTimer); this.changeTimer = null; }
         if (!this._muted) this.applyLevel(lvl);
       }
     } catch (e) {
@@ -126,7 +131,8 @@ class Music {
     this.musicLevel = startLevel;
     this.minLevel = startLevel;
     this.pendingLevel = -1;
-    this.lastChangeTime = 0; // allow first level change immediately
+
+    if (this.changeTimer) { clearTimeout(this.changeTimer); this.changeTimer = null; }
     if (!this._muted) this.applyLevel(startLevel);
   }
 
@@ -157,21 +163,31 @@ class Music {
 
   /** Call every frame to update music layers based on distance (meters). */
   updateDistance(meters: number): void {
-    if (!this.initialized) return;
+    if (!this.initialized || !this.audioCtx) return;
     const next = Math.max(this.minLevel, getMusicLevel(meters));
-    if (next !== this.musicLevel) {
+    if (next !== this.musicLevel && next !== this.pendingLevel) {
       this.pendingLevel = next;
+      this.scheduleChange();
     }
-    if (this.pendingLevel < 0 || this.pendingLevel === this.musicLevel) return;
+  }
 
-    const now = performance.now() / 1000;
-    const fourBars = 4 / (this.baseBpm / 4 / 60); // 4 cycles in seconds
-    if (now - this.lastChangeTime >= fourBars) {
-      this.musicLevel = this.pendingLevel;
-      this.pendingLevel = -1;
-      this.lastChangeTime = now;
-      if (!this._muted) this.applyLevel(this.musicLevel);
-    }
+  /** Schedule level change to fire ~100ms before the next 4-bar boundary. */
+  private scheduleChange(): void {
+    if (this.changeTimer) clearTimeout(this.changeTimer);
+    const cps = this.baseBpm / 4 / 60;
+    const cycle = this.audioCtx!.currentTime * cps;
+    const nextBoundary = (Math.floor(cycle / 4) + 1) * 4;
+    const delaySec = (nextBoundary - cycle) / cps;
+    // Fire 100ms early so Strudel's scheduler picks up the new pattern
+    const ms = Math.max(0, delaySec * 1000 - 100);
+    this.changeTimer = setTimeout(() => {
+      this.changeTimer = null;
+      if (this.pendingLevel >= 0 && this.pendingLevel !== this.musicLevel) {
+        this.musicLevel = this.pendingLevel;
+        this.pendingLevel = -1;
+        if (!this._muted) this.applyLevel(this.musicLevel);
+      }
+    }, ms);
   }
 
   // -----------------------------------------------------------------------
@@ -207,7 +223,7 @@ class Music {
     this.clearDeathTimer();
     this.musicLevel = 0;
     this.pendingLevel = -1;
-    this.lastChangeTime = 0; // allow first level change immediately
+    if (this.changeTimer) { clearTimeout(this.changeTimer); this.changeTimer = null; }
     if (!this._muted) {
       this.applyLevel(0);
     }

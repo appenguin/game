@@ -102,7 +102,8 @@ android/              Android APK wrapper (Capacitor)
 - Other obstacles use procedural shapes (ellipses, circles)
 - Snow spray particles + belly-slide trail behind penguin on ground; trail pauses inside trees
 - Tree collision: continuous snow burst (white particles from tree + under penguin) while overlapping, tree shakes ±3px around origin, speed penalty scaled by hit centeredness
-- **3 lives** (🐧🐧🐧 in HUD): rock hit flings penguin off-screen (tween: spin, shrink, fade), respawn at center with 2s invincibility flash. Camera freezes during fling. Final death on last life
+- **Health bar** (thin full-width line under HUD, color-coded green/yellow/red): rocks deal speed-scaled damage (25 base + 0.05/speed, caps ~55% at 600 speed) with lateral knockback and significant deceleration. Trees chip health (5-20 HP scaled by hit centeredness). Crash landings cost 10 HP. Fish heal +5 HP. Health auto-regenerates (2 HP/s) after 5s without damage. 0.5s damage cooldown prevents multi-hits. Death triggers dramatic camera shake + red flash + tumble animation. Game over at 0 HP
+- Obstacles pre-spawned across the visible area on scene load so the slope isn't empty; game and music start immediately
 - Obstacles persist after being hit (marked with `hit` flag to prevent re-triggering); only fish are removed on collection
 - Event particle bursts on collisions and landings; camera bump on landing
 - Snowstorm at 2000-3000m (tied to solo): 500 screen-fixed snowflake circles (`setScrollFactor(0)`) with organic wind gusts (160 px/s max); wind pushes penguin and obstacles laterally (5× push when airborne); white overlay reduces visibility; +30% air time during storm; ramps up over 100m, ends when solo ends
@@ -150,9 +151,9 @@ Three player-selected levels on the start screen:
 
 Speed is no longer a function of distance — it emerges from the force model. Players control speed via wing tuck/spread. Ice patches reduce friction (fast acceleration). Snowdrifts add extra friction drag.
 
-Trees are the most common obstacle (40% at easy, 25% at expert). Tree collision uses acceleration-based slowdown: grazing = -30 speed, dead center = -300 speed (near full stop). Resets combo.
+Trees are the most common obstacle (22% at easy, 25% at expert). Tree collision uses acceleration-based slowdown: grazing = -30 speed, dead center = -300 speed (near full stop). Resets combo. Trees also chip health (5-20 HP based on centeredness).
 
-Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by level selection.
+Obstacle spawn difficulty (distance zones 0-3 at 300/800/1500m) is separate and unchanged by level selection. Early game is gentle (70% fish, 3% rocks); expert difficulty is dense (22% fish, 30% rocks). Spawn intervals also tighten with distance (0.6s easy to 0.22s expert).
 
 ## Scoring
 
@@ -170,7 +171,7 @@ Obstacle spawn difficulty (distance zones 0-3) is separate and unchanged by leve
 
 ### Music
 
-Procedural layered music powered by **Strudel** (`@strudel/web`). Samples loaded from `github:tidalcycles/dirt-samples`.
+Procedural layered music powered by **Strudel** (`@strudel/web`). TR-909 drum samples bundled locally in `public/samples/` for offline/Android playback.
 
 - 16-level progressive arrangement (0-15) driven by distance (meters), not score — instruments enter one at a time
 - Starts with Bmin9 triangle chord pad, builds through sawtooth bass, drums (bd, hh, sd), ghost snares (TR-909), saw leads with `arrange()` cycling, bass progressions, to full solo at 2000m. Solo runs 2000-3000m with storm, then drops back to groove (bass4 + drums) post-solo
@@ -188,7 +189,7 @@ Procedural SFX synthesised at runtime using the Web Audio API — no audio files
 - Each sound is a short-lived chain of Web Audio nodes (oscillators, noise buffers, filters, gain envelopes) that auto-cleanup after playback
 - Shared white noise AudioBuffer (2s) created once in constructor, reused by all noise-based sounds
 - Master gain node for global SFX volume; muted independently via Sound toggle on boot screen
-- Sound events: fish collect (ding), clean/sloppy/crash landing, rock hit, tree hit (intensity scales with centeredness), ramp launch (whoosh), mogul launch (boing), ice entry (shimmer), snowdrift hit (poof), trick performed, fling, game over
+- Sound events: fish collect (ding), clean/sloppy/crash landing, rock hit, tree hit (intensity scales with centeredness), ramp launch (whoosh), mogul launch (boing), ice entry (shimmer), snowdrift hit (poof), trick performed, game over
 
 ### AudioContext architecture
 
@@ -204,7 +205,7 @@ Vibration feedback using the Capacitor Haptics plugin (`@capacitor/haptics`). Al
 - Works on Android and iOS native apps via Capacitor, gracefully no-ops on web
 - Haptics toggle on boot screen, preference persisted in localStorage (`penguinski:haptics`)
 - Uses native haptic patterns: ImpactStyle (Light/Medium/Heavy) and NotificationType (Success/Warning/Error)
-- Events: rock hit (heavy), tree hit (light/medium/heavy by centeredness), fish collect (light), ramp launch (medium), mogul (light), ice/snowdrift (light), landings (success/warning/error), trick (light), fling/game over (vibrate)
+- Events: rock hit (heavy), tree hit (light/medium/heavy by centeredness), fish collect (light), ramp launch (medium), mogul (light), ice/snowdrift (light), landings (success/warning/error), trick (light), game over (vibrate)
 
 ## Development
 

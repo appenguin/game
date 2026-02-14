@@ -4,7 +4,10 @@ import { SPEED_PROFILES } from "../../core/difficulty";
 import { saveScore } from "../../core/storage";
 import { LEVEL_THRESHOLDS } from "../../core/music";
 import {
-  PIXELS_PER_METER, PENGUIN_Y, HITBOX_SHRINK, STARTING_LIVES, INVINCIBILITY_MS,
+  PIXELS_PER_METER, PENGUIN_Y, HITBOX_SHRINK,
+  MAX_HEALTH, ROCK_DAMAGE_BASE, ROCK_DAMAGE_SPEED, ROCK_KNOCKBACK,
+  TREE_DAMAGE_MIN, TREE_DAMAGE_MAX, CRASH_LANDING_DAMAGE,
+  REGEN_DELAY, REGEN_RATE, FISH_HEAL, DAMAGE_COOLDOWN,
   GRAVITY, FRICTION_NORMAL, FRICTION_ICE, FRICTION_SNOWDRIFT_EXTRA,
   WING_DRAG_TUCK, WING_DRAG_NEUTRAL, WING_DRAG_SPREAD, SCORE_RATE,
   ICE_TURN_ACCEL, ICE_TURN_SPEED, ICE_DRAG, ICE_CENTER, COUNTER_STEER_BOOST,
@@ -14,7 +17,7 @@ import {
   LANDING_CLEAN_THRESHOLD, LANDING_SLOPPY_THRESHOLD,
   FISH_POINTS, ICE_POINTS, FLYOVER_POINTS, MULTI_TRICK_BONUS, SPIN_HALF_POINTS,
   ICE_SPEED_BOOST,
-  TREE_GRAZE_DECEL, TREE_CENTER_DECEL, TREE_HIT_WIDTH,
+  ROCK_DECEL, TREE_GRAZE_DECEL, TREE_CENTER_DECEL, TREE_HIT_WIDTH,
   SLIPPERY_DURATION, SNOWDRIFT_DURATION, CRASH_LOCK_MS, GAME_OVER_DELAY_MS,
 } from "../../core/constants";
 import { Input } from "../systems/Input";
@@ -76,9 +79,9 @@ export class RunScene extends Phaser.Scene {
   private scoreFrac = 0;
   private trickScore = 0;
   private combo = 0;
-  private lives = STARTING_LIVES;
-  private invincible = false;
-  private flinging = false;
+  private health = MAX_HEALTH;
+  private damageCooldown = 0;
+  private regenTimer = 0;
   private gameOver = false;
   private paused = false;
 
@@ -123,7 +126,6 @@ export class RunScene extends Phaser.Scene {
     const data = this.scene.settings.data as { level?: number; sfxMuted?: boolean; hapticsMuted?: boolean } | undefined;
     this.level = data?.level ?? 1;
     this.music.setDifficulty(this.level);
-    this.music.play(1);
 
     // Reset state
     this.gameOver = false;
@@ -141,9 +143,9 @@ export class RunScene extends Phaser.Scene {
     this.slipperyTimer = 0;
     this.snowdriftTimer = 0;
     this.stormStarted = false;
-    this.lives = STARTING_LIVES;
-    this.invincible = false;
-    this.flinging = false;
+    this.health = MAX_HEALTH;
+    this.damageCooldown = 0;
+    this.regenTimer = 0;
     this.paused = false;
     this.cameras.main.setBackgroundColor("#f8fbff");
 
@@ -165,7 +167,7 @@ export class RunScene extends Phaser.Scene {
 
     // Systems
     this.menu = new Menu(this);
-    this.hud = new HUD(this, this.level, this.lives, () => this.togglePause());
+    this.hud = new HUD(this, this.level, () => this.togglePause());
     this.inputHandler = new Input(this);
     this.spawner = new Spawner(this);
     this.effects = new Effects(this, this.penguin);
@@ -175,6 +177,16 @@ export class RunScene extends Phaser.Scene {
     this.haptics = new Haptics();
     this.haptics.setMuted(data?.hapticsMuted ?? false);
     this.inputHandler.setPauseHandler(() => this.togglePause());
+
+    // Pre-spawn obstacles scattered across the visible area
+    for (let i = 0; i < 8; i++) {
+      this.spawner.update(0.5, 0, 0, width / 2);
+    }
+    for (const obj of this.spawner.getObjects()) {
+      obj.sprite.y = height * 0.4 + Math.random() * height * 0.55;
+    }
+
+    this.music.play(1);
 
     // Expose functions for Android back button and background/visibility change
     window.__gameTogglePause = () => this.togglePause();
@@ -229,6 +241,8 @@ export class RunScene extends Phaser.Scene {
     }
     this.updateAirborne(dt);
 
+    this.updateHealth(dt);
+
     const meters = Math.floor(this.distanceTraveled / PIXELS_PER_METER);
     this.hud.update(this.score, meters, this.scrollSpeed, this.combo, this.slipperyTimer, this.snowdriftTimer);
     this.inputHandler.setAirborne(this.isAirborne);
@@ -274,11 +288,6 @@ export class RunScene extends Phaser.Scene {
   private updateSteering(dt: number): void {
     const icy = this.slipperyTimer > 0;
     const fullSpeed = this.scrollSpeed;
-
-    // Skip steering/rotation during fling (let tween control penguin)
-    if (this.flinging) {
-      return;
-    }
 
     if (!this.isAirborne) {
       const steerDir = this.inputHandler.getSteerDir();
@@ -385,9 +394,7 @@ export class RunScene extends Phaser.Scene {
 
   private updateCamera(dt: number): void {
     const { width } = this.scale;
-    if (!this.flinging) {
-      this.cameras.main.scrollX = this.penguin.x - width / 2;
-    }
+    this.cameras.main.scrollX = this.penguin.x - width / 2;
     this.snowBg.tilePositionX = this.cameras.main.scrollX;
     this.snowBg.tilePositionY += this.scrollSpeed * dt;
   }
@@ -526,6 +533,7 @@ export class RunScene extends Phaser.Scene {
       } else {
         // Crash — too far off
         this.combo = 0;
+        this.takeDamage(CRASH_LANDING_DAMAGE);
         this.effects.burstCrashLanding(this.penguin.x, this.penguin.y);
         this.sfx.crashLanding();
         this.haptics.crashLanding();
@@ -599,19 +607,37 @@ export class RunScene extends Phaser.Scene {
 
   private handleCollision(obj: SlopeObject): void {
     switch (obj.type) {
-      case "rock":
-        if (this.invincible) break;
-        this.lives--;
-        this.hud.setLives(this.lives);
+      case "rock": {
+        if (this.damageCooldown > 0) break;
+        this.damageCooldown = DAMAGE_COOLDOWN;
+        const dmg = ROCK_DAMAGE_BASE + this.scrollSpeed * ROCK_DAMAGE_SPEED;
+        this.takeDamage(dmg, true);
+        this.scrollSpeed = Math.max(0, this.scrollSpeed - ROCK_DECEL);
         this.effects.burstDeath(this.penguin.x, this.penguin.y);
         this.sfx.rockHit();
         this.haptics.rockHit();
-        if (this.lives <= 0) {
-          this.endGame();
-        } else {
-          this.flingPenguin(obj);
-        }
+        // Knockback: push penguin away from rock center
+        const knockDir = this.penguin.x >= obj.sprite.x ? 1 : -1;
+        this.tweens.add({
+          targets: this.penguin,
+          x: this.penguin.x + knockDir * ROCK_KNOCKBACK,
+          duration: 200,
+          ease: "Cubic.easeOut",
+        });
+        this.cameras.main.shake(250, 0.015);
+        this.penguin.setTint(0xff4444);
+        this.time.delayedCall(300, () => {
+          if (!this.isDead) {
+            if (this.slipperyTimer > 0) {
+              this.penguin.setTint(0x67e8f9);
+            } else {
+              this.penguin.clearTint();
+            }
+          }
+        });
+        this.spawner.markHit(obj);
         break;
+      }
 
       case "tree": {
         // Center hit = huge decel, grazing = small nudge
@@ -621,6 +647,8 @@ export class RunScene extends Phaser.Scene {
         const decel = TREE_GRAZE_DECEL + centeredness * TREE_CENTER_DECEL;
         this.scrollSpeed = Math.max(0, this.scrollSpeed - decel);
         this.combo = 0;
+        const treeDmg = TREE_DAMAGE_MIN + centeredness * (TREE_DAMAGE_MAX - TREE_DAMAGE_MIN);
+        this.takeDamage(treeDmg);
         this.effects.burstTreeHit(obj.sprite.x, obj.sprite.y, this.penguin.x, this.penguin.y);
         this.cameras.main.shake(150, 0.005);
         this.sfx.treeHit(centeredness);
@@ -672,6 +700,10 @@ export class RunScene extends Phaser.Scene {
 
       case "fish":
         this.score += FISH_POINTS;
+        if (this.health < MAX_HEALTH) {
+          this.health = Math.min(MAX_HEALTH, this.health + FISH_HEAL);
+          this.hud.setHealth(this.health);
+        }
         this.effects.burstFishCollected(obj.sprite.x, obj.sprite.y);
         this.sfx.fishCollect();
         this.haptics.fishCollect();
@@ -680,89 +712,23 @@ export class RunScene extends Phaser.Scene {
     }
   }
 
-  // --- Fling & Respawn ---
+  // --- Health ---
 
-  private flingPenguin(obj: SlopeObject): void {
-    this.invincible = true;
-    this.flinging = true;
-    this.isDead = true;
-    this.combo = 0;
-    this.penguin.setFrame(1);
-    this.cameras.main.shake(300, 0.015);
-    this.sfx.fling();
-    this.haptics.fling();
-
-    // Fling direction: away from rock
-    const dx = this.penguin.x - obj.sprite.x;
-    const dy = this.penguin.y - obj.sprite.y;
-    const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-    const flingX = this.penguin.x + (dx / dist) * 500;
-    const flingY = this.penguin.y + (dy / dist) * 350;
-    const spinDir = dx >= 0 ? 1 : -1;
-
-    this.tweens.add({
-      targets: this.penguin,
-      x: flingX,
-      y: flingY,
-      rotation: this.penguin.rotation + spinDir * Math.PI * 16,
-      scaleX: 0.3,
-      scaleY: 0.3,
-      alpha: 0,
-      duration: 1000,
-      ease: "Cubic.easeOut",
-      onComplete: () => this.respawnPenguin(),
-    });
-
-    // Hide shadow during fling
-    this.penguinShadow.setAlpha(0);
+  private updateHealth(dt: number): void {
+    if (this.damageCooldown > 0) this.damageCooldown -= dt;
+    this.regenTimer += dt;
+    if (this.regenTimer >= REGEN_DELAY && this.health < MAX_HEALTH) {
+      this.health = Math.min(MAX_HEALTH, this.health + REGEN_RATE * dt);
+      this.hud.setHealth(this.health);
+    }
   }
 
-  private respawnPenguin(): void {
-    this.flinging = false;
-    const { width, height } = this.scale;
-    const profile = SPEED_PROFILES[this.level] ?? SPEED_PROFILES[1];
-
-    // Reset penguin to screen center
-    this.penguin.x = this.cameras.main.scrollX + width / 2;
-    this.penguin.y = height * PENGUIN_Y;
-    this.penguin.setScale(1);
-    this.penguin.setAlpha(1);
-    this.penguin.setRotation(0);
-    this.penguin.setDepth(5);
-    this.penguin.setFrame(0);
-    this.penguinShadow.x = this.penguin.x;
-    this.penguinShadow.setAlpha(0.2);
-    this.isDead = false;
-
-    // Reset steering
-    this.heading = 0;
-    this.headingVelocity = 0;
-
-    // Slow down to start speed
-    this.scrollSpeed = Math.min(this.scrollSpeed, profile.start);
-
-    // Reset airborne state if flung while airborne
-    if (this.isAirborne) {
-      this.isAirborne = false;
-      this.airTime = 0;
-      this.airDuration = 0;
-    }
-
-    // Invincibility flash for 2 seconds
-    let flashCount = 0;
-    const flashTimer = this.time.addEvent({
-      delay: 100,
-      repeat: 19,
-      callback: () => {
-        flashCount++;
-        this.penguin.setAlpha(flashCount % 2 === 0 ? 1 : 0.3);
-      },
-    });
-    this.time.delayedCall(INVINCIBILITY_MS, () => {
-      flashTimer.destroy();
-      this.penguin.setAlpha(1);
-      this.invincible = false;
-    });
+  private takeDamage(amount: number, resetCombo = false): void {
+    this.health = Math.max(0, this.health - amount);
+    this.regenTimer = 0;
+    this.hud.setHealth(this.health);
+    if (resetCombo) this.combo = 0;
+    if (this.health <= 0) this.endGame();
   }
 
   // --- Game Over & Restart ---
@@ -770,19 +736,23 @@ export class RunScene extends Phaser.Scene {
   private endGame(): void {
     this.gameOver = true;
     this.isDead = true;
+    this.health = 0;
+    this.hud.setHealth(0);
     this.penguin.setFrame(1);
     this.music.onGameOver();
-    this.cameras.main.shake(400, 0.02);
+    this.cameras.main.shake(600, 0.03);
+    this.cameras.main.flash(400, 255, 50, 50);
     this.sfx.gameOver();
     this.haptics.gameOver();
+    this.effects.burstDeath(this.penguin.x, this.penguin.y);
 
-    // Spin and tumble slightly in the opposite direction
+    // Spin, tumble, shrink and fade
     const spinDir = this.heading >= 0 ? -1 : 1;
     this.tweens.add({
       targets: this.penguin,
-      x: this.penguin.x + spinDir * 40,
+      x: this.penguin.x + spinDir * 60,
       rotation: this.penguin.rotation + spinDir * Math.PI * 16,
-      duration: 800,
+      duration: 1000,
       ease: "Cubic.easeOut",
     });
 

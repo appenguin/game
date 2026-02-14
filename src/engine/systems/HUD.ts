@@ -15,9 +15,13 @@ export class HUD {
   private comboText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
   private effectText!: Phaser.GameObjects.Text;
-  private livesText!: Phaser.GameObjects.Text;
+  private healthBarFill!: Phaser.GameObjects.Rectangle;
+  private healthBarW = 0; // set in constructor to full screen width
+  private readonly healthBarH = 3;
+  private targetHealth = 100;
+  private displayHealth = 100;
 
-  constructor(scene: Phaser.Scene, level: number, lives: number, onPauseTap: () => void) {
+  constructor(scene: Phaser.Scene, level: number, onPauseTap: () => void) {
     this.scene = scene;
     const { width } = scene.scale;
 
@@ -55,9 +59,15 @@ export class HUD {
       .setDepth(11)
       .setScrollFactor(0);
 
-    this.livesText = scene.add
-      .text(width - 60, barH / 2, "\uD83D\uDC27".repeat(lives), textStyle)
-      .setOrigin(1, 0.5)
+    this.healthBarW = width;
+    scene.add
+      .rectangle(0, barH, width, this.healthBarH, 0x000000, 0.4)
+      .setOrigin(0, 0)
+      .setDepth(11)
+      .setScrollFactor(0);
+    this.healthBarFill = scene.add
+      .rectangle(0, barH, width, this.healthBarH, 0x22c55e, 0.9)
+      .setOrigin(0, 0)
       .setDepth(11)
       .setScrollFactor(0);
 
@@ -146,10 +156,31 @@ export class HUD {
     } else {
       this.effectText.setAlpha(0);
     }
+
+    // Health bar: instant snap on damage, smooth lerp on regen
+    if (this.displayHealth !== this.targetHealth) {
+      if (this.targetHealth < this.displayHealth) {
+        this.displayHealth = this.targetHealth;
+      } else {
+        this.displayHealth = Math.min(
+          this.targetHealth,
+          this.displayHealth + 120 * 0.016,
+        );
+      }
+    }
+    const pct = Phaser.Math.Clamp(this.displayHealth / 100, 0, 1);
+    this.healthBarFill.width = this.healthBarW * pct;
+    if (pct > 0.6) {
+      this.healthBarFill.setFillStyle(0x22c55e);
+    } else if (pct > 0.3) {
+      this.healthBarFill.setFillStyle(0xeab308);
+    } else {
+      this.healthBarFill.setFillStyle(0xef4444);
+    }
   }
 
-  setLives(n: number): void {
-    this.livesText.setText("\uD83D\uDC27".repeat(Math.max(0, n)));
+  setHealth(health: number): void {
+    this.targetHealth = health;
   }
 
   showTrickText(text: string): void {

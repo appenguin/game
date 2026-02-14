@@ -10,9 +10,18 @@ export const PIXELS_PER_METER = 18;
 export const PENGUIN_Y = 0.25; // vertical screen ratio
 export const HITBOX_SHRINK = 0.7; // collision box vs display size
 
-// --- Lives ---
-export const STARTING_LIVES = 3;
-export const INVINCIBILITY_MS = 2000;
+// --- Health ---
+export const MAX_HEALTH = 100;
+export const ROCK_DAMAGE_BASE = 25;
+export const ROCK_DAMAGE_SPEED = 0.05; // extra damage per speed unit (max ~55 at 600 speed)
+export const ROCK_KNOCKBACK = 80; // lateral pixels pushed sideways
+export const TREE_DAMAGE_MIN = 5;
+export const TREE_DAMAGE_MAX = 20;
+export const CRASH_LANDING_DAMAGE = 10;
+export const REGEN_DELAY = 5.0;
+export const REGEN_RATE = 2;
+export const FISH_HEAL = 5;
+export const DAMAGE_COOLDOWN = 0.5;
 
 // --- Physics ---
 export const GRAVITY = 120;
@@ -55,6 +64,7 @@ export const SPIN_HALF_POINTS = 100;
 export const ICE_SPEED_BOOST = 40;
 
 // --- Collision ---
+export const ROCK_DECEL = 200;
 export const TREE_GRAZE_DECEL = 30;
 export const TREE_CENTER_DECEL = 270; // added to graze for dead-center hit (total 300)
 export const TREE_HIT_WIDTH = 0.35;

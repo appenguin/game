@@ -101,7 +101,7 @@ export class BootScene extends Phaser.Scene {
     // Difficulty menu items
     const startY = height * 0.28;
     const gap = 42;
-    const toggleGap = 12; // extra space between difficulty items and toggles
+    const toggleGap = 28; // extra space between difficulty items and toggles
     const hitPad = 16;
     this.menuTexts = [];
     this.cursor = 1; // default to Medium
